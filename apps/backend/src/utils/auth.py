@@ -9,7 +9,6 @@ from src.conf import BASE_DIR, LOCAL_CHROME_HEADLESS, LOCAL_CHROME_PATH
 from src.utils.base_social_media import set_init_script
 from src.utils.log import tencent_logger, kuaishou_logger, douyin_logger
 from pathlib import Path
-from src.uploader.xiaohongshu_uploader.main import sign_local
 from src.utils.browser import launch_browser
 
 

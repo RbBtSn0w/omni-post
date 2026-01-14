@@ -9,38 +9,6 @@ from src.conf import BASE_DIR
 sys.modules.setdefault("utils.files_times", sys.modules[__name__])
 
 
-def get_absolute_path(relative_path: str, base_dir: str = None) -> str:
-    # Convert the relative path to an absolute path
-    absolute_path = Path(BASE_DIR) / base_dir / relative_path
-    return str(absolute_path)
-
-
-def get_title_and_hashtags(filename):
-    """
-  获取视频标题和 hashtag
-
-  Args:
-    filename: 视频文件名
-
-  Returns:
-    视频标题和 hashtag 列表
-  """
-
-    # 获取视频标题和 hashtag txt 文件名
-    txt_filename = filename.replace(".mp4", ".txt")
-
-    # 读取 txt 文件
-    with open(txt_filename, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # 获取标题和 hashtag
-    splite_str = content.strip().split("\n")
-    title = splite_str[0]
-    hashtags = splite_str[1].replace("#", "").split(" ")
-
-    return title, hashtags
-
-
 def generate_schedule_time_next_day(total_videos, videos_per_day = 1, daily_times=None, timestamps=False, start_days=0):
     """
     Generate a schedule for video uploads, starting from the next day.

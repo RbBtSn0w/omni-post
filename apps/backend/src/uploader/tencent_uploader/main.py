@@ -31,56 +31,6 @@ def format_str_for_short_title(origin_title: str) -> str:
     return formatted_string
 
 
-async def cookie_auth(account_file):
-    async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=LOCAL_CHROME_HEADLESS)
-        context = await browser.new_context(storage_state=account_file)
-        context = await set_init_script(context)
-        # 创建一个新的页面
-        page = await context.new_page()
-        # 访问指定的 URL
-        await page.goto("https://channels.weixin.qq.com/platform/post/create")
-        try:
-            await page.wait_for_selector('div.title-name:has-text("微信小店")', timeout=5000)  # 等待5秒
-            tencent_logger.error("[+] 等待5秒 cookie 失效")
-            return False
-        except:
-            tencent_logger.success("[+] cookie 有效")
-            return True
-
-
-async def get_tencent_cookie(account_file):
-    async with async_playwright() as playwright:
-        options = {
-            'args': [
-                '--lang en-GB'
-            ],
-            'headless': LOCAL_CHROME_HEADLESS,  # Set headless option here
-        }
-        # Make sure to run headed.
-        browser = await playwright.chromium.launch(**options)
-        # Setup context however you like.
-        context = await browser.new_context()  # Pass any options
-        # Pause the page, and start recording manually.
-        context = await set_init_script(context)
-        page = await context.new_page()
-        await page.goto("https://channels.weixin.qq.com")
-        await page.pause()
-        # 点击调试器的继续，保存cookie
-        await context.storage_state(path=account_file)
-
-
-async def weixin_setup(account_file, handle=False):
-    account_file = get_absolute_path(account_file, "tencent_uploader")
-    if not os.path.exists(account_file) or not await cookie_auth(account_file):
-        if not handle:
-            # Todo alert message
-            return False
-        tencent_logger.info('[+] cookie文件不存在或已失效，即将自动打开浏览器，请扫码登录，登陆后会自动生成cookie文件')
-        await get_tencent_cookie(account_file)
-    return True
-
-
 class TencentVideo(object):
     def __init__(self, title, file_path, tags, publish_date: datetime, account_file, category=None, is_draft=False):
         self.title = title  # 视频标题
