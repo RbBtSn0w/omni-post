@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Backend",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.app",
+            "cwd": "${workspaceFolder}/apps/backend",
+            "python": "${workspaceFolder}/apps/backend/.venv/bin/python",
+            "console": "integratedTerminal"
+        }
+    ]
+}

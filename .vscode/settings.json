@@ -1,0 +1,27 @@
+{
+  // Python 基础配置
+  "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python",
+  "python.defaultInterpreterPath.windows": "${workspaceFolder}\\apps\\backend\\.venv\\Scripts\\python.exe",
+  "python.envFile": "${workspaceFolder}/apps/backend/.env",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/apps/backend"
+  ],
+  // Python 测试配置
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.cwd": "${workspaceFolder}/apps/backend",
+  // 前端 Vitest 配置
+  "vitest.enable": true,
+  "vitest.commandLine": "npm run test",
+  "vitest.root": "${workspaceFolder}/apps/frontend",
+  // 编辑器优化
+  "editor.formatOnSave": true,
+  "files.trimTrailingWhitespace": true,
+  // 文件排除配置
+  "files.exclude": {
+    "**/.venv": true,
+    "**/node_modules": true
+  }
+}
