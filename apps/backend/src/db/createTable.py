@@ -1,0 +1,66 @@
+import sqlite3
+import json
+import os
+import sys
+from pathlib import Path
+
+# 导入数据库管理器
+from .db_manager import db_manager
+
+# 从数据库管理器获取数据库文件路径
+db_file = db_manager.get_db_path()
+
+# 验证数据库路径
+is_valid, error_msg = db_manager.validate_path()
+if not is_valid:
+    raise ValueError(f"数据库路径验证失败: {error_msg}")
+
+# 如果数据库已存在，则删除旧的表（可选）
+# if os.path.exists(db_file):
+#     os.remove(db_file)
+
+# 连接到SQLite数据库（如果文件不存在则会自动创建）
+conn = sqlite3.connect(db_file)
+cursor = conn.cursor()
+
+# 创建账号组表
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS account_groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,        -- 组名称（唯一）
+    description TEXT,                  -- 组描述
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
+# 创建账号记录表
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS user_info (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type INTEGER NOT NULL,
+    filePath TEXT NOT NULL,  -- 存储文件路径
+    userName TEXT NOT NULL,
+    status INTEGER DEFAULT 0,
+    group_id INTEGER,        -- 关联账号组
+    UNIQUE(type, userName),  -- 确保每个平台每个用户名只有一条记录
+    FOREIGN KEY (group_id) REFERENCES account_groups(id)
+)
+''')
+
+# 创建文件记录表
+cursor.execute('''CREATE TABLE IF NOT EXISTS file_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- 唯一标识每条记录
+    filename TEXT NOT NULL,               -- 文件名
+    filesize REAL,                     -- 文件大小（单位：MB）
+    upload_time DATETIME DEFAULT CURRENT_TIMESTAMP, -- 上传时间，默认当前时间
+    file_path TEXT                        -- 文件路径
+)
+''')
+
+
+# 提交更改
+conn.commit()
+print("✅ 表创建成功")
+# 关闭连接
+conn.close()

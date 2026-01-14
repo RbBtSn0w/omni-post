@@ -1,0 +1,22 @@
+{
+  "name": "omni-post-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "OmniPost Backend Service - Multi-platform content publishing automation",
+  "scripts": {
+    "clean": "npx rimraf .venv test-results htmlcov dist build *.egg-info",
+    "create:venv": "python -m venv .venv",
+    "create:venv:win": "python -m venv .venv",
+    "install:python": ".venv/bin/python -m pip install -e . && .venv/bin/python -m pip install -r requirements.txt",
+    "install:python:win": ".venv\\Scripts\\python.exe -m pip install -e . && .venv\\Scripts\\python.exe -m pip install -r requirements.txt",
+    "start": ".venv/bin/python -m src.app",
+    "start:win": ".venv\\Scripts\\python.exe -m src.app",
+    "test": ".venv/bin/python -m pytest -xvs tests/",
+    "test:win": ".venv\\Scripts\\python.exe -m pytest -xvs tests/",
+    "test:cov": ".venv/bin/python -m pytest -xvs tests/ --cov=src --cov-report=html:htmlcov --cov-report=term",
+    "test:cov:win": ".venv\\Scripts\\python.exe -m pytest -xvs tests/ --cov=src --cov-report=html:htmlcov --cov-report=term",
+    "lint": ".venv/bin/flake8 .",
+    "lint:win": ".venv\\Scripts\\python.exe -m flake8 .",
+    "info": "echo '=== Backend Info ===' && npm pkg get name version description"
+  }
+}
