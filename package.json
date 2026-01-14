@@ -1,0 +1,70 @@
+{
+  "name": "omni-post",
+  "version": "2.0.0",
+  "description": "OmniPost - Broadcast Everywhere, Manage Once. The Ultimate Multi-Platform Content Publishing Tool",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "npm run clean -w apps/frontend",
+    "clean:backend": "npm run clean -w apps/backend",
+    "install:all": "npm install && npm run install:backend && npm run install:frontend",
+    "install:backend": "npm run create:venv -w apps/backend && npm run install:python -w apps/backend",
+    "install:frontend": "npm install -w apps/frontend",
+    "dev": "npm run dev:frontend & npm run dev:backend",
+    "dev:backend": "npm run start -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "npm run test -w apps/backend",
+    "test:frontend": "npm run test -w apps/frontend",
+    "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:backend": "npm run lint -w apps/backend",
+    "lint:frontend": "npm run lint -w apps/frontend",
+    "build": "npm run build -w apps/frontend",
+    "preview": "npm run preview -w apps/frontend",
+    "info": "npm run info -w apps/frontend && npm run info -w apps/backend"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0",
+    "python": ">=3.10.0 <3.11.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RbBtSn0w/omni-post.git"
+  },
+  "homepage": "https://github.com/RbBtSn0w/omni-post#readme",
+  "bugs": {
+    "url": "https://github.com/RbBtSn0w/omni-post/issues"
+  },
+  "keywords": [
+    "omni-post",
+    "omnipost",
+    "social-media",
+    "automation",
+    "multi-platform",
+    "content-publishing",
+    "broadcast",
+    "content-creator",
+    "douyin",
+    "xiaohongshu",
+    "playwright",
+    "vue3",
+    "flask"
+  ],
+  "author": "rbbtsn0w <hamiltonsnow@gmail.com>",
+  "license": "MIT",
+  "notes": [
+    "This is a full-stack project with separate dependencies for frontend and backend.",
+    "Frontend dependencies are managed by npm in apps/frontend/package.json.",
+    "Backend dependencies are managed by pip in apps/backend/requirements.txt.",
+    "Python version must be 3.10.x (>=3.10.0 <3.11.0) as specified in README.md.",
+    "It is recommended to run Python in a virtual environment (venv) as specified in README.md.",
+    "Use the :venv suffix commands to run in a virtual environment.",
+    "For example: npm run install:all:venv, npm run dev:backend:venv.",
+    "Please follow the setup instructions in the README.md file."
+  ]
+}
