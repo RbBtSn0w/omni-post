@@ -10,8 +10,8 @@ class TestAppE2E:
     def setup_method(self):
         """设置测试环境"""
         # Import app after setup to avoid import issues
-        from src.app import app
-        self.app = app
+        from src.app import create_app
+        self.app = create_app()
         self.app.config['TESTING'] = True
         self.client = self.app.test_client()
     
@@ -81,7 +81,8 @@ class TestAppE2E:
     
     def test_registered_blueprints(self):
         """测试已注册的蓝图"""
-        from src.app import app
+        from src.app import create_app
+        app = create_app()
         blueprint_names = [bp.name for bp in app.blueprints.values()]
         
         # Check that key blueprints are registered
@@ -121,8 +122,8 @@ class TestAppBlueprints:
     """测试蓝图集成"""
     
     def setup_method(self):
-        from src.app import app
-        self.app = app
+        from src.app import create_app
+        self.app = create_app()
         self.client = self.app.test_client()
     
     def test_file_blueprint_routes(self):
@@ -160,8 +161,8 @@ class TestAppE2EFlows:
     """端到端流程测试"""
     
     def setup_method(self):
-        from src.app import app
-        self.app = app
+        from src.app import create_app
+        self.app = create_app()
         self.client = self.app.test_client()
     
     @patch('src.db.db_manager')
