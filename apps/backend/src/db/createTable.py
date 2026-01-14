@@ -10,15 +10,6 @@ from .db_manager import db_manager
 # 从数据库管理器获取数据库文件路径
 db_file = db_manager.get_db_path()
 
-# 验证数据库路径
-is_valid, error_msg = db_manager.validate_path()
-if not is_valid:
-    raise ValueError(f"数据库路径验证失败: {error_msg}")
-
-# 如果数据库已存在，则删除旧的表（可选）
-# if os.path.exists(db_file):
-#     os.remove(db_file)
-
 # 连接到SQLite数据库（如果文件不存在则会自动创建）
 conn = sqlite3.connect(db_file)
 cursor = conn.cursor()
