@@ -1,0 +1,69 @@
+name: Build Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-build:
+    name: Backend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        cd apps/backend
+        python -m pip install --upgrade pip
+        pip install -e .
+
+    - name: Verify backend imports
+      run: |
+        cd apps/backend
+        python -c "from src.app import create_app; print('✓ Backend imports successful')"
+
+    - name: Check Flask app creation
+      run: |
+        cd apps/backend
+        python -c "from src.app import create_app; app = create_app(); print('✓ Flask app created successfully')"
+
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd apps/frontend
+        npm install
+
+    - name: Build frontend
+      run: |
+        cd apps/frontend
+        npm run build
+
+    - name: Verify build output
+      run: |
+        if [ -d "apps/frontend/dist" ]; then
+          echo "✓ Frontend build successful"
+          ls -la apps/frontend/dist
+        else
+          echo "✗ Build output not found"
+          exit 1
+        fi

@@ -1,0 +1,49 @@
+name: Frontend Lint
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/frontend/**'
+      - '.github/workflows/lint-frontend.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/frontend/**'
+      - '.github/workflows/lint-frontend.yml'
+
+jobs:
+  lint:
+    name: JavaScript/Vue Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+        cache: 'npm'
+
+    - name: Install frontend dependencies
+      run: |
+        cd apps/frontend
+        npm install
+
+    - name: Run ESLint
+      run: |
+        cd apps/frontend
+        npm run lint
+      continue-on-error: true
+
+    - name: Check for Vue issues
+      run: |
+        cd apps/frontend
+        npm run build 2>&1 | grep -i error || echo "No errors detected"
+      continue-on-error: true
+
+    - name: Report lint results
+      if: always()
+      run: |
+        echo "Frontend lint checks completed. Review the results above."

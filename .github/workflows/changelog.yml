@@ -1,0 +1,51 @@
+name: Changelog Generator
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/frontend/**'
+      - '.github/**'
+
+jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # 获取最后一条标签（如果存在）
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+        if [ -z "$LAST_TAG" ]; then
+          # 如果没有标签，获取所有提交
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "## 📝 变更日志" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log --pretty=format:"- %s (%h)" | head -20 >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          # 获取上一个标签之后的提交
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "## 📝 变更日志 (从 $LAST_TAG 开始)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Display changelog
+      run: |
+        echo "Latest changes:"
+        echo "${{ steps.changelog.outputs.changelog }}"
