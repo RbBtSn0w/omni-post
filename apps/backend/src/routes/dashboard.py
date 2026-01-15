@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify
-from src.services.cookie_service import get_cookie_service
 from src.db.db_manager import db_manager
 import sqlite3
 import datetime
@@ -10,39 +9,22 @@ bp = Blueprint('dashboard', __name__)
 
 # 获取仪表盘统计数据
 @bp.route('/getDashboardStats', methods=['GET'])
-async def get_dashboard_stats():
+def get_dashboard_stats():
     try:
         # 连接到数据库
         conn = sqlite3.connect(db_manager.get_db_path())
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # 账号统计 - 与getValidAccounts保持一致的逻辑
+        # 账号统计 - 使用数据库缓存状态（不实时验证，避免启动浏览器）
         # 获取所有账号
         cursor.execute('SELECT * FROM user_info')
         rows = cursor.fetchall()
-        rows_list = [list(row) for row in rows]
 
-        # 实时验证每个账号状态
-        total_accounts = len(rows_list)
-        normal_accounts = 0
-        abnormal_accounts = 0
-
-        for row in rows_list:
-            flag = await get_cookie_service().check_cookie(row[1], row[2])
-            if flag:
-                normal_accounts += 1
-                # 更新数据库状态为正常
-                if row[4] != 1:
-                    cursor.execute('UPDATE user_info SET status = ? WHERE id = ?', (1, row[0]))
-            else:
-                abnormal_accounts += 1
-                # 更新数据库状态为异常
-                if row[4] != 0:
-                    cursor.execute('UPDATE user_info SET status = ? WHERE id = ?', (0, row[0]))
-
-        # 提交数据库更新
-        conn.commit()
+        # 直接使用数据库中的 status 字段统计，不触发浏览器验证
+        total_accounts = len(rows)
+        normal_accounts = sum(1 for row in rows if row['status'] == 1)
+        abnormal_accounts = total_accounts - normal_accounts
 
         # 平台统计 - 根据实际账号数据计算
         cursor.execute('SELECT type, COUNT(*) as count FROM user_info GROUP BY type')

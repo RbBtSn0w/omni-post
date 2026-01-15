@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import pytest
-from unittest.mock import patch, MagicMock, call, AsyncMock
+from unittest.mock import patch, MagicMock
 from datetime import datetime
 from flask import Flask
 
@@ -17,10 +17,9 @@ class TestDashboard:
         self.app.register_blueprint(dashboard_bp)
 
     @patch('sqlite3.connect')
-    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
-    def test_get_dashboard_stats_normal(self, mock_db_manager, mock_check_cookie, mock_sqlite_connect):
-        """测试正常情况下获取仪表盘统计数据"""
+    def test_get_dashboard_stats_normal(self, mock_db_manager, mock_sqlite_connect):
+        """测试正常情况下获取仪表盘统计数据 - 使用缓存状态，不触发cookie验证"""
         # 配置模拟返回值
         mock_db_manager.get_db_path.return_value = 'mock_db_path'
 
@@ -30,23 +29,53 @@ class TestDashboard:
         mock_sqlite_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
 
-        # 模拟user_info表数据
+        # 创建模拟的Row对象（支持字典式访问）
+        def create_mock_row(data, keys):
+            row = MagicMock()
+            row.__iter__ = lambda self: iter(data)
+            row.__getitem__ = lambda self, key: dict(zip(keys, data))[key] if isinstance(key, str) else data[key]
+            return row
+
+        # 模拟user_info表数据（使用Row-like对象）
+        user_keys = ['id', 'type', 'filePath', 'userName', 'status', 'group_id', 'created_at', 'last_validated_at']
         mock_user_rows = [
-            # id, type, file_path, name, status
-            (1, 1, 'xhs_cookie.json', '小红书账号1', 1),
-            (2, 2, 'tencent_cookie.json', '视频号账号1', 1),
-            (3, 3, 'douyin_cookie.json', '抖音账号1', 1),  # 初始状态1（正常），但check_cookie返回异常，所以会被更新为0
-            (4, 4, 'ks_cookie.json', '快手账号1', 1)
+            create_mock_row((1, 1, 'xhs_cookie.json', '小红书账号1', 1, None, None, None), user_keys),
+            create_mock_row((2, 2, 'tencent_cookie.json', '视频号账号1', 1, None, None, None), user_keys),
+            create_mock_row((3, 3, 'douyin_cookie.json', '抖音账号1', 0, None, None, None), user_keys),  # 数据库中已标记为异常
+            create_mock_row((4, 4, 'ks_cookie.json', '快手账号1', 1, None, None, None), user_keys),
         ]
 
-        # 模拟fetchall返回值
+        # 模拟平台统计数据
+        platform_keys = ['type', 'count']
+        mock_platform_rows = [
+            create_mock_row((1, 1), platform_keys),
+            create_mock_row((2, 1), platform_keys),
+            create_mock_row((3, 1), platform_keys),
+            create_mock_row((4, 1), platform_keys),
+        ]
+
+        # 模拟任务统计数据（空）
+        mock_task_rows = []
+
+        # 模拟文件统计
+        mock_file_count = MagicMock()
+        mock_file_count.__getitem__ = lambda self, key: 0
+
+        # 模拟趋势数据（空）
+        mock_trend_rows = []
+
+        # 模拟最近任务（空）
+        mock_recent_tasks = []
+
+        # 模拟fetchall和fetchone返回值
         mock_cursor.fetchall.side_effect = [
-            mock_user_rows,  # 第一次调用获取user_info表数据
-            [{'type': 1, 'count': 1}, {'type': 2, 'count': 1}, {'type': 3, 'count': 1}, {'type': 4, 'count': 1}]  # 第二次调用获取平台统计
+            mock_user_rows,       # SELECT * FROM user_info
+            mock_platform_rows,   # SELECT type, COUNT(*) ... GROUP BY type
+            mock_task_rows,       # SELECT status, COUNT(*) FROM tasks GROUP BY status
+            mock_trend_rows,      # SELECT date(created_at) ... FROM tasks ...
+            mock_recent_tasks,    # SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5
         ]
-
-        # 模拟check_cookie返回值（第1、2、4个账号正常，第3个异常）
-        mock_check_cookie.side_effect = [True, True, False, True]
+        mock_cursor.fetchone.return_value = mock_file_count
 
         # 使用Flask测试客户端执行测试
         with self.app.test_client() as client:
@@ -58,23 +87,14 @@ class TestDashboard:
             assert data['code'] == 200
             assert data['msg'] == '获取数据成功'
 
-            # 验证数据库操作
+            # 验证数据库操作（不应该有UPDATE操作，因为我们不再验证cookie）
             mock_sqlite_connect.assert_called_once()
             mock_cursor.execute.assert_any_call('SELECT * FROM user_info')
             mock_cursor.execute.assert_any_call('SELECT type, COUNT(*) as count FROM user_info GROUP BY type')
 
-            # 验证账号状态更新
-            expected_updates = [
-                call('UPDATE user_info SET status = ? WHERE id = ?', (0, 3))  # 第3个账号状态需要从1更新为0
-            ]
-
-            # 过滤出UPDATE语句的调用
-            update_calls = [call for call in mock_cursor.execute.call_args_list if call[0][0].startswith('UPDATE')]
-            assert len(update_calls) == 1
-            assert update_calls[0] in expected_updates
-
-            # 验证check_cookie调用
-            assert mock_check_cookie.call_count == 4
+            # 验证不再调用UPDATE语句（因为不验证cookie了）
+            update_calls = [call for call in mock_cursor.execute.call_args_list if 'UPDATE' in str(call)]
+            assert len(update_calls) == 0, "Dashboard should not update account status anymore"
 
             # 验证返回数据结构
             dashboard_data = data['data']
@@ -86,10 +106,10 @@ class TestDashboard:
             assert 'contentStatsData' in dashboard_data
             assert 'recentTasks' in dashboard_data
 
-            # 验证账号统计数据
+            # 验证账号统计数据（使用数据库缓存状态）
             assert dashboard_data['accountStats']['total'] == 4
-            assert dashboard_data['accountStats']['normal'] == 3
-            assert dashboard_data['accountStats']['abnormal'] == 1
+            assert dashboard_data['accountStats']['normal'] == 3  # 数据库中status=1的账号
+            assert dashboard_data['accountStats']['abnormal'] == 1  # 数据库中status=0的账号
 
             # 验证平台统计数据
             assert dashboard_data['platformStats']['xiaohongshu'] == 1
@@ -119,9 +139,8 @@ class TestDashboard:
             assert data['data'] is None
 
     @patch('sqlite3.connect')
-    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
-    def test_get_dashboard_stats_no_accounts(self, mock_db_manager, mock_check_cookie, mock_sqlite_connect):
+    def test_get_dashboard_stats_no_accounts(self, mock_db_manager, mock_sqlite_connect):
         """测试没有账号的情况"""
         # 配置模拟返回值
         mock_db_manager.get_db_path.return_value = 'mock_db_path'
@@ -134,9 +153,15 @@ class TestDashboard:
 
         # 模拟没有账号数据
         mock_cursor.fetchall.side_effect = [
-            [],  # 第一次调用获取user_info表数据（空）
-            []   # 第二次调用获取平台统计（空）
+            [],  # SELECT * FROM user_info (空)
+            [],  # SELECT type, COUNT(*) ... GROUP BY type (空)
+            [],  # SELECT status, COUNT(*) FROM tasks GROUP BY status (空)
+            [],  # SELECT date(created_at) ... FROM tasks ... (空)
+            [],  # SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5 (空)
         ]
+        mock_file_count = MagicMock()
+        mock_file_count.__getitem__ = lambda self, key: 0
+        mock_cursor.fetchone.return_value = mock_file_count
 
         # 使用Flask测试客户端执行测试
         with self.app.test_client() as client:
@@ -167,15 +192,13 @@ class TestDashboard:
             assert dashboard_data['contentStats']['published'] == 0
             assert dashboard_data['contentStats']['draft'] == 0
 
-            # 验证最近任务列表（应该有一个示例任务）
-            assert len(dashboard_data['recentTasks']) == 1
-            assert dashboard_data['recentTasks'][0]['title'] == '示例任务'
+            # 验证最近任务列表（应该为空）
+            assert len(dashboard_data['recentTasks']) == 0
 
     @patch('sqlite3.connect')
-    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
-    def test_get_dashboard_stats_all_abnormal(self, mock_db_manager, mock_check_cookie, mock_sqlite_connect):
-        """测试所有账号都异常的情况"""
+    def test_get_dashboard_stats_all_abnormal(self, mock_db_manager, mock_sqlite_connect):
+        """测试所有账号都异常的情况（使用数据库缓存状态）"""
         # 配置模拟返回值
         mock_db_manager.get_db_path.return_value = 'mock_db_path'
 
@@ -185,20 +208,36 @@ class TestDashboard:
         mock_sqlite_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
 
-        # 模拟user_info表数据（2个账号，初始状态都是正常）
+        # 创建模拟的Row对象
+        def create_mock_row(data, keys):
+            row = MagicMock()
+            row.__iter__ = lambda self: iter(data)
+            row.__getitem__ = lambda self, key: dict(zip(keys, data))[key] if isinstance(key, str) else data[key]
+            return row
+
+        # 模拟user_info表数据（2个账号，数据库中都标记为异常）
+        user_keys = ['id', 'type', 'filePath', 'userName', 'status', 'group_id', 'created_at', 'last_validated_at']
         mock_user_rows = [
-            (1, 1, 'xhs_cookie.json', '小红书账号1', 1),
-            (2, 2, 'tencent_cookie.json', '视频号账号1', 1)
+            create_mock_row((1, 1, 'xhs_cookie.json', '小红书账号1', 0, None, None, None), user_keys),
+            create_mock_row((2, 2, 'tencent_cookie.json', '视频号账号1', 0, None, None, None), user_keys),
         ]
 
-        # 模拟fetchall返回值
+        platform_keys = ['type', 'count']
+        mock_platform_rows = [
+            create_mock_row((1, 1), platform_keys),
+            create_mock_row((2, 1), platform_keys),
+        ]
+
         mock_cursor.fetchall.side_effect = [
             mock_user_rows,
-            [{'type': 1, 'count': 1}, {'type': 2, 'count': 1}]
+            mock_platform_rows,
+            [],  # tasks
+            [],  # trend
+            [],  # recent tasks
         ]
-
-        # 模拟check_cookie返回值（所有账号都异常）
-        mock_check_cookie.return_value = False
+        mock_file_count = MagicMock()
+        mock_file_count.__getitem__ = lambda self, key: 0
+        mock_cursor.fetchone.return_value = mock_file_count
 
         # 使用Flask测试客户端执行测试
         with self.app.test_client() as client:
@@ -209,12 +248,13 @@ class TestDashboard:
             data = response.get_json()
             assert data['code'] == 200
 
-            # 验证账号统计数据
+            # 验证账号统计数据（基于数据库缓存状态，不触发验证）
             dashboard_data = data['data']
             assert dashboard_data['accountStats']['total'] == 2
             assert dashboard_data['accountStats']['normal'] == 0
             assert dashboard_data['accountStats']['abnormal'] == 2
 
-            # 验证账号状态更新（应该有2次UPDATE操作）
-            update_calls = [call for call in mock_cursor.execute.call_args_list if call[0][0].startswith('UPDATE')]
-            assert len(update_calls) == 2
+            # 验证不再进行UPDATE操作
+            update_calls = [call for call in mock_cursor.execute.call_args_list if 'UPDATE' in str(call)]
+            assert len(update_calls) == 0
+
