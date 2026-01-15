@@ -3,13 +3,20 @@ from unittest.mock import patch, MagicMock
 from src.utils.publish_executor import run_publish_task
 
 class TestPublishExecutor:
+    @patch('src.services.publish_executor.COOKIES_DIR')
+    @patch('src.services.publish_executor.VIDEOS_DIR')
     @patch('src.services.publish_executor.Path')
     @patch('src.services.publish_executor.task_service')
     @patch('src.services.publish_executor.post_video_DouYin')
-    def test_run_publish_task_douyin_success(self, mock_douyin, mock_task_service, mock_path):
-        # Mock Path to make file validation pass
+    def test_run_publish_task_douyin_success(self, mock_douyin, mock_task_service, mock_path, mock_videos_dir, mock_cookies_dir):
+        # Mock Path/Dir behavior
         mock_path_instance = MagicMock()
         mock_path_instance.exists.return_value = True
+
+        # Make directories return mock path on / operator
+        mock_videos_dir.__truediv__.return_value = mock_path_instance
+        mock_cookies_dir.__truediv__.return_value = mock_path_instance
+
         mock_path.return_value.__truediv__.return_value = mock_path_instance
 
         publish_data = {

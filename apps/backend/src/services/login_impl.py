@@ -14,7 +14,7 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
-from src.core.config import BASE_DIR, DEBUG_MODE
+from src.core.config import BASE_DIR, DEBUG_MODE, LOGS_DIR
 from src.core.browser import launch_browser, set_init_script
 from src.db.db_manager import db_manager
 from src.services.cookie_service import get_cookie_service
@@ -30,7 +30,7 @@ def debug_print(*args, **kwargs):
 def create_screenshot_dir(platform: str) -> Path:
     """Create platform-specific session screenshot directory."""
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-    screenshots_root = Path(BASE_DIR / "logs" / "screenshots")
+    screenshots_root = LOGS_DIR / "screenshots"
     screenshots_root.mkdir(exist_ok=True, parents=True)
     session_dir = screenshots_root / platform / timestamp
     session_dir.mkdir(exist_ok=True, parents=True)
@@ -39,16 +39,7 @@ def create_screenshot_dir(platform: str) -> Path:
 
 async def debug_screenshot(page, session_dir: Path, filename: str, description: str = ""):
     """Take screenshot if DEBUG_MODE is enabled."""
-    # Check DEBUG_MODE dynamically to allow patching in tests
-    is_debug = False
-    if 'src.core.config' in sys.modules:
-        is_debug = getattr(sys.modules['src.core.config'], 'DEBUG_MODE', False)
-    elif 'conf' in sys.modules:
-        is_debug = getattr(sys.modules['conf'], 'DEBUG_MODE', False)
-    else:
-        is_debug = DEBUG_MODE
-
-    if not is_debug:
+    if not DEBUG_MODE:
         return
 
     if not filename.lower().endswith('.png'):

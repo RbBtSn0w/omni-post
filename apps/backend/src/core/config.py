@@ -12,6 +12,16 @@ from pathlib import Path
 # Directory paths
 BASE_DIR = Path(__file__).parent.parent.resolve()  # src/
 ROOT_DIR = BASE_DIR.parent  # apps/backend/
+DATA_DIR = ROOT_DIR / "data"
+COOKIES_DIR = DATA_DIR / "cookies"
+VIDEOS_DIR = DATA_DIR / "videos"
+LOGS_DIR = DATA_DIR / "logs"
+
+# Ensure directories exist
+DATA_DIR.mkdir(exist_ok=True)
+COOKIES_DIR.mkdir(exist_ok=True)
+VIDEOS_DIR.mkdir(exist_ok=True)
+LOGS_DIR.mkdir(exist_ok=True)
 
 # Server settings
 XHS_SERVER = "http://127.0.0.1:11901"

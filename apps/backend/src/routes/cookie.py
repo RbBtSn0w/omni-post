@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 from pathlib import Path
-from src.conf import BASE_DIR
+from src.core.config import COOKIES_DIR
 from src.db.db_manager import db_manager
 import sqlite3
 import os
@@ -60,7 +60,7 @@ def upload_cookie():
             }), 404
 
         # 保存上传的Cookie文件到对应路径
-        cookie_file_path = Path(BASE_DIR / "cookiesFile" / result['filePath'])
+        cookie_file_path = COOKIES_DIR / result['filePath']
         cookie_file_path.parent.mkdir(parents=True, exist_ok=True)
 
         file.save(str(cookie_file_path))
@@ -95,8 +95,8 @@ def download_cookie():
             }), 400
 
         # 验证文件路径的安全性，防止路径遍历攻击
-        cookie_file_path = Path(BASE_DIR / "cookiesFile" / file_path).resolve()
-        base_path = Path(BASE_DIR / "cookiesFile").resolve()
+        cookie_file_path = (COOKIES_DIR / file_path).resolve()
+        base_path = COOKIES_DIR.resolve()
 
         if not cookie_file_path.is_relative_to(base_path):
             return jsonify({

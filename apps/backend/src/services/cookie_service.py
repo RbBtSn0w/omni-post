@@ -11,7 +11,7 @@ from typing import Optional
 from playwright.async_api import async_playwright
 import asyncio
 
-from src.core.config import BASE_DIR
+from src.core.config import COOKIES_DIR
 from src.core.browser import launch_browser, set_init_script
 from src.core.logger import tencent_logger, kuaishou_logger, douyin_logger
 
@@ -49,7 +49,7 @@ class DefaultCookieService(CookieService):
     """默认 Cookie 验证服务实现"""
 
     def __init__(self):
-        self.cookies_dir = Path(BASE_DIR / "cookiesFile")
+        self.cookies_dir = COOKIES_DIR
 
     async def cookie_auth_douyin(self, account_file: Path) -> bool:
         async with async_playwright() as playwright:

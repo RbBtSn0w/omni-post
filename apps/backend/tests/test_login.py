@@ -213,7 +213,7 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.conf.DEBUG_MODE', True)
+    @patch('src.services.login_impl.DEBUG_MODE', True)
     @patch('src.utils.login.debug_print')
     async def test_debug_screenshot_unit(self, mock_debug_print):
         """单元测试：调试截图功能"""
@@ -230,7 +230,7 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.conf.DEBUG_MODE', False)
+    @patch('src.services.login_impl.DEBUG_MODE', False)
     async def test_debug_screenshot_disabled_unit(self):
         """单元测试：调试截图功能在DEBUG_MODE=False时不执行"""
         # 创建模拟对象

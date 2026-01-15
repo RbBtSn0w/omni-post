@@ -216,8 +216,8 @@ def delete_account():
             file_path = record.get('filePath')
             if file_path:
                 from pathlib import Path
-                from src.conf import BASE_DIR
-                cookie_file = Path(BASE_DIR / "cookiesFile" / file_path)
+                from src.core.config import COOKIES_DIR
+                cookie_file = COOKIES_DIR / file_path
                 if cookie_file.exists():
                     try:
                         cookie_file.unlink()

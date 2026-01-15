@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-from src.conf import BASE_DIR
+from src.core.config import DATA_DIR
 
 class DatabaseManager:
     """
@@ -13,7 +13,7 @@ class DatabaseManager:
 
     def __init__(self):
         # 数据库目录路径
-        self.data_dir = Path(BASE_DIR.parent / "data")
+        self.data_dir = DATA_DIR
         # 数据库文件路径
         self.db_file = self.data_dir / "database.db"
 

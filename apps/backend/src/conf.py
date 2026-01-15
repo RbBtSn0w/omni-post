@@ -16,6 +16,10 @@ from src.core.config import (
     MOCK_CONFIG,
     LOCAL_CHROME_PATH,
     LOCAL_CHROME_HEADLESS,
+    DATA_DIR,
+    COOKIES_DIR,
+    VIDEOS_DIR,
+    LOGS_DIR,
 )
 
 # Re-export all symbols
@@ -28,6 +32,10 @@ __all__ = [
     'MOCK_CONFIG',
     'LOCAL_CHROME_PATH',
     'LOCAL_CHROME_HEADLESS',
+    'DATA_DIR',
+    'COOKIES_DIR',
+    'VIDEOS_DIR',
+    'LOGS_DIR',
 ]
 
 # Register this module as 'conf' alias for test patching

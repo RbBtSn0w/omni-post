@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 from abc import ABC
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from src.services.auth_service import (
     AuthService,
@@ -110,7 +110,9 @@ class TestAuthService:
     async def test_check_cookie(self, mock_check_cookie):
         """测试检查cookie有效性方法"""
         # 设置mock返回值
-        mock_check_cookie.return_value = True
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=True)
+        mock_check_cookie.return_value = mock_service
 
         # 创建认证服务实例
         auth_service = DefaultAuthService()
@@ -126,7 +128,9 @@ class TestAuthService:
     async def test_check_cookie_invalid(self, mock_check_cookie):
         """测试检查无效cookie方法"""
         # 设置mock返回值
-        mock_check_cookie.return_value = False
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=False)
+        mock_check_cookie.return_value = mock_service
 
         # 创建认证服务实例
         auth_service = DefaultAuthService()
