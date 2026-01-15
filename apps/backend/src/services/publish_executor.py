@@ -9,7 +9,7 @@ import traceback
 from pathlib import Path
 
 from src.services.task_service import task_service
-from src.utils.postVideo import post_video_tencent, post_video_DouYin, post_video_ks, post_video_xhs
+from src.services.publish_service import post_video_tencent, post_video_DouYin, post_video_ks, post_video_xhs
 from src.core.config import VIDEOS_DIR, COOKIES_DIR
 
 

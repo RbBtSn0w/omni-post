@@ -1,5 +1,5 @@
 from pathlib import Path
 
-from src.conf import BASE_DIR
+from src.core.config import BASE_DIR
 
 Path(BASE_DIR / "cookies" / "tencent_uploader").mkdir(exist_ok=True)

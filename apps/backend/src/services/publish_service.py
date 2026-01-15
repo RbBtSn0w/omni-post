@@ -147,3 +147,24 @@ def get_publish_service() -> PublishService:
     if _default_publish_service is None:
         _default_publish_service = DefaultPublishService()
     return _default_publish_service
+
+
+# Module-level convenience functions for backward compatibility
+def post_video_tencent(*args, **kwargs):
+    """发布腾讯视频号 - 便捷函数"""
+    return get_publish_service().post_video_tencent(*args, **kwargs)
+
+
+def post_video_DouYin(*args, **kwargs):
+    """发布抖音 - 便捷函数"""
+    return get_publish_service().post_video_douyin(*args, **kwargs)
+
+
+def post_video_ks(*args, **kwargs):
+    """发布快手 - 便捷函数"""
+    return get_publish_service().post_video_ks(*args, **kwargs)
+
+
+def post_video_xhs(*args, **kwargs):
+    """发布小红书 - 便捷函数"""
+    return get_publish_service().post_video_xhs(*args, **kwargs)

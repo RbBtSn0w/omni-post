@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from src.utils.postVideo import (
+from src.services.publish_service import (
     post_video_tencent,
     post_video_DouYin,
     post_video_ks,
@@ -31,7 +31,7 @@ class TestPostVideo:
             files=['test1.mp4', 'test2.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json', 'account2.json'],
-            enableTimer=False
+            enable_timer=False
         )
 
         # 断言结果
@@ -65,7 +65,7 @@ class TestPostVideo:
             files=['test1.mp4', 'test2.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=True,
+            enable_timer=True,
             videos_per_day=1,
             daily_times=[10, 14, 18],
             start_days=1
@@ -100,10 +100,10 @@ class TestPostVideo:
             files=['test1.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=False,
+            enable_timer=False,
             thumbnail_path='thumbnail.jpg',
-            productLink='https://example.com/product',
-            productTitle='测试商品'
+            product_link='https://example.com/product',
+            product_title='测试商品'
         )
 
         # 断言结果
@@ -132,7 +132,7 @@ class TestPostVideo:
             files=['test1.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=False
+            enable_timer=False
         )
 
         # 断言结果
@@ -161,7 +161,7 @@ class TestPostVideo:
             files=['test1.mp4', 'test2.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=False
+            enable_timer=False
         )
 
         # 断言结果
@@ -192,7 +192,7 @@ class TestPostVideo:
             files=['test1.mp4', 'test2.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=True,
+            enable_timer=True,
             videos_per_day=2,
             daily_times=[10, 14]
         )
@@ -226,7 +226,7 @@ class TestPostVideo:
             files=['test1.mp4'],
             tags=['标签1', '标签2'],
             account_file=['account1.json'],
-            enableTimer=False,
+            enable_timer=False,
             is_draft=True
         )
 

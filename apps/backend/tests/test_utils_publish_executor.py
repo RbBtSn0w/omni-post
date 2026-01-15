@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from src.utils.publish_executor import run_publish_task
+from src.services.publish_executor import run_publish_task
 
 class TestPublishExecutor:
     @patch('src.services.publish_executor.COOKIES_DIR')

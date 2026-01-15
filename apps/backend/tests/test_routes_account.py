@@ -63,7 +63,7 @@ class TestAccountRoutes:
 
     def test_get_valid_accounts(self, client):
         # Mocks auth check
-        with patch('src.routes.account.auth.check_cookie') as mock_check:
+        with patch('src.routes.account.check_cookie') as mock_check:
             mock_check.return_value = True
             res = client.get('/getValidAccounts')
             assert res.status_code == 200

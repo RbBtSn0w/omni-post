@@ -5,9 +5,9 @@ from playwright.async_api import Playwright, async_playwright
 import os
 import asyncio
 
-from src.conf import LOCAL_CHROME_PATH, LOCAL_CHROME_HEADLESS
-from src.utils.base_social_media import set_init_script
-from src.utils.log import tencent_logger
+from src.core.config import LOCAL_CHROME_PATH, LOCAL_CHROME_HEADLESS
+from src.core.browser import set_init_script
+from src.core.logger import tencent_logger
 
 
 def format_str_for_short_title(origin_title: str) -> str:

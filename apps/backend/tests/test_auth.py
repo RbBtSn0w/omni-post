@@ -2,13 +2,25 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from src.utils.auth import (
-    check_cookie,
-    cookie_auth_douyin,
-    cookie_auth_tencent,
-    cookie_auth_ks,
-    cookie_auth_xhs
+from src.services.cookie_service import (
+    get_cookie_service,
 )
+
+# Create wrappers that tests can use
+async def check_cookie(type_id, file_path):
+    return await get_cookie_service().check_cookie(type_id, file_path)
+
+async def cookie_auth_douyin(account_file):
+    return await get_cookie_service().cookie_auth_douyin(account_file)
+
+async def cookie_auth_tencent(account_file):
+    return await get_cookie_service().cookie_auth_tencent(account_file)
+
+async def cookie_auth_ks(account_file):
+    return await get_cookie_service().cookie_auth_ks(account_file)
+
+async def cookie_auth_xhs(account_file):
+    return await get_cookie_service().cookie_auth_xhs(account_file)
 
 class TestAuth:
     """测试认证相关功能"""

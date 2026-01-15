@@ -3,7 +3,7 @@ from queue import Queue
 
 # 导入必要服务
 from src.services.task_service import task_service
-from src.utils.publish_executor import start_publish_thread
+from src.services.publish_executor import start_publish_thread
 
 # 创建蓝图
 bp = Blueprint('publish', __name__)

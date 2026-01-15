@@ -14,8 +14,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Optional, Tuple
 from pathlib import Path
 
-from src.conf import BASE_DIR
-from src.utils.auth import check_cookie
+from src.core.config import BASE_DIR
+from src.services.cookie_service import get_cookie_service
 from src.db.db_manager import db_manager
 
 # 全局变量

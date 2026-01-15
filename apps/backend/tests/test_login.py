@@ -2,11 +2,13 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from src.utils.login import (
+from src.services.login_impl import (
     douyin_cookie_gen,
     get_tencent_cookie,
     get_ks_cookie,
     xiaohongshu_cookie_gen,
+)
+from src.core.browser import (
     create_screenshot_dir,
     debug_screenshot
 )
@@ -213,9 +215,8 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.services.login_impl.DEBUG_MODE', True)
-    @patch('src.utils.login.debug_print')
-    async def test_debug_screenshot_unit(self, mock_debug_print):
+    @patch('src.core.browser.DEBUG_MODE', True)
+    async def test_debug_screenshot_unit(self):
         """单元测试：调试截图功能"""
         # 创建模拟对象
         mock_page = MagicMock()
@@ -230,7 +231,7 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.services.login_impl.DEBUG_MODE', False)
+    @patch('src.core.browser.DEBUG_MODE', False)
     async def test_debug_screenshot_disabled_unit(self):
         """单元测试：调试截图功能在DEBUG_MODE=False时不执行"""
         # 创建模拟对象

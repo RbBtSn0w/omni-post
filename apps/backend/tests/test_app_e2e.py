@@ -203,7 +203,7 @@ class TestAppE2EFlows:
         assert response.status_code == 200
 
         # Step 2: Get valid accounts
-        with patch('src.routes.account.auth.check_cookie') as mock_check:
+        with patch('src.routes.account.check_cookie') as mock_check:
             mock_check.return_value = True
             response = self.client.get('/getValidAccounts')
             assert response.status_code in [200, 500]

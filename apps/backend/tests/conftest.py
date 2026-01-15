@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 def _create_database_tables(conn):
     """Helper function to create database tables - used by both fixtures."""
     cursor = conn.cursor()
-    
+
     # Create account_groups table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS account_groups (
@@ -23,7 +23,7 @@ def _create_database_tables(conn):
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
+
     # Create user_info table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS user_info (
@@ -37,7 +37,7 @@ def _create_database_tables(conn):
         FOREIGN KEY (group_id) REFERENCES account_groups(id)
     )
     ''')
-    
+
     # Create file_records table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS file_records (
@@ -48,7 +48,7 @@ def _create_database_tables(conn):
         file_path TEXT
     )
     ''')
-    
+
     # Create tasks table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS tasks (
@@ -66,21 +66,21 @@ def _create_database_tables(conn):
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-    
+
     conn.commit()
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_database_exists():
     """Ensure the actual database file exists with tables before running tests."""
-    from src.conf import BASE_DIR
-    
+    from src.core.config import BASE_DIR
+
     # Get database path
     db_file = Path(BASE_DIR.parent / "data" / "database.db")
     data_dir = db_file.parent
-    
+
     # Ensure data directory exists
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # If database doesn't exist or is empty, initialize it
     if not db_file.exists() or db_file.stat().st_size == 0:
         # Initialize database with tables
@@ -89,7 +89,7 @@ def ensure_database_exists():
             _create_database_tables(conn)
         finally:
             conn.close()
-    
+
     yield
 
 @pytest.fixture

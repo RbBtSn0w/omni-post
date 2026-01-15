@@ -4,7 +4,7 @@ from pathlib import Path
 from queue import Queue
 from flask_cors import CORS
 from flask import Flask, Response, send_from_directory
-from src.conf import BASE_DIR
+from src.core.config import BASE_DIR
 
 def create_app():
     """Flask应用工厂函数"""

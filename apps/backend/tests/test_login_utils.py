@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime
 
-from src.utils.login import (
-    debug_print,
+from src.services.login_impl import debug_print
+from src.core.browser import (
     create_screenshot_dir,
     debug_screenshot,
 )
@@ -79,7 +79,7 @@ class TestLoginUtils:
             import shutil
             shutil.rmtree(screenshot_dir, ignore_errors=True)
 
-    @patch('src.services.login_impl.DEBUG_MODE', False)
+    @patch('src.core.browser.DEBUG_MODE', False)
     @pytest.mark.asyncio
     async def test_debug_screenshot_disabled(self):
         """测试DEBUG_MODE关闭时debug_screenshot不截图"""
