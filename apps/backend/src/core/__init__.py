@@ -1,12 +1,9 @@
 """
-Configuration module for backward compatibility.
+Core infrastructure module for omni-post backend.
 
-DEPRECATED: Please import from src.core.config instead.
+This module provides centralized configuration, constants, and utilities.
 """
 
-import sys
-
-# Import all from core.config for backward compatibility
 from src.core.config import (
     BASE_DIR,
     ROOT_DIR,
@@ -18,7 +15,6 @@ from src.core.config import (
     LOCAL_CHROME_HEADLESS,
 )
 
-# Re-export all symbols
 __all__ = [
     'BASE_DIR',
     'ROOT_DIR',
@@ -29,6 +25,3 @@ __all__ = [
     'LOCAL_CHROME_PATH',
     'LOCAL_CHROME_HEADLESS',
 ]
-
-# Register this module as 'conf' alias for test patching
-sys.modules.setdefault("conf", sys.modules[__name__])

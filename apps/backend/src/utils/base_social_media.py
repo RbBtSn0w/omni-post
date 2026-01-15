@@ -1,15 +1,19 @@
-from pathlib import Path
-from typing import List
+"""
+Base social media utilities for backward compatibility.
 
-from src.conf import BASE_DIR
+DEPRECATED: Please import from src.core.browser instead.
+"""
 
-SOCIAL_MEDIA_DOUYIN = "douyin"
-SOCIAL_MEDIA_TENCENT = "tencent"
-SOCIAL_MEDIA_KUAISHOU = "kuaishou"
+from src.core.browser import (
+    set_init_script,
+    SOCIAL_MEDIA_DOUYIN,
+    SOCIAL_MEDIA_TENCENT,
+    SOCIAL_MEDIA_KUAISHOU,
+)
 
-
-async def set_init_script(context):
-    stealth_js_path = Path(BASE_DIR / "utils/stealth.min.js")
-    await context.add_init_script(path=stealth_js_path)
-    return context
-
+__all__ = [
+    'set_init_script',
+    'SOCIAL_MEDIA_DOUYIN',
+    'SOCIAL_MEDIA_TENCENT',
+    'SOCIAL_MEDIA_KUAISHOU',
+]
