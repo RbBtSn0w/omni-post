@@ -3,6 +3,7 @@ from src.services.cookie_service import get_cookie_service
 from src.db.db_manager import db_manager
 import sqlite3
 import datetime
+import json
 
 # 创建蓝图
 bp = Blueprint('dashboard', __name__)
@@ -69,42 +70,59 @@ async def get_dashboard_stats():
             if platform:
                 platform_stats[platform] = row['count']
 
-        # 关闭数据库连接
-        conn.close()
-
         # 基于实际业务逻辑生成统计数据
 
-        # 1. 任务统计 - 根据账号数量动态生成
-        # 每个账号平均有6个任务
-        avg_tasks_per_account = 6
+        # 1. 任务统计 - 从数据库查询
+        cursor.execute('SELECT status, COUNT(*) FROM tasks GROUP BY status')
+        task_counts = cursor.fetchall()
+
         task_stats = {
-            'total': total_accounts * avg_tasks_per_account,
-            'completed': int(total_accounts * avg_tasks_per_account * 0.75),  # 75% 完成率
-            'inProgress': int(total_accounts * avg_tasks_per_account * 0.20),  # 20% 进行中
-            'failed': max(0, int(total_accounts * avg_tasks_per_account * 0.05))  # 5% 失败率
+            'total': 0,
+            'completed': 0,
+            'inProgress': 0,
+            'failed': 0,
+            'waiting': 0
         }
 
-        # 确保任务总数等于各状态任务之和
-        task_sum = task_stats['completed'] + task_stats['inProgress'] + task_stats['failed']
-        if task_stats['total'] != task_sum:
-            task_stats['total'] = task_sum
+        for row in task_counts:
+            status = row[0]
+            count = row[1]
+            task_stats['total'] += count
+            if status == 'completed':
+                task_stats['completed'] += count
+            elif status in ['uploading', 'processing']:
+                task_stats['inProgress'] += count
+            elif status == 'failed':
+                task_stats['failed'] += count
+            elif status == 'waiting':
+                task_stats['waiting'] += count
 
-        # 2. 内容统计 - 根据任务数量动态生成
-        # 每个任务平均生成1.5个内容
-        avg_content_per_task = 1.5
+        # 2. 内容统计 - 暂时置为0，后续可关联 file_records 或 published tasks
+        # 或者简单查询 file_records 表
+        cursor.execute('SELECT COUNT(*) FROM file_records')
+        file_count_row = cursor.fetchone()
+        file_count = file_count_row[0] if file_count_row else 0
+
         content_stats = {
-            'total': int(task_stats['total'] * avg_content_per_task),
-            'published': int(task_stats['completed'] * avg_content_per_task),  # 已完成任务对应已发布内容
-            'draft': max(0, int((task_stats['inProgress'] + task_stats['failed']) * avg_content_per_task * 0.5))  # 进行中/失败任务对应部分草稿
+            'total': file_count,
+            'published': task_stats['completed'], # 假设已完成的任务即为已发布
+            'draft': max(0, file_count - task_stats['completed']) # 剩余的视为草稿/素材
         }
 
-        # 确保内容总数等于已发布和草稿之和
-        content_sum = content_stats['published'] + content_stats['draft']
-        if content_stats['total'] != content_sum:
-            content_stats['total'] = content_sum
-
-        # 3. 任务趋势 - 生成最近7天的真实日期和合理任务数量
+        # 3. 任务趋势 - 查询最近7天数据
         today = datetime.datetime.now()
+        seven_days_ago = today - datetime.timedelta(days=6)
+        seven_days_ago_str = seven_days_ago.strftime('%Y-%m-%d 00:00:00')
+
+        cursor.execute('''
+            SELECT date(created_at) as day, status, COUNT(*)
+            FROM tasks
+            WHERE created_at >= ?
+            GROUP BY day, status
+        ''', (seven_days_ago_str,))
+        trend_rows = cursor.fetchall()
+
+        # 初始化趋势数据结构
         task_trend = {
             'xAxis': [],
             'series': [
@@ -113,125 +131,60 @@ async def get_dashboard_stats():
             ]
         }
 
-        # 生成最近7天的日期和任务数据
+        # 构建日期映射
+        trend_map = {}
         for i in range(6, -1, -1):
             date = today - datetime.timedelta(days=i)
-            # 格式化日期为 M-D 格式
-            date_str = f"{date.month}-{date.day}"
-            task_trend['xAxis'].append(date_str)
+            date_key = date.strftime('%Y-%m-%d')
+            display_date = f"{date.month}-{date.day}"
+            task_trend['xAxis'].append(display_date)
+            trend_map[date_key] = {'completed': 0, 'failed': 0}
 
-            # 生成合理的任务数量，基于总任务数平均分配
-            avg_daily_tasks = max(1, task_stats['total'] // 7)
-            # 随机波动但保持合理范围
-            completed = max(0, int(avg_daily_tasks * 0.75) + (i % 3 - 1))
-            failed = max(0, int(avg_daily_tasks * 0.05) + (i % 2 - 0.5))
+        # 填充查询数据
+        for row in trend_rows:
+            day = row[0]
+            status = row[1]
+            count = row[2]
+            if day in trend_map:
+                if status == 'completed':
+                    trend_map[day]['completed'] += count
+                elif status == 'failed':
+                    trend_map[day]['failed'] += count
 
-            task_trend['series'][0]['data'].append(completed)
-            task_trend['series'][1]['data'].append(int(failed))
+        # 转换为列表
+        for i in range(6, -1, -1):
+            date = today - datetime.timedelta(days=i)
+            date_key = date.strftime('%Y-%m-%d')
+            task_trend['series'][0]['data'].append(trend_map[date_key]['completed'])
+            task_trend['series'][1]['data'].append(trend_map[date_key]['failed'])
 
-        # 4. 内容发布统计 - 基于平台统计数据生成
+        # 4. 内容发布统计 - 暂时置为0
         content_publish_stats = {
             'xAxis': ['快手', '抖音', '视频号', '小红书'],
             'series': [
-                {'name': '已发布', 'data': []},
-                {'name': '草稿', 'data': []}
+                {'name': '已发布', 'data': [0, 0, 0, 0]},
+                {'name': '草稿', 'data': [0, 0, 0, 0]}
             ]
         }
 
-        # 平台名称映射
-        platform_names = {
-            'kuaishou': '快手',
-            'douyin': '抖音',
-            'channels': '视频号',
-            'xiaohongshu': '小红书'
-        }
-
-        # 基于平台账号数量生成内容数据
-        for platform in ['kuaishou', 'douyin', 'channels', 'xiaohongshu']:
-            # 每个平台账号平均生成4个已发布内容和1个草稿
-            published = platform_stats[platform] * 4
-            draft = platform_stats[platform] * 1
-            content_publish_stats['series'][0]['data'].append(published)
-            content_publish_stats['series'][1]['data'].append(draft)
-
-        # 5. 最近任务列表 - 生成真实的任务信息
+        # 5. 最近任务列表 - 查询真实任务
+        cursor.execute('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5')
+        recent_tasks_rows = cursor.fetchall()
         recent_tasks = []
 
-        # 只有当有账号时才生成任务
-        if total_accounts > 0:
-            # 平台任务类型模板
-            task_templates = {
-                'kuaishou': ['快手视频自动发布', '快手短视频批量上传', '快手直播预告发布'],
-                'douyin': ['抖音视频定时发布', '抖音短视频创作', '抖音直播策划'],
-                'channels': ['视频号内容上传', '视频号直播推广', '视频号短视频发布'],
-                'xiaohongshu': ['小红书图文发布', '小红书短视频制作', '小红书笔记推广']
-            }
+        for row in recent_tasks_rows:
+            task_dict = dict(row)
+            try:
+                task_dict['platforms'] = json.loads(row['platforms']) if row['platforms'] else []
+            except:
+                task_dict['platforms'] = []
 
-            # 生成最多5个最近任务
-            task_count = min(5, task_stats['total'])
-            for i in range(task_count):
-                # 随机选择平台
-                platforms = list(platform_stats.keys())
-                # 只选择有账号的平台
-                active_platforms = [p for p in platforms if platform_stats[p] > 0]
-                if not active_platforms:
-                    continue
+            try:
+                task_dict['account_list'] = json.loads(row['account_list']) if row['account_list'] else []
+            except:
+                task_dict['account_list'] = []
 
-                # 随机选择一个有账号的平台
-                import random
-                platform = random.choice(active_platforms)
-                platform_name = platform_names[platform]
-
-                # 随机选择任务模板
-                task_template = random.choice(task_templates[platform])
-
-                # 生成任务ID
-                task_id = i + 1
-
-                # 生成账号名称
-                account_name = f"{platform_name}账号{random.randint(1, platform_stats[platform])}"
-
-                # 生成创建时间（最近7天内）
-                create_time = today - datetime.timedelta(days=random.randint(0, 6), hours=random.randint(0, 23), minutes=random.randint(0, 59))
-                create_time_str = create_time.strftime("%Y-%m-%d %H:%M:%S")
-
-                # 随机选择任务状态
-                status_weights = {
-                    '已完成': 0.75,
-                    '进行中': 0.20,
-                    '待执行': 0.04,
-                    '已失败': 0.01
-                }
-                status = random.choices(
-                    list(status_weights.keys()),
-                    weights=list(status_weights.values()),
-                    k=1
-                )[0]
-
-                # 创建任务对象
-                task = {
-                    'id': task_id,
-                    'title': task_template,
-                    'platform': platform_name,
-                    'account': account_name,
-                    'createTime': create_time_str,
-                    'status': status
-                }
-
-                recent_tasks.append(task)
-
-        # 如果没有生成任何任务，添加一个示例任务
-        if not recent_tasks:
-            recent_tasks = [
-                {
-                    'id': 1,
-                    'title': '示例任务',
-                    'platform': '抖音',
-                    'account': '示例账号',
-                    'createTime': today.strftime("%Y-%m-%d %H:%M:%S"),
-                    'status': '待执行'
-                }
-            ]
+            recent_tasks.append(task_dict)
 
         return jsonify({
             "code": 200,
@@ -257,3 +210,6 @@ async def get_dashboard_stats():
             "msg": f"获取数据失败: {str(e)}",
             "data": None
         }), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
