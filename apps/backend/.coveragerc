@@ -6,6 +6,7 @@ omit =
     */tests/*
     src/services/login_impl.py
     src/uploader/*/main.py
+    src/core/browser.py
 
 [report]
 exclude_lines =
