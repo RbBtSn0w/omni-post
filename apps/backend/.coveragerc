@@ -2,7 +2,6 @@
 parallel = True
 omit =
     */examples/*
-    src/cli_main.py
     tests/*
     */tests/*
 

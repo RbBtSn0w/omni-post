@@ -1,6 +1,6 @@
 import json
 
-EXCLUDED_PREFIXES = ['examples/', 'src/cli_main.py', 'src/test_conf.py']
+EXCLUDED_PREFIXES = ['examples/']
 
 try:
     with open('test-results/coverage/coverage.json') as f:
