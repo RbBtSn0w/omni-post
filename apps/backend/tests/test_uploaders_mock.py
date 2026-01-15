@@ -105,19 +105,30 @@ class TestUploaders:
 
         return playwright, context, page
 
+    @patch('src.uploader.douyin_uploader.main.launch_browser', new_callable=AsyncMock)
     @patch('src.uploader.douyin_uploader.main.set_init_script', new_callable=AsyncMock)
-    async def test_douyin_basic(self, mock_init, mock_playwright):
+    async def test_douyin_basic(self, mock_init, mock_launch, mock_playwright):
         pw, ctx, page = mock_playwright
         mock_init.return_value = ctx
+
+        mock_browser = AsyncMock()
+        mock_browser.new_context.return_value = ctx
+        mock_launch.return_value = mock_browser
 
         uploader = DouYinVideo('Title', 'path', ['tag'], 0, 'acc', thumbnail_path='thumb')
         await uploader.upload(pw)
         page.goto.assert_called_with("https://creator.douyin.com/creator-micro/content/upload", wait_until='domcontentloaded')
+        mock_browser.close.assert_called_once()
 
+    @patch('src.uploader.douyin_uploader.main.launch_browser', new_callable=AsyncMock)
     @patch('src.uploader.douyin_uploader.main.set_init_script', new_callable=AsyncMock)
-    async def test_douyin_complex(self, mock_init, mock_playwright):
+    async def test_douyin_complex(self, mock_init, mock_launch, mock_playwright):
         pw, ctx, page = mock_playwright
         mock_init.return_value = ctx
+
+        mock_browser = AsyncMock()
+        mock_browser.new_context.return_value = ctx
+        mock_launch.return_value = mock_browser
 
         uploader = DouYinVideo(
             title='Title',
@@ -182,20 +193,32 @@ class TestUploaders:
         # Verify browser was closed in finally block
         mock_browser.close.assert_called_once()
 
+    @patch('src.uploader.ks_uploader.main.launch_browser', new_callable=AsyncMock)
     @patch('src.uploader.ks_uploader.main.set_init_script', new_callable=AsyncMock)
-    async def test_kuaishou(self, mock_init, mock_playwright):
+    async def test_kuaishou(self, mock_init, mock_launch, mock_playwright):
         pw, ctx, page = mock_playwright
         mock_init.return_value = ctx
+
+        mock_browser = AsyncMock()
+        mock_browser.new_context.return_value = ctx
+        mock_launch.return_value = mock_browser
 
         uploader = KSVideo('Title', 'path', ['tag'], 0, 'acc')
         await uploader.upload(pw)
         page.goto.assert_called_with("https://cp.kuaishou.com/article/publish/video", wait_until='domcontentloaded')
+        mock_browser.close.assert_called_once()
 
+    @patch('src.uploader.xiaohongshu_uploader.main.launch_browser', new_callable=AsyncMock)
     @patch('src.uploader.xiaohongshu_uploader.main.set_init_script', new_callable=AsyncMock)
-    async def test_xhs(self, mock_init, mock_playwright):
+    async def test_xhs(self, mock_init, mock_launch, mock_playwright):
         pw, ctx, page = mock_playwright
         mock_init.return_value = ctx
+
+        mock_browser = AsyncMock()
+        mock_browser.new_context.return_value = ctx
+        mock_launch.return_value = mock_browser
 
         uploader = XiaoHongShuVideo('Title', 'path', ['tag'], 0, 'acc')
         await uploader.upload(pw)
         page.goto.assert_called_with("https://creator.xiaohongshu.com/publish/publish?from=homepage&target=video", wait_until='domcontentloaded')
+        mock_browser.close.assert_called_once()

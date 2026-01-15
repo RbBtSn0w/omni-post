@@ -45,7 +45,7 @@ else:
     LOCAL_CHROME_PATH = "/usr/bin/google-chrome"
 
 # Headless mode setting
-LOCAL_CHROME_HEADLESS = False
+LOCAL_CHROME_HEADLESS = True
 
 # Print browser info at startup (only if not in test mode)
 if not TEST_MODE:

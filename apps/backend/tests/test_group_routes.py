@@ -97,3 +97,87 @@ class TestGroupRoutes:
         data = response.get_json()
         assert data['code'] == 400
         assert '无法删除' in data['message']
+
+    def test_create_group_empty_name(self, client, mock_db_manager):
+        """Test creating group with empty name returns 400."""
+        response = client.post('/createGroup', json={'name': '', 'description': 'test'})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 400
+        assert '不能为空' in data['message']
+
+    def test_create_group_whitespace_name(self, client, mock_db_manager):
+        """Test creating group with whitespace-only name returns 400."""
+        response = client.post('/createGroup', json={'name': '   ', 'description': 'test'})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 400
+
+    def test_update_group_empty_name(self, client, mock_db_manager):
+        """Test updating group with empty name returns 400."""
+        res = client.post('/createGroup', json={'name': 'Original'})
+        group_id = res.get_json()['data']['id']
+
+        response = client.put(f'/updateGroup/{group_id}', json={'name': '', 'description': 'test'})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 400
+        assert '不能为空' in data['message']
+
+    def test_update_nonexistent_group(self, client, mock_db_manager):
+        """Test updating a group that doesn't exist returns 404."""
+        response = client.put('/updateGroup/99999', json={'name': 'New Name', 'description': 'test'})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 404
+        assert '不存在' in data['message']
+
+    def test_delete_nonexistent_group(self, client, mock_db_manager):
+        """Test deleting a group that doesn't exist returns 404."""
+        response = client.delete('/deleteGroup/99999')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 404
+        assert '不存在' in data['message']
+
+    def test_update_group_duplicate_name(self, client, mock_db_manager):
+        """Test updating group to a duplicate name returns 400."""
+        client.post('/createGroup', json={'name': 'Group A'})
+        res = client.post('/createGroup', json={'name': 'Group B'})
+        group_id = res.get_json()['data']['id']
+
+        response = client.put(f'/updateGroup/{group_id}', json={'name': 'Group A', 'description': 'test'})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 400
+        assert '已存在' in data['message']
+
+    def test_get_group_accounts(self, client, mock_db_manager, temp_db_path):
+        """Test getting accounts in a group."""
+        res = client.post('/createGroup', json={'name': 'Account Group'})
+        group_id = res.get_json()['data']['id']
+
+        # Insert accounts into DB
+        conn = sqlite3.connect(temp_db_path)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO user_info (type, filePath, userName, group_id) VALUES (1, 'path1', 'User1', ?)", (group_id,))
+        cursor.execute("INSERT INTO user_info (type, filePath, userName, group_id) VALUES (2, 'path2', 'User2', ?)", (group_id,))
+        conn.commit()
+        conn.close()
+
+        response = client.get(f'/getGroupAccounts/{group_id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 200
+        assert len(data['data']) == 2
+
+    def test_get_group_accounts_empty(self, client, mock_db_manager):
+        """Test getting accounts from an empty group."""
+        res = client.post('/createGroup', json={'name': 'Empty Group'})
+        group_id = res.get_json()['data']['id']
+
+        response = client.get(f'/getGroupAccounts/{group_id}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['code'] == 200
+        assert len(data['data']) == 0

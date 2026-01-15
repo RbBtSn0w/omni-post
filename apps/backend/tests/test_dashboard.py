@@ -258,3 +258,125 @@ class TestDashboard:
             update_calls = [call for call in mock_cursor.execute.call_args_list if 'UPDATE' in str(call)]
             assert len(update_calls) == 0
 
+    @patch('sqlite3.connect')
+    @patch('src.db.db_manager')
+    def test_get_dashboard_stats_with_tasks(self, mock_db_manager, mock_sqlite_connect):
+        """测试有任务数据的情况，覆盖任务状态分支"""
+        mock_db_manager.get_db_path.return_value = 'mock_db_path'
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_sqlite_connect.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+
+        def create_mock_row(data, keys):
+            row = MagicMock()
+            row.__iter__ = lambda self: iter(data)
+            row.__getitem__ = lambda self, key: dict(zip(keys, data))[key] if isinstance(key, str) else data[key]
+            return row
+
+        # 模拟任务统计数据 - 覆盖所有状态分支
+        task_status_keys = ['status', 'count']
+        mock_task_rows = [
+            create_mock_row(('completed', 5), task_status_keys),
+            create_mock_row(('uploading', 2), task_status_keys),
+            create_mock_row(('processing', 1), task_status_keys),
+            create_mock_row(('failed', 3), task_status_keys),
+            create_mock_row(('waiting', 4), task_status_keys),
+        ]
+
+        # 模拟趋势数据 - 覆盖趋势填充分支
+        from datetime import datetime, timedelta
+        today = datetime.now()
+        trend_keys = ['day', 'status', 'count']
+        mock_trend_rows = [
+            create_mock_row((today.strftime('%Y-%m-%d'), 'completed', 3), trend_keys),
+            create_mock_row((today.strftime('%Y-%m-%d'), 'failed', 1), trend_keys),
+            create_mock_row(((today - timedelta(days=1)).strftime('%Y-%m-%d'), 'completed', 2), trend_keys),
+        ]
+
+        # 模拟最近任务 - 覆盖 JSON 解析分支
+        recent_task_keys = ['id', 'title', 'status', 'progress', 'priority', 'platforms', 'file_list', 'account_list', 'schedule_data', 'error_msg', 'created_at', 'updated_at']
+        mock_recent_tasks = [
+            create_mock_row(('task1', 'Task 1', 'completed', 100, 1, '[1,2]', '[]', '[{"id":1}]', '{}', None, '2026-01-15', '2026-01-15'), recent_task_keys),
+            create_mock_row(('task2', 'Task 2', 'failed', 50, 2, None, None, None, None, 'Error', '2026-01-14', '2026-01-14'), recent_task_keys),
+        ]
+
+        mock_cursor.fetchall.side_effect = [
+            [],  # user_info
+            [],  # platform stats
+            mock_task_rows,  # tasks status
+            mock_trend_rows,  # trend
+            mock_recent_tasks,  # recent tasks
+        ]
+        mock_file_count = MagicMock()
+        mock_file_count.__getitem__ = lambda self, key: 10
+        mock_cursor.fetchone.return_value = mock_file_count
+
+        with self.app.test_client() as client:
+            response = client.get('/getDashboardStats')
+
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['code'] == 200
+
+            dashboard_data = data['data']
+            # 验证任务统计覆盖所有分支
+            assert dashboard_data['taskStats']['total'] == 15
+            assert dashboard_data['taskStats']['completed'] == 5
+            assert dashboard_data['taskStats']['inProgress'] == 3  # uploading + processing
+            assert dashboard_data['taskStats']['failed'] == 3
+            assert dashboard_data['taskStats']['waiting'] == 4
+
+            # 验证趋势数据
+            assert len(dashboard_data['taskTrend']['xAxis']) == 7
+            assert len(dashboard_data['taskTrend']['series'][0]['data']) == 7
+
+            # 验证最近任务列表
+            assert len(dashboard_data['recentTasks']) == 2
+
+    @patch('sqlite3.connect')
+    @patch('src.db.db_manager')
+    def test_get_dashboard_stats_json_parse_error(self, mock_db_manager, mock_sqlite_connect):
+        """测试 JSON 解析异常的情况"""
+        mock_db_manager.get_db_path.return_value = 'mock_db_path'
+
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_sqlite_connect.return_value = mock_conn
+        mock_conn.cursor.return_value = mock_cursor
+
+        def create_mock_row(data, keys):
+            row = MagicMock()
+            row.__iter__ = lambda self: iter(data)
+            row.__getitem__ = lambda self, key: dict(zip(keys, data))[key] if isinstance(key, str) else data[key]
+            return row
+
+        # 模拟最近任务 - 包含无效 JSON
+        recent_task_keys = ['id', 'title', 'status', 'progress', 'priority', 'platforms', 'file_list', 'account_list', 'schedule_data', 'error_msg', 'created_at', 'updated_at']
+        mock_recent_tasks = [
+            create_mock_row(('task1', 'Task 1', 'completed', 100, 1, 'invalid json', 'not json', 'also invalid', '{}', None, '2026-01-15', '2026-01-15'), recent_task_keys),
+        ]
+
+        mock_cursor.fetchall.side_effect = [
+            [],  # user_info
+            [],  # platform stats
+            [],  # tasks status
+            [],  # trend
+            mock_recent_tasks,  # recent tasks with invalid JSON
+        ]
+        mock_file_count = MagicMock()
+        mock_file_count.__getitem__ = lambda self, key: 0
+        mock_cursor.fetchone.return_value = mock_file_count
+
+        with self.app.test_client() as client:
+            response = client.get('/getDashboardStats')
+
+            # 应该成功处理，即使 JSON 解析失败也能返回数据
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['code'] == 200
+            assert len(data['data']['recentTasks']) == 1
+            # JSON 解析失败时应该返回空数组
+            assert data['data']['recentTasks'][0]['platforms'] == []
+            assert data['data']['recentTasks'][0]['account_list'] == []
