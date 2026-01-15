@@ -5,3 +5,8 @@ omit =
     src/cli_main.py
     tests/*
     */tests/*
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
+    pragma: no cover
