@@ -56,11 +56,10 @@ class KSVideo(object):
         # 创建一个新的页面
         page = await context.new_page()
         # 访问指定的 URL
-        await page.goto("https://cp.kuaishou.com/article/publish/video", wait_until='networkidle')
+        # 注意：使用 domcontentloaded 而非 networkidle，因为快手后台有持续的网络连接
+        await page.goto("https://cp.kuaishou.com/article/publish/video", wait_until='domcontentloaded')
         kuaishou_logger.info('正在上传-------{}.mp4'.format(self.title))
-        # 等待页面跳转到指定的 URL，没进入，则自动等待到超时
         kuaishou_logger.info('正在打开主页...')
-        await page.wait_for_url("https://cp.kuaishou.com/article/publish/video")
         # 点击 "上传视频" 按钮
         upload_button = page.locator("button[class^='_upload-btn']")
         await upload_button.wait_for(state='visible')  # 确保按钮可见

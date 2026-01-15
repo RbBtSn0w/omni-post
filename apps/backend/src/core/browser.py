@@ -15,7 +15,6 @@ from src.core.config import (
     BASE_DIR,
     LOCAL_CHROME_HEADLESS,
     LOCAL_CHROME_PATH,
-    LOCAL_CHROME_PATH,
     DEBUG_MODE,
     LOGS_DIR,
 )
