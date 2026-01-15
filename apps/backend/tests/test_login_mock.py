@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch, ANY
 import asyncio
-from src.utils.login import douyin_cookie_gen, get_tencent_cookie, get_ks_cookie, xiaohongshu_cookie_gen
+from src.services.login_impl import douyin_cookie_gen, get_tencent_cookie, get_ks_cookie, xiaohongshu_cookie_gen
 
 # Reuse locator mock helper
 def create_mock_locator(text_content="", count_val=1, src="http://example.com/qr.png"):
@@ -67,18 +67,23 @@ class TestLoginUtils:
         cursor.lastrowid = 1
         return conn
 
-    @patch('src.utils.login.async_playwright')
-    @patch('src.utils.login.launch_browser')
-    @patch('src.utils.login.set_init_script')
-    @patch('src.utils.login.check_cookie')
-    @patch('src.utils.login.sqlite3')
-    async def test_douyin_cookie_gen_success(self, mock_sqlite, mock_check_cookie, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
+    @patch('src.services.login_impl.async_playwright')
+    @patch('src.services.login_impl.launch_browser')
+    @patch('src.services.login_impl.set_init_script')
+    @patch('src.services.login_impl.get_cookie_service')
+    @patch('src.services.login_impl.sqlite3')
+    async def test_douyin_cookie_gen_success(self, mock_sqlite, mock_get_cookie_service, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
         pw, ctx, page = mock_playwright
         mock_pw_cls.return_value.__aenter__.return_value = pw
         mock_launch.return_value = pw.chromium.launch.return_value
         mock_init.return_value = ctx
 
-        mock_check_cookie.return_value = True
+        # Correctly mock the service object
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=True)
+        mock_get_cookie_service.return_value = mock_service
+
+        # mock_check_cookie.return_value = True # OLD
         mock_sqlite.connect.return_value.__enter__.return_value = mock_db
 
         # Simulate URL change event triggering
@@ -94,72 +99,81 @@ class TestLoginUtils:
         mock_queue.put.assert_any_call("200") # Success
         mock_db.cursor.return_value.execute.assert_called()
 
-    @patch('src.utils.login.async_playwright')
-    @patch('src.utils.login.launch_browser')
-    @patch('src.utils.login.set_init_script')
-    @patch('src.utils.login.check_cookie')
-    @patch('src.utils.login.sqlite3')
-    async def test_tencent_cookie_gen_success(self, mock_sqlite, mock_check_cookie, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
+    @patch('src.services.login_impl.async_playwright')
+    @patch('src.services.login_impl.launch_browser')
+    @patch('src.services.login_impl.set_init_script')
+    @patch('src.services.login_impl.get_cookie_service')
+    @patch('src.services.login_impl.sqlite3')
+    async def test_tencent_cookie_gen_success(self, mock_sqlite, mock_get_cookie_service, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
         pw, ctx, page = mock_playwright
         mock_pw_cls.return_value.__aenter__.return_value = pw
         mock_launch.return_value = pw.chromium.launch.return_value
         mock_init.return_value = ctx
 
-        mock_check_cookie.return_value = True
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=True)
+        mock_get_cookie_service.return_value = mock_service
+
         mock_sqlite.connect.return_value.__enter__.return_value = mock_db
 
         with patch('asyncio.wait_for', new_callable=AsyncMock) as mock_wait:
-             # Tencent waits for url_changed_event.wait()
-             mock_wait.return_value = None
+            mock_wait.return_value = None
 
-             await get_tencent_cookie("user2", mock_queue, "group1")
+            await get_tencent_cookie("user2", mock_queue, "group1")
 
         page.goto.assert_called_with("https://channels.weixin.qq.com")
         mock_queue.put.assert_any_call("200")
 
-    @patch('src.utils.login.async_playwright')
-    @patch('src.utils.login.launch_browser')
-    @patch('src.utils.login.set_init_script')
-    @patch('src.utils.login.check_cookie')
-    @patch('src.utils.login.sqlite3')
-    async def test_ks_cookie_gen_success(self, mock_sqlite, mock_check_cookie, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
+    @patch('src.services.login_impl.async_playwright')
+    @patch('src.services.login_impl.launch_browser')
+    @patch('src.services.login_impl.set_init_script')
+    @patch('src.services.login_impl.get_cookie_service')
+    @patch('src.services.login_impl.sqlite3')
+    async def test_ks_cookie_gen_success(self, mock_sqlite, mock_get_cookie_service, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
         pw, ctx, page = mock_playwright
         mock_pw_cls.return_value.__aenter__.return_value = pw
         mock_launch.return_value = pw.chromium.launch.return_value
         mock_init.return_value = ctx
 
-        mock_check_cookie.return_value = True
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=True)
+        mock_get_cookie_service.return_value = mock_service
+
         mock_sqlite.connect.return_value.__enter__.return_value = mock_db
 
         with patch('asyncio.wait_for', new_callable=AsyncMock) as mock_wait:
-             mock_wait.return_value = None
+            mock_wait.return_value = None
 
-             # Need to mock verify_login_success which uses page content
-             # It uses page.title()
+            # verify_login_success is called internally, checks page content
+            # Our mock locator returns structure that passes most checks
 
-             await get_ks_cookie("user3", mock_queue, "group1")
+            await get_ks_cookie("user3", mock_queue, "group1")
 
+        # page.goto is called
         page.goto.assert_called()
         mock_queue.put.assert_any_call("200")
 
-    @patch('src.utils.login.async_playwright')
-    @patch('src.utils.login.launch_browser')
-    @patch('src.utils.login.set_init_script')
-    @patch('src.utils.login.check_cookie')
-    @patch('src.utils.login.sqlite3')
-    async def test_xhs_cookie_gen_success(self, mock_sqlite, mock_check_cookie, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
+    @patch('src.services.login_impl.async_playwright')
+    @patch('src.services.login_impl.launch_browser')
+    @patch('src.services.login_impl.set_init_script')
+    @patch('src.services.login_impl.get_cookie_service')
+    @patch('src.services.login_impl.sqlite3')
+    async def test_xhs_cookie_gen_success(self, mock_sqlite, mock_get_cookie_service, mock_init, mock_launch, mock_pw_cls, mock_playwright, mock_queue, mock_db):
         pw, ctx, page = mock_playwright
         mock_pw_cls.return_value.__aenter__.return_value = pw
         mock_launch.return_value = pw.chromium.launch.return_value
         mock_init.return_value = ctx
 
-        mock_check_cookie.return_value = True
+        mock_service = MagicMock()
+        mock_service.check_cookie = AsyncMock(return_value=True)
+        mock_get_cookie_service.return_value = mock_service
+
         mock_sqlite.connect.return_value.__enter__.return_value = mock_db
 
         with patch('asyncio.wait_for', new_callable=AsyncMock) as mock_wait:
-             mock_wait.return_value = None
+            mock_wait.return_value = None
 
-             await xiaohongshu_cookie_gen("user4", mock_queue, "group1")
+            await xiaohongshu_cookie_gen("user4", mock_queue, "group1")
 
         page.goto.assert_called_with("https://creator.xiaohongshu.com/")
         mock_queue.put.assert_any_call("200")

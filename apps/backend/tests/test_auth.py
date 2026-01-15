@@ -109,7 +109,7 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_xhs')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_xhs')
     async def test_check_cookie_production_success_unit(self, mock_cookie_auth_xhs):
         """单元测试：生产模式下cookie验证成功"""
         # 配置模拟返回值
@@ -124,7 +124,7 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_xhs')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_xhs')
     async def test_check_cookie_production_failure_unit(self, mock_cookie_auth_xhs):
         """单元测试：生产模式下cookie验证失败"""
         # 配置模拟返回值为False
@@ -139,7 +139,7 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_douyin')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_douyin')
     async def test_check_cookie_douyin_production_unit(self, mock_cookie_auth_douyin):
         """单元测试：生产模式下抖音cookie验证"""
         # 配置模拟返回值
@@ -154,7 +154,7 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_tencent')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_tencent')
     async def test_check_cookie_tencent_production_unit(self, mock_cookie_auth_tencent):
         """单元测试：生产模式下腾讯cookie验证"""
         # 配置模拟返回值
@@ -169,7 +169,7 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_ks')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_ks')
     async def test_check_cookie_ks_production_unit(self, mock_cookie_auth_ks):
         """单元测试：生产模式下快手cookie验证"""
         # 配置模拟返回值
@@ -218,10 +218,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_douyin_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：抖音cookie认证生产模式成功"""
         # 配置模拟返回值
@@ -253,10 +253,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_douyin_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：抖音cookie认证生产模式失败"""
         # 配置模拟返回值
@@ -288,10 +288,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_tencent_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：腾讯cookie认证生产模式成功"""
         # 配置模拟返回值
@@ -322,10 +322,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_ks_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：快手cookie认证生产模式成功"""
         # 配置模拟返回值
@@ -356,10 +356,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_xhs_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：小红书cookie认证生产模式成功"""
         # 配置模拟返回值
@@ -391,10 +391,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.utils.auth.asyncio')
-    @patch('src.utils.auth.async_playwright')
-    @patch('src.utils.auth.launch_browser')
-    @patch('src.utils.auth.set_init_script')
+    @patch('src.services.cookie_service.asyncio')
+    @patch('src.services.cookie_service.async_playwright')
+    @patch('src.services.cookie_service.launch_browser')
+    @patch('src.services.cookie_service.set_init_script')
     async def test_cookie_auth_xhs_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
         """单元测试：小红书cookie认证生产模式失败"""
         # 配置模拟返回值
@@ -472,10 +472,10 @@ class TestAuth:
 
     @pytest.mark.integration
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_xhs')
-    @patch('src.utils.auth.cookie_auth_tencent')
-    @patch('src.utils.auth.cookie_auth_douyin')
-    @patch('src.utils.auth.cookie_auth_ks')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_xhs')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_tencent')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_douyin')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_ks')
     async def test_check_cookie_all_platforms_integration(self, mock_ks, mock_douyin, mock_tencent, mock_xhs):
         """集成测试：所有平台的cookie验证"""
         # 配置模拟返回值
@@ -498,7 +498,7 @@ class TestAuth:
 
     @pytest.mark.integration
     @pytest.mark.auth
-    @patch('src.utils.auth.cookie_auth_xhs')
+    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_xhs')
     async def test_check_cookie_mixed_results_integration(self, mock_cookie_auth_xhs):
         """集成测试：混合结果的cookie验证"""
         # 配置模拟返回值，第一次调用成功，第二次失败

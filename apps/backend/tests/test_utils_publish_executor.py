@@ -3,9 +3,9 @@ from unittest.mock import patch, MagicMock
 from src.utils.publish_executor import run_publish_task
 
 class TestPublishExecutor:
-    @patch('src.utils.publish_executor.Path')
-    @patch('src.utils.publish_executor.task_service')
-    @patch('src.utils.publish_executor.post_video_DouYin')
+    @patch('src.services.publish_executor.Path')
+    @patch('src.services.publish_executor.task_service')
+    @patch('src.services.publish_executor.post_video_DouYin')
     def test_run_publish_task_douyin_success(self, mock_douyin, mock_task_service, mock_path):
         # Mock Path to make file validation pass
         mock_path_instance = MagicMock()
@@ -34,8 +34,8 @@ class TestPublishExecutor:
         # Check end status
         mock_task_service.update_task_status.assert_called_with('task_1', 'completed', 100)
 
-    @patch('src.utils.publish_executor.task_service')
-    @patch('src.utils.publish_executor.post_video_xhs')
+    @patch('src.services.publish_executor.task_service')
+    @patch('src.services.publish_executor.post_video_xhs')
     def test_run_publish_task_xhs_failure(self, mock_xhs, mock_task_service):
         mock_xhs.side_effect = Exception("Upload Failed")
 
@@ -51,7 +51,7 @@ class TestPublishExecutor:
         assert "Upload Failed" in args[1]['error_msg']
 
     def test_run_publish_task_unknown_type(self):
-        with patch('src.utils.publish_executor.task_service') as mock_ts:
+        with patch('src.services.publish_executor.task_service') as mock_ts:
             run_publish_task('t3', {'type': 99})
             args = mock_ts.update_task_status.call_args_list[-1]
             assert args[0][1] == 'failed'

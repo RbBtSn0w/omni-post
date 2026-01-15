@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import async_playwright
+import asyncio
 
 from src.core.config import BASE_DIR
 from src.core.browser import launch_browser, set_init_script
