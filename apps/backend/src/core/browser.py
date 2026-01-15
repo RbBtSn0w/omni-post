@@ -83,32 +83,6 @@ async def launch_browser(playwright, headless: Optional[bool] = None) -> Browser
     return await playwright.chromium.launch(**launch_options)
 
 
-async def create_browser_context(
-    playwright,
-    storage_state: Optional[str] = None,
-    headless: Optional[bool] = None
-) -> tuple[Browser, BrowserContext]:
-    """
-    Create a browser and context with standard configuration.
-
-    Args:
-        playwright: Playwright instance
-        storage_state: Path to storage state file (cookies)
-        headless: Override headless mode
-
-    Returns:
-        Tuple of (browser, context)
-    """
-    browser = await launch_browser(playwright, headless)
-
-    context_options = {}
-    if storage_state:
-        context_options['storage_state'] = storage_state
-
-    context = await browser.new_context(**context_options)
-    context = await set_init_script(context)
-
-    return browser, context
 
 
 def create_screenshot_dir(platform: str) -> Path:
