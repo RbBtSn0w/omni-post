@@ -1,96 +1,63 @@
-import asyncio
-import sys
-from pathlib import Path
+"""
+Video posting utilities for backward compatibility.
 
-from src.conf import BASE_DIR
+DEPRECATED: Please import from src.services.publish_service instead.
+"""
 
-# Expose module under utils.postVideo for test patching compatibility
-sys.modules.setdefault("utils.postVideo", sys.modules[__name__])
-from src.uploader.douyin_uploader.main import DouYinVideo
-from src.uploader.ks_uploader.main import KSVideo
-from src.uploader.tencent_uploader.main import TencentVideo
-from src.uploader.xiaohongshu_uploader.main import XiaoHongShuVideo
-from src.utils.constant import TencentZoneTypes
-from src.utils.files_times import generate_schedule_time_next_day
+from src.core.constants import TencentZoneTypes
+from src.services.publish_service import get_publish_service
 
 
-def post_video_tencent(title,files,tags,account_file,category=TencentZoneTypes.LIFESTYLE.value,enableTimer=False,videos_per_day = 1, daily_times=None,start_days = 0, is_draft=False):
-    # 生成文件的完整路径
-    account_file = [Path(BASE_DIR / "cookiesFile" / file) for file in account_file]
-    files = [Path(BASE_DIR / "videoFile" / file) for file in files]
-    if enableTimer:
-        publish_datetimes = generate_schedule_time_next_day(len(files), videos_per_day, daily_times,start_days)
-    else:
-        publish_datetimes = [0 for i in range(len(files))]
-    for index, file in enumerate(files):
-        for cookie in account_file:
-            print(f"文件路径{str(file)}")
-            # 打印视频文件名、标题和 hashtag
-            print(f"视频文件名：{file}")
-            print(f"标题：{title}")
-            print(f"Hashtag：{tags}")
-            app = TencentVideo(title, str(file), tags, publish_datetimes[index], cookie, category, is_draft)
-            asyncio.run(app.main(), debug=False)
+def post_video_tencent(title, files, tags, account_file,
+                       category=TencentZoneTypes.LIFESTYLE.value,
+                       enableTimer=False, videos_per_day=1,
+                       daily_times=None, start_days=0, is_draft=False):
+    """发布视频到腾讯视频号 - 兼容层"""
+    return get_publish_service().post_video_tencent(
+        title, files, tags, account_file, category,
+        enableTimer, videos_per_day, daily_times, start_days, is_draft
+    )
 
 
-def post_video_DouYin(title,files,tags,account_file,category=TencentZoneTypes.LIFESTYLE.value,enableTimer=False,videos_per_day = 1, daily_times=None,start_days = 0,
-                      thumbnail_path = '',
-                      productLink = '', productTitle = ''):
-    # 生成文件的完整路径
-    account_file = [Path(BASE_DIR / "cookiesFile" / file) for file in account_file]
-    files = [Path(BASE_DIR / "videoFile" / file) for file in files]
-    if enableTimer:
-        publish_datetimes = generate_schedule_time_next_day(len(files), videos_per_day, daily_times,start_days)
-    else:
-        publish_datetimes = [0 for i in range(len(files))]
-    for index, file in enumerate(files):
-        for cookie in account_file:
-            print(f"文件路径{str(file)}")
-            # 打印视频文件名、标题和 hashtag
-            print(f"视频文件名：{file}")
-            print(f"标题：{title}")
-            print(f"Hashtag：{tags}")
-            app = DouYinVideo(title, str(file), tags, publish_datetimes[index], cookie, thumbnail_path, productLink, productTitle)
-            asyncio.run(app.main(), debug=False)
+def post_video_DouYin(title, files, tags, account_file,
+                      category=TencentZoneTypes.LIFESTYLE.value,
+                      enableTimer=False, videos_per_day=1,
+                      daily_times=None, start_days=0,
+                      thumbnail_path='', productLink='', productTitle=''):
+    """发布视频到抖音 - 兼容层"""
+    return get_publish_service().post_video_douyin(
+        title, files, tags, account_file, category,
+        enableTimer, videos_per_day, daily_times, start_days,
+        thumbnail_path, productLink, productTitle
+    )
 
 
-def post_video_ks(title,files,tags,account_file,category=TencentZoneTypes.LIFESTYLE.value,enableTimer=False,videos_per_day = 1, daily_times=None,start_days = 0):
-    # 生成文件的完整路径
-    account_file = [Path(BASE_DIR / "cookiesFile" / file) for file in account_file]
-    files = [Path(BASE_DIR / "videoFile" / file) for file in files]
-    if enableTimer:
-        publish_datetimes = generate_schedule_time_next_day(len(files), videos_per_day, daily_times,start_days)
-    else:
-        publish_datetimes = [0 for i in range(len(files))]
-    for index, file in enumerate(files):
-        for cookie in account_file:
-            print(f"文件路径{str(file)}")
-            # 打印视频文件名、标题和 hashtag
-            print(f"视频文件名：{file}")
-            print(f"标题：{title}")
-            print(f"Hashtag：{tags}")
-            app = KSVideo(title, str(file), tags, publish_datetimes[index], cookie)
-            asyncio.run(app.main(), debug=False)
-
-def post_video_xhs(title,files,tags,account_file,category=TencentZoneTypes.LIFESTYLE.value,enableTimer=False,videos_per_day = 1, daily_times=None,start_days = 0):
-    # 生成文件的完整路径
-    account_file = [Path(BASE_DIR / "cookiesFile" / file) for file in account_file]
-    files = [Path(BASE_DIR / "videoFile" / file) for file in files]
-    file_num = len(files)
-    if enableTimer:
-        publish_datetimes = generate_schedule_time_next_day(file_num, videos_per_day, daily_times,start_days)
-    else:
-        publish_datetimes = 0
-    for index, file in enumerate(files):
-        for cookie in account_file:
-            # 打印视频文件名、标题和 hashtag
-            print(f"视频文件名：{file}")
-            print(f"标题：{title}")
-            print(f"Hashtag：{tags}")
-            app = XiaoHongShuVideo(title, file, tags, publish_datetimes, cookie)
-            asyncio.run(app.main(), debug=False)
+def post_video_ks(title, files, tags, account_file,
+                  category=TencentZoneTypes.LIFESTYLE.value,
+                  enableTimer=False, videos_per_day=1,
+                  daily_times=None, start_days=0):
+    """发布视频到快手 - 兼容层"""
+    return get_publish_service().post_video_ks(
+        title, files, tags, account_file, category,
+        enableTimer, videos_per_day, daily_times, start_days
+    )
 
 
+def post_video_xhs(title, files, tags, account_file,
+                   category=TencentZoneTypes.LIFESTYLE.value,
+                   enableTimer=False, videos_per_day=1,
+                   daily_times=None, start_days=0):
+    """发布视频到小红书 - 兼容层"""
+    return get_publish_service().post_video_xhs(
+        title, files, tags, account_file, category,
+        enableTimer, videos_per_day, daily_times, start_days
+    )
 
-# post_video("333",["demo.mp4"],"d","d")
-# post_video_DouYin("333",["demo.mp4"],"d","d")
+
+__all__ = [
+    'post_video_tencent',
+    'post_video_DouYin',
+    'post_video_ks',
+    'post_video_xhs',
+    'TencentZoneTypes'
+]
