@@ -1,6 +1,6 @@
 import pytest
 import sqlite3
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 class TestAccountRoutes:
     @pytest.fixture(autouse=True)
@@ -63,7 +63,7 @@ class TestAccountRoutes:
 
     def test_get_valid_accounts(self, client):
         # Mocks auth check
-        with patch('src.routes.account.check_cookie') as mock_check:
+        with patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock) as mock_check:
             mock_check.return_value = True
             res = client.get('/getValidAccounts')
             assert res.status_code == 200

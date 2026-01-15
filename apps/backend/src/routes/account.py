@@ -4,11 +4,6 @@ from src.db.db_manager import db_manager
 import sqlite3
 
 
-# expose check_cookie for patching
-async def check_cookie(type_id, file_path):
-    return await get_cookie_service().check_cookie(type_id, file_path)
-
-
 # 创建蓝图
 bp = Blueprint('account', __name__)
 
@@ -98,7 +93,7 @@ async def getValidAccounts():
                 # 保持当前状态，不重新验证
                 continue
 
-            flag = await check_cookie(account_type, file_path)
+            flag = await get_cookie_service().check_cookie(account_type, file_path)
             if not flag:
                 row[4] = 0
                 cursor.execute('''
@@ -159,7 +154,7 @@ async def getAccountStatus():
 
             row_list = list(row)
             # 验证cookie状态
-            flag = await check_cookie(row_list[1], row_list[2])
+            flag = await get_cookie_service().check_cookie(row_list[1], row_list[2])
             current_status = 1 if flag else 0
 
             # 更新数据库状态

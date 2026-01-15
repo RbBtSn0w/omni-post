@@ -75,7 +75,7 @@ class TestAccount:
             assert '获取账号列表失败' in data['msg']
             assert data['data'] is None
 
-    @patch('src.routes.account.check_cookie')
+    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
     @patch('sqlite3.connect')
     def test_getValidAccounts_all(self, mock_sqlite_connect, mock_db_manager, mock_check_cookie):
@@ -110,7 +110,7 @@ class TestAccount:
             assert data['msg'] is None
             assert len(data['data']) >= 0
 
-    @patch('src.routes.account.check_cookie')
+    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
     @patch('sqlite3.connect')
     def test_getValidAccounts_single(self, mock_sqlite_connect, mock_db_manager, mock_check_cookie):
@@ -141,7 +141,7 @@ class TestAccount:
             assert data['code'] == 200
             assert len(data['data']) >= 0
 
-    @patch('src.routes.account.check_cookie')
+    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
     @patch('sqlite3.connect')
     def test_getAccountStatus_success(self, mock_sqlite_connect, mock_db_manager, mock_check_cookie):
@@ -171,7 +171,7 @@ class TestAccount:
             data = response.get_json()
             assert data['code'] == 200
 
-    @patch('src.routes.account.check_cookie')
+    @patch('src.services.cookie_service.DefaultCookieService.check_cookie', new_callable=AsyncMock)
     @patch('src.db.db_manager')
     @patch('sqlite3.connect')
     def test_getAccountStatus_invalid(self, mock_sqlite_connect, mock_db_manager, mock_check_cookie):

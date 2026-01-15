@@ -4,10 +4,6 @@ from src.db.db_manager import db_manager
 import sqlite3
 import datetime
 
-# expose check_cookie for patching
-async def check_cookie(type_id, file_path):
-    return await get_cookie_service().check_cookie(type_id, file_path)
-
 # 创建蓝图
 bp = Blueprint('dashboard', __name__)
 
@@ -32,7 +28,7 @@ async def get_dashboard_stats():
         abnormal_accounts = 0
 
         for row in rows_list:
-            flag = await check_cookie(row[1], row[2])
+            flag = await get_cookie_service().check_cookie(row[1], row[2])
             if flag:
                 normal_accounts += 1
                 # 更新数据库状态为正常
