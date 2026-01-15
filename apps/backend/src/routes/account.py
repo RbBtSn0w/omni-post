@@ -46,7 +46,7 @@ async def getValidAccounts():
     force_refresh = request.args.get('force', 'false').lower() == 'true'
 
     # 验证冷却期（秒）- 刚登录成功的账号在此时间内跳过二次验证
-    VALIDATION_COOLDOWN_SECONDS = 60
+    VALIDATION_COOLDOWN_SECONDS = 300  # 5分钟冷却期，减少不必要的浏览器验证
 
     with sqlite3.connect(db_manager.get_db_path()) as conn:
         cursor = conn.cursor()
