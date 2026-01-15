@@ -7,6 +7,8 @@
 """
 
 import asyncio
+import time
+from queue import Queue
 import uuid
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Tuple
@@ -15,6 +17,48 @@ from pathlib import Path
 from src.conf import BASE_DIR
 from src.utils.auth import check_cookie
 from src.db.db_manager import db_manager
+
+# 全局变量
+active_queues = {}
+
+
+# SSE 流生成器函数
+def sse_stream(status_queue):
+    while True:
+        if not status_queue.empty():
+            msg = status_queue.get()
+            yield f"data: {msg}\n\n"
+        else:
+            # 避免 CPU 占满
+            time.sleep(0.1)
+
+
+# 包装函数：在线程中运行异步函数
+def run_async_function(type, id, status_queue, group_name=None):
+    # 创建登录服务实例
+    login_service = DefaultLoginService()
+
+    match type:
+        case '1':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.xiaohongshu_cookie_gen(id, status_queue, group_name))
+            loop.close()
+        case '2':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.get_tencent_cookie(id, status_queue, group_name))
+            loop.close()
+        case '3':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.douyin_cookie_gen(id, status_queue, group_name))
+            loop.close()
+        case '4':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.get_ks_cookie(id, status_queue, group_name))
+            loop.close()
 
 
 class LoginService(ABC):

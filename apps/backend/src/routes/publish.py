@@ -19,7 +19,7 @@ def login():
     group_name = request.args.get('group')
 
     # 延迟导入，避免循环依赖
-    from src.app import active_queues, run_async_function, sse_stream
+    from src.services.login_service import active_queues, run_async_function, sse_stream
 
     # 模拟一个用于异步通信的队列
     status_queue = Queue()

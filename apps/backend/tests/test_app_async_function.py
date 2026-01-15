@@ -11,7 +11,7 @@ class TestRunAsyncFunction:
     @patch('src.services.login_service.DefaultLoginService')
     def test_run_async_function_type_1_xiaohongshu(self, MockService):
         """测试小红书登录分支 (type='1')"""
-        from src.app import run_async_function
+        from src.services.login_service import run_async_function
         mock_instance = MockService.return_value
         mock_instance.xiaohongshu_cookie_gen = AsyncMock()
 
@@ -25,7 +25,7 @@ class TestRunAsyncFunction:
     @patch('src.services.login_service.DefaultLoginService')
     def test_run_async_function_type_2_tencent(self, MockService):
         """测试腾讯登录分支 (type='2')"""
-        from src.app import run_async_function
+        from src.services.login_service import run_async_function
         mock_instance = MockService.return_value
         mock_instance.get_tencent_cookie = AsyncMock()
 
@@ -37,7 +37,7 @@ class TestRunAsyncFunction:
     @patch('src.services.login_service.DefaultLoginService')
     def test_run_async_function_type_3_douyin(self, MockService):
         """测试抖音登录分支 (type='3')"""
-        from src.app import run_async_function
+        from src.services.login_service import run_async_function
         mock_instance = MockService.return_value
         mock_instance.douyin_cookie_gen = AsyncMock()
 
@@ -49,7 +49,7 @@ class TestRunAsyncFunction:
     @patch('src.services.login_service.DefaultLoginService')
     def test_run_async_function_type_4_kuaishou(self, MockService):
         """测试快手登录分支 (type='4')"""
-        from src.app import run_async_function
+        from src.services.login_service import run_async_function
         mock_instance = MockService.return_value
         mock_instance.get_ks_cookie = AsyncMock()
 
@@ -61,7 +61,7 @@ class TestRunAsyncFunction:
     @patch('src.services.login_service.DefaultLoginService')
     def test_run_async_function_unknown_type(self, MockService):
         """测试未知类型不会调用任何登录方法"""
-        from src.app import run_async_function
+        from src.services.login_service import run_async_function
         mock_instance = MockService.return_value
         mock_instance.xiaohongshu_cookie_gen = AsyncMock()
         mock_instance.get_tencent_cookie = AsyncMock()
