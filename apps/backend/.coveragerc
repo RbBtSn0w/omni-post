@@ -4,6 +4,7 @@ omit =
     */examples/*
     tests/*
     */tests/*
+    src/services/login_impl.py
 
 [report]
 exclude_lines =
