@@ -165,22 +165,22 @@ class DefaultLoginService(LoginService):
 
     async def douyin_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的抖音登录逻辑"""
-        from src.utils.login import douyin_cookie_gen as original_douyin_login
+        from src.services.login_impl import douyin_cookie_gen as original_douyin_login
         return await original_douyin_login(id, status_queue, group_name)
 
     async def get_tencent_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的腾讯视频号登录逻辑"""
-        from src.utils.login import get_tencent_cookie as original_tencent_login
+        from src.services.login_impl import get_tencent_cookie as original_tencent_login
         return await original_tencent_login(id, status_queue, group_name)
 
     async def get_ks_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的快手登录逻辑"""
-        from src.utils.login import get_ks_cookie as original_ks_login
+        from src.services.login_impl import get_ks_cookie as original_ks_login
         return await original_ks_login(id, status_queue, group_name)
 
     async def xiaohongshu_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的小红书登录逻辑"""
-        from src.utils.login import xiaohongshu_cookie_gen as original_xhs_login
+        from src.services.login_impl import xiaohongshu_cookie_gen as original_xhs_login
         return await original_xhs_login(id, status_queue, group_name)
 
 
