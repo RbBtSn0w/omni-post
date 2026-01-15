@@ -14,7 +14,7 @@ from pathlib import Path
 
 from playwright.async_api import async_playwright
 
-from src.core.config import BASE_DIR, DEBUG_MODE, LOGS_DIR
+from src.core.config import BASE_DIR, DEBUG_MODE, LOGS_DIR, COOKIES_DIR
 from src.core.browser import launch_browser, set_init_script
 from src.db.db_manager import db_manager
 from src.services.cookie_service import get_cookie_service
@@ -121,7 +121,7 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
 
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
-        cookies_dir = Path(BASE_DIR / "cookiesFile")
+        cookies_dir = COOKIES_DIR
         cookies_dir.mkdir(exist_ok=True, parents=True)
         await context.storage_state(path=cookies_dir / f"{uuid_v1}.json")
 
@@ -232,7 +232,7 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
 
         uuid_v1 = uuid.uuid1()
         debug_print(f"[DEBUG] UUID v1: {uuid_v1}")
-        cookies_dir = Path(BASE_DIR / "cookiesFile")
+        cookies_dir = COOKIES_DIR
         cookies_dir.mkdir(exist_ok=True, parents=True)
         await context.storage_state(path=cookies_dir / f"{uuid_v1}.json")
         debug_print(f"[DEBUG] Cookie 保存到: {cookies_dir / f'{uuid_v1}.json'}")
@@ -395,7 +395,7 @@ async def get_ks_cookie(id, status_queue, group_name=None):
             return {'success': False, 'error': 'FINAL_VERIFICATION_FAILED', 'message': "登录成功后基于页面内容验证失败"}
 
         uuid_v1 = uuid.uuid1()
-        cookies_dir = Path(BASE_DIR / "cookiesFile")
+        cookies_dir = COOKIES_DIR
         cookies_dir.mkdir(exist_ok=True, parents=True)
         await context.storage_state(path=cookies_dir / f"{uuid_v1}.json")
         await log_with_timestamp(f"Cookie信息已保存到: {cookies_dir / f'{uuid_v1}.json'}")
@@ -481,7 +481,7 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
 
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
-        cookies_dir = Path(BASE_DIR / "cookiesFile")
+        cookies_dir = COOKIES_DIR
         cookies_dir.mkdir(exist_ok=True, parents=True)
         await context.storage_state(path=cookies_dir / f"{uuid_v1}.json")
 

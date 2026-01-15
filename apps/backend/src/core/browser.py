@@ -15,7 +15,9 @@ from src.core.config import (
     BASE_DIR,
     LOCAL_CHROME_HEADLESS,
     LOCAL_CHROME_PATH,
+    LOCAL_CHROME_PATH,
     DEBUG_MODE,
+    LOGS_DIR,
 )
 
 
@@ -96,7 +98,7 @@ def create_screenshot_dir(platform: str) -> Path:
         Path: 会话截图目录路径
     """
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-    screenshots_root = Path(BASE_DIR / "logs" / "screenshots")
+    screenshots_root = LOGS_DIR / "screenshots"
     screenshots_root.mkdir(exist_ok=True, parents=True)
     session_dir = screenshots_root / platform / timestamp
     session_dir.mkdir(exist_ok=True, parents=True)

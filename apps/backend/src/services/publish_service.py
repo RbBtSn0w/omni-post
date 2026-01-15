@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from pathlib import Path
 
-from src.core.config import BASE_DIR
+from src.core.config import BASE_DIR, COOKIES_DIR, VIDEOS_DIR
 from src.core.constants import TencentZoneTypes
 from src.utils.files_times import generate_schedule_time_next_day
 
@@ -59,8 +59,8 @@ class DefaultPublishService(PublishService):
     """默认发布服务实现"""
 
     def __init__(self):
-        self.cookies_dir = BASE_DIR / "cookiesFile"
-        self.videos_dir = BASE_DIR / "videoFile"
+        self.cookies_dir = COOKIES_DIR
+        self.videos_dir = VIDEOS_DIR
 
     def _get_full_paths(self, files: List[str], account_files: List[str]):
         full_files = [Path(self.videos_dir / file) for file in files]
