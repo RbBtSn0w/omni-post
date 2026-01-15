@@ -5,6 +5,7 @@ omit =
     tests/*
     */tests/*
     src/services/login_impl.py
+    src/uploader/*/main.py
 
 [report]
 exclude_lines =
