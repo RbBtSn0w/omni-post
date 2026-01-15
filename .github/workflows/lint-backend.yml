@@ -28,7 +28,7 @@ jobs:
     - name: Install linting tools
       run: |
         python -m pip install --upgrade pip
-        pip install black flake8 isort pylint
+        pip install black flake8 isort pylint radon
 
     - name: Check code formatting with black
       run: |
@@ -54,6 +54,27 @@ jobs:
         pip install -e .
         pylint src/ --disable=all --enable=E,F --exit-zero || true
       continue-on-error: true
+
+    - name: Check code duplication
+      run: |
+        cd apps/backend
+        pylint --disable=all --enable=duplicate-code src/ || true
+      continue-on-error: true
+
+    - name: Analyze Python complexity
+      run: |
+        cd apps/backend
+        echo "=== Cyclomatic Complexity ==="
+        radon cc src/ -a --total-average || true
+        echo ""
+        echo "=== Maintainability Index ==="
+        radon mi src/ || true
+      continue-on-error: true
+
+    - name: Count lines of code
+      run: |
+        echo "=== Backend ==="
+        find apps/backend/src -name "*.py" | xargs wc -l | tail -1
 
     - name: Report lint results
       if: always()

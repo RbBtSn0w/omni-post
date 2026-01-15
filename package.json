@@ -8,11 +8,19 @@
   ],
   "scripts": {
     "setup": "npm install && npm run setup -w apps/backend",
+    "install:all": "npm install && npm run env:create -w apps/backend && npm run env:install -w apps/backend",
+    "install:backend": "npm run env:create -w apps/backend && npm run env:install -w apps/backend",
+    "install:frontend": "npm install -w apps/frontend",
     "dev:backend": "npm run dev -w apps/backend",
     "dev:frontend": "npm run dev -w apps/frontend",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "lint:backend": "npm run lint -w apps/backend",
+    "lint:frontend": "npm run lint -w apps/frontend",
     "test": "npm run test --workspaces --if-present",
+    "test:backend": "npm run test -w apps/backend",
+    "test:frontend": "npm run test -w apps/frontend",
+    "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
     "clean": "npm run clean --workspaces --if-present"
   },
   "engines": {

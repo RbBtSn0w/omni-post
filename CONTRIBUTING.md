@@ -105,13 +105,20 @@ async def process_video(
         raise FileNotFoundError(f"Video file not found: {file_path}")
     return True
 
-# Use async/await for I/O operations
+# Use async/await and try...finally for resource management
+from src.core.browser import launch_browser
+
 async def login_platform(account_file: Path) -> bool:
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch()
-        # ... implementation
-        await browser.close()
-        return True
+        browser = None
+        try:
+            # Use shared launch_browser for consistent config
+            browser = await launch_browser(playwright)
+            # ... implementation
+            return True
+        finally:
+            if browser:
+                await browser.close()
 ```
 
 **Testing:**
