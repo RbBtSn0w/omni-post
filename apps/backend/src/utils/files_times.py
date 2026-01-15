@@ -3,7 +3,7 @@ from datetime import timedelta
 from datetime import datetime
 from pathlib import Path
 
-from src.core.config import BASE_DIR
+
 
 # Allow tests to patch via utils.files_times.* aliases
 sys.modules.setdefault("utils.files_times", sys.modules[__name__])
