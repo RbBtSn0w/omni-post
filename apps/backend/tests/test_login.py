@@ -2,12 +2,6 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from src.services.login_impl import (
-    douyin_cookie_gen,
-    get_tencent_cookie,
-    get_ks_cookie,
-    xiaohongshu_cookie_gen,
-)
 from src.core.browser import (
     create_screenshot_dir,
     debug_screenshot

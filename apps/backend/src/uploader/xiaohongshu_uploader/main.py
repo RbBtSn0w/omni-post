@@ -132,7 +132,7 @@ class XiaoHongShuVideo(object):
                     )
                     xiaohongshu_logger.success("  [-]视频发布成功")
                     break
-                except:
+                except Exception:  # Timeout means still publishing
                     xiaohongshu_logger.info("  [-] 视频正在发布中...")
                     await page.screenshot(full_page=True)
                     await asyncio.sleep(0.5)

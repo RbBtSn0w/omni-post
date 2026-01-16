@@ -88,7 +88,7 @@ class DouYinVideo(object):
                             timeout=3000)
                         douyin_logger.info("[+] 成功进入version_2发布页面!")
                         break
-                    except:
+                    except Exception:  # Timeout, retry navigation
                         douyin_logger.info("  [-] 超时未进入视频发布页面，重新尝试...")
                         await asyncio.sleep(0.5)
 
@@ -126,7 +126,7 @@ class DouYinVideo(object):
                         if await page.locator('div.progress-div > div:has-text("上传失败")').count():
                             douyin_logger.error("  [-] 发现上传出错了... 准备重试")
                             await self.handle_upload_error(page)
-                except:
+                except Exception:  # Still uploading
                     douyin_logger.info("  [-] 正在上传视频中...")
                     await asyncio.sleep(2)
 
@@ -160,7 +160,7 @@ class DouYinVideo(object):
                                             timeout=3000)
                     douyin_logger.success("  [-]视频发布成功")
                     break
-                except:
+                except Exception:  # Still publishing
                     douyin_logger.info("  [-] 视频正在发布中...")
                     await page.screenshot(full_page=True)
                     await asyncio.sleep(0.5)

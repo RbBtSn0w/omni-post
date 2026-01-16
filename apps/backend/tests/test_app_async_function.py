@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """测试 app.py 中的 run_async_function 异步包装函数"""
-import pytest
 from unittest.mock import patch, AsyncMock
 from queue import Queue
 

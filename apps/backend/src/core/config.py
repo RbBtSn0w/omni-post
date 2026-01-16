@@ -4,7 +4,6 @@ Core configuration module for omni-post backend.
 This module centralizes all configuration settings.
 """
 
-import os
 import platform
 import sys
 from pathlib import Path
@@ -47,17 +46,20 @@ else:
 # Headless mode setting
 LOCAL_CHROME_HEADLESS = True
 
-# Print browser info at startup (only if not in test mode)
-if not TEST_MODE:
-    if LOCAL_CHROME_PATH is None:
-        print("📌 使用 Playwright 自带的 Chromium 浏览器")
-        print("💡 如需使用系统 Chrome，请修改 conf.py 中的 LOCAL_CHROME_PATH")
-    else:
-        if not Path(LOCAL_CHROME_PATH).exists():
-            print(f"⚠️  警告：Chrome 路径不存在: {LOCAL_CHROME_PATH}")
-            print("💡 建议将 LOCAL_CHROME_PATH 设置为 None 以使用 Playwright 自带的 Chromium")
+# Browser info logging (moved to avoid execution during import)
+# Call log_browser_info() explicitly from app startup if needed
+def log_browser_info():
+    """Log browser configuration information at startup."""
+    if not TEST_MODE:
+        if LOCAL_CHROME_PATH is None:
+            print("📌 使用 Playwright 自带的 Chromium 浏览器")
+            print("💡 如需使用系统 Chrome，请修改 conf.py 中的 LOCAL_CHROME_PATH")
         else:
-            print(f"📌 使用系统 Chrome: {LOCAL_CHROME_PATH}")
+            if not Path(LOCAL_CHROME_PATH).exists():
+                print(f"⚠️  警告：Chrome 路径不存在: {LOCAL_CHROME_PATH}")
+                print("💡 建议将 LOCAL_CHROME_PATH 设置为 None 以使用 Playwright 自带的 Chromium")
+            else:
+                print(f"📌 使用系统 Chrome: {LOCAL_CHROME_PATH}")
 
 # Register module alias for test patching compatibility
 sys.modules.setdefault("conf", sys.modules.get("src.conf", sys.modules.get(__name__)))

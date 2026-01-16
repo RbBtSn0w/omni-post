@@ -130,7 +130,7 @@ class TencentVideo(object):
                     file_input = page.locator('div.uploader input[type="file"]').first
                     if await file_input.count():
                         tencent_logger.info("  [+] 找到 uploader 内的 file input")
-                except:
+                except Exception:  # Ignore if locator fails, try next method
                     pass
 
             # 方法3: 查找任何可见的上传input
@@ -139,7 +139,7 @@ class TencentVideo(object):
                     file_input = page.locator('input[accept*="video"]').first
                     if await file_input.count():
                         tencent_logger.info("  [+] 找到 video accept input")
-                except:
+                except Exception:  # Ignore if locator fails
                     pass
 
             if not file_input or not await file_input.count():

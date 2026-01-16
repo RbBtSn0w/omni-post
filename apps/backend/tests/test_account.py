@@ -6,7 +6,6 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from flask import Flask
 
 from src.routes.account import bp as account_bp
-from src.services.cookie_service import get_cookie_service
 from src.db.db_manager import db_manager
 
 class TestAccount:

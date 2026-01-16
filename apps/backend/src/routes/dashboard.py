@@ -158,12 +158,12 @@ def get_dashboard_stats():
             task_dict = dict(row)
             try:
                 task_dict['platforms'] = json.loads(row['platforms']) if row['platforms'] else []
-            except:
+            except (json.JSONDecodeError, TypeError):  # Handle invalid JSON
                 task_dict['platforms'] = []
 
             try:
                 task_dict['account_list'] = json.loads(row['account_list']) if row['account_list'] else []
-            except:
+            except (json.JSONDecodeError, TypeError):  # Handle invalid JSON
                 task_dict['account_list'] = []
 
             recent_tasks.append(task_dict)

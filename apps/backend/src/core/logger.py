@@ -4,7 +4,6 @@ Logging configuration for omni-post backend.
 This module provides centralized logging configuration.
 """
 
-from pathlib import Path
 from sys import stdout
 from loguru import logger
 
