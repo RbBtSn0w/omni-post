@@ -1,77 +1,79 @@
-## 🎯 PR 提交清单
+## 🎯 PR Submission Checklist
 
-感谢你的贡献！请确保你的 PR 满足以下要求。
+Thank you for your contribution! Please ensure that your PR meets the following requirements.
 
-### 📝 描述
+### 📝 Description
 
-<!-- 简要描述你的变更内容 -->
+<!-- Briefly describe your changes -->
 
-### 🔧 变更类型
+### 🔧 Change Type
 
-请删除不适用的选项：
+Please delete options that are not applicable:
 
-- [ ] 🐛 Bug 修复（修复现有的 bug）
-- [ ] ✨ 新功能（添加新功能）
-- [ ] 📚 文档更新（仅更新文档）
-- [ ] ♻️ 代码重构（不改变功能的代码改进）
-- [ ] 🧪 测试（添加或改进测试）
-- [ ] 🔄 依赖升级（升级依赖包）
-- [ ] 🚀 性能优化（性能改进）
+- [ ] 🐛 Bug fix (fixes an existing bug)
+- [ ] ✨ New feature (adds a new feature)
+- [ ] 📚 Documentation update (only updates documentation)
+- [ ] ♻️ Code refactoring (code improvements without changing functionality)
+- [ ] 🧪 Test (adds or improves tests)
+- [ ] 🔄 Dependency upgrade (upgrades dependency packages)
+- [ ] 🚀 Performance optimization (performance improvements)
 
-### ✅ 提交检查清单
+### ✅ Submission Checklist
 
-在提交 PR 前，请确保：
+Before submitting the PR, please ensure:
 
-#### 通用检查
-- [ ] PR 标题清晰明了，格式为 `[类型] 简短描述` 例如：`[feat] Add user authentication`
-- [ ] 代码遵循项目编码规范
-- [ ] 没有 console.log、print 等调试语句
-- [ ] 没有硬编码的密钥或敏感信息
+#### General Checks
+- [ ] PR title is clear and concise, formatted as `[Type] Short description`, e.g., `[feat] Add user authentication`
+- [ ] Code follows project coding standards
+- [ ] No `console.log`, `print`, or other debugging statements
+- [ ] No hardcoded keys or sensitive information
 
-#### 后端检查（如果修改了 `apps/backend/`）
-- [ ] 代码通过 black 格式检查
-- [ ] 代码通过 flake8 检查
-- [ ] 代码通过 isort 检查
-- [ ] 运行了相关的单元测试：`npm run test:backend`
-- [ ] 新功能都有相应的测试用例
-- [ ] 测试覆盖率未下降
+#### Backend Checks (if `apps/backend/` was modified)
+- [ ] Code passes Black formatting check
+- [ ] Imports are sorted with isort
+- [ ] Code passes Flake8/PEP8 checks
+- [ ] Code passes Pylint basic checks
+- [ ] Cyclomatic complexity and maintainability index checked (radon)
+- [ ] Related unit tests run: `npm run test:backend`
+- [ ] New features have corresponding test cases
+- [ ] Test coverage has not decreased
 
-#### 前端检查（如果修改了 `apps/frontend/`）
-- [ ] 代码通过 ESLint 检查：`npm run lint`
-- [ ] 运行了相关的单元测试：`npm run test:frontend`
-- [ ] Vue 组件遵循 Vue 3 Composition API 最佳实践
-- [ ] 没有 TypeScript 错误（如使用 TypeScript）
-- [ ] 在多个浏览器中测试过（如适用）
+#### Frontend Checks (if `apps/frontend/` was modified)
+- [ ] Code passes ESLint checks: `npm run lint`
+- [ ] Related unit tests run: `npm run test:frontend`
+- [ ] Vue components follow Vue 3 Composition API best practices
+- [ ] No TypeScript errors (if using TypeScript)
+- [ ] Tested across multiple browsers (if applicable)
 
-#### 测试检查
-- [ ] 添加了单元测试
-- [ ] 添加了集成测试（如适用）
-- [ ] 所有现有测试仍然通过
-- [ ] 本地运行 `npm test` 全部通过
+#### Testing Checks
+- [ ] Unit tests added
+- [ ] Integration tests added (if applicable)
+- [ ] All existing tests still pass
+- [ ] Local `npm test` passes completely
 
-#### 文档检查
-- [ ] 更新了相关的 README 或其他文档
-- [ ] 添加了代码注释（特别是复杂逻辑）
-- [ ] 更新了 CHANGELOG（如适用）
+#### Documentation Checks
+- [ ] Updated relevant READMEs or other documentation
+- [ ] Added code comments (especially for complex logic)
+- [ ] Updated CHANGELOG (if applicable)
 
-### 🔗 关联问题
+### 🔗 Related Issues
 
-关闭 #（issue 号码）
+Closes # (issue number)
 
-### 📸 截图或视频（如适用）
+### 📸 Screenshots or Videos (if applicable)
 
-<!-- 对于 UI 变更，请添加截图或视频 -->
+<!-- For UI changes, please add screenshots or videos -->
 
-### 🚀 部署说明（如需要）
+### 🚀 Deployment Instructions (if needed)
 
-<!-- 是否需要迁移？是否需要新的环境变量？等等 -->
+<!-- Is a migration required? Are new environment variables needed? etc. -->
 
 ---
 
-## 📋 代码审查员检查清单
+## 📋 Reviewer Checklist
 
-- [ ] 代码逻辑正确
-- [ ] 没有明显的安全漏洞
-- [ ] 性能可以接受
-- [ ] 测试充分
-- [ ] 文档完整
+- [ ] Code logic is correct
+- [ ] No obvious security vulnerabilities
+- [ ] Performance is acceptable
+- [ ] Testing is sufficient
+- [ ] Documentation is complete
