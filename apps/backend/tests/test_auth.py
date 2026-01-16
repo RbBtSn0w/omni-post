@@ -230,11 +230,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_douyin_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_douyin_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：抖音cookie认证生产模式成功"""
         # 配置模拟返回值
         mock_browser = MagicMock()
@@ -265,11 +264,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_douyin_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_douyin_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：抖音cookie认证生产模式失败"""
         # 配置模拟返回值
         mock_browser = MagicMock()
@@ -300,11 +298,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_tencent_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_tencent_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：腾讯cookie认证生产模式成功"""
         # 配置模拟返回值
         mock_browser = MagicMock()
@@ -334,11 +331,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_ks_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_ks_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：快手cookie认证生产模式成功"""
         # 配置模拟返回值
         mock_browser = MagicMock()
@@ -368,11 +364,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_xhs_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_xhs_production_success_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：小红书cookie认证生产模式成功"""
         # 配置模拟返回值
         mock_browser = MagicMock()
@@ -403,11 +398,10 @@ class TestAuth:
 
     @pytest.mark.unit
     @pytest.mark.auth
-    @patch('src.services.cookie_service.asyncio')
     @patch('src.services.cookie_service.async_playwright')
     @patch('src.services.cookie_service.launch_browser')
     @patch('src.services.cookie_service.set_init_script')
-    async def test_cookie_auth_xhs_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright, mock_asyncio):
+    async def test_cookie_auth_xhs_production_failure_unit(self, mock_set_init_script, mock_launch_browser, mock_async_playwright):
         """单元测试：小红书cookie认证生产模式失败"""
         # 配置模拟返回值
         mock_browser = MagicMock()
