@@ -74,6 +74,6 @@ class TestAccountRoutes:
 
             # Check with invalid cookie
             mock_check.return_value = False
-            res = client.get('/getValidAccounts')
+            res = client.get('/getValidAccounts?force=true')
             data = res.json['data']
             assert data[0][4] == 0
