@@ -1,10 +1,17 @@
+"""
+Publish executor service for omni-post backend.
+
+This module handles task execution for video publishing.
+"""
+
 import threading
 import traceback
-import asyncio
 from pathlib import Path
+
 from src.services.task_service import task_service
-from src.utils.postVideo import post_video_tencent, post_video_DouYin, post_video_ks, post_video_xhs
-from src.conf import BASE_DIR
+from src.services.publish_service import post_video_tencent, post_video_DouYin, post_video_ks, post_video_xhs
+from src.core.config import VIDEOS_DIR, COOKIES_DIR
+
 
 def run_publish_task(task_id, publish_data):
     """
@@ -44,8 +51,8 @@ def run_publish_task(task_id, publish_data):
         print(f"[PUBLISH] Enable timer: {enableTimer}")
 
         # Validate files exist
-        video_dir = Path(BASE_DIR / "videoFile")
-        cookie_dir = Path(BASE_DIR / "cookiesFile")
+        video_dir = VIDEOS_DIR
+        cookie_dir = COOKIES_DIR
 
         print(f"\n[VALIDATE] Checking video files in: {video_dir}")
         for f in file_list:
@@ -88,6 +95,7 @@ def run_publish_task(task_id, publish_data):
         print(f"\n[PUBLISH] Task {task_id} FAILED: {e}")
         traceback.print_exc()
         task_service.update_task_status(task_id, 'failed', error_msg=str(e))
+
 
 def start_publish_thread(task_id, publish_data):
     """Start the publish task in a daemon thread"""

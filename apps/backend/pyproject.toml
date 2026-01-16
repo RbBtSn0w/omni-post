@@ -19,6 +19,8 @@ dependencies = [
     "Pillow>=11.0.0",
     "pycryptodome>=3.20.0",
     "qrcode>=8.0",
+    "xhs>=0.2.0",
+    "loguru>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +29,9 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-xdist>=3.5.0",
+    "freezegun>=1.2.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-env>=0.8.1",
 ]
 
 [tool.setuptools]

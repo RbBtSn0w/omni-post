@@ -62,52 +62,47 @@ OmniPost is built using a **Monorepo architecture** with separate frontend and b
 apps/frontend/
 ├── src/
 │   ├── views/                    # Page components
-│   │   ├── Login.vue
 │   │   ├── Dashboard.vue
 │   │   ├── AccountManagement.vue
-│   │   ├── VideoPublishing.vue
-│   │   └── TaskMonitor.vue
+│   │   ├── PublishCenter.vue    # Video Publishing Interface
+│   │   ├── TaskManagement.vue   # Task Monitoring
+│   │   ├── MaterialManagement.vue
+│   │   └── ...
 │   │
 │   ├── components/               # Reusable UI components
-│   │   ├── VideoUploader.vue
-│   │   ├── AccountSelector.vue
-│   │   ├── PublishForm.vue
-│   │   ├── TaskList.vue
+│   │   ├── GroupSelector.vue
 │   │   └── ...
 │   │
 │   ├── stores/                   # Pinia state management
-│   │   ├── auth.js              # Authentication state
-│   │   ├── videos.js            # Video management
-│   │   ├── accounts.js          # Account management
-│   │   ├── tasks.js             # Publishing tasks
-│   │   └── ui.js                # UI state
+│   │   ├── user.js              # Authentication/User state
+│   │   ├── account.js           # Account management
+│   │   ├── task.js              # Publishing tasks
+│   │   ├── group.js             # Group management
+│   │   └── app.js               # Global UI state
 │   │
 │   ├── api/                     # API service layer
-│   │   ├── auth.js              # Authentication endpoints
-│   │   ├── accounts.js          # Account endpoints
-│   │   ├── videos.js            # Video endpoints
-│   │   ├── publish.js           # Publishing endpoints
-│   │   └── common.js            # Shared axios instance
+│   │   ├── user.js              # Authentication endpoints
+│   │   ├── account.js           # Account endpoints
+│   │   ├── material.js          # Material/Video endpoints
+│   │   ├── task.js              # Task endpoints
+│   │   ├── dashboard.js         # Dashboard stats
+│   │   └── index.js             # Shared axios instance
 │   │
 │   ├── router/                  # Vue Router configuration
 │   │   └── index.js
 │   │
 │   ├── composables/             # Composition API utilities
-│   │   ├── useAuth.js           # Authentication logic
-│   │   ├── useForm.js           # Form handling
-│   │   └── useTask.js           # Task management
+│   │   ├── useAccountActions.js
+│   │   └── useAccountFilter.js
 │   │
 │   ├── utils/                   # Utility functions
-│   │   ├── format.js
-│   │   ├── validate.js
-│   │   └── date.js
+│   │   ├── request.js
+│   │   └── dataCache.js
 │   │
 │   ├── styles/                  # Global styles
-│   │   └── variables.css
+│   │   └── ...
 │   │
 │   ├── assets/                  # Static assets
-│   │   ├── images/
-│   │   └── icons/
 │   │
 │   ├── App.vue                  # Root component
 │   └── main.js                  # Application entry point
@@ -182,25 +177,26 @@ Child Components
 apps/backend/
 ├── src/
 │   ├── app.py                   # Flask application factory
-│   ├── cli_main.py              # CLI entry point
-│   ├── conf.py                  # Configuration
+│   ├── core/                    # Core configuration
+│   │   ├── config.py
+│   │   ├── constants.py
+│   │   └── logger.py
 │   │
 │   ├── routes/                  # API endpoint definitions
-│   │   ├── __init__.py
-│   │   ├── auth_routes.py       # /api/auth/*
-│   │   ├── account_routes.py    # /api/accounts/*
-│   │   ├── video_routes.py      # /api/videos/*
-│   │   ├── publish_routes.py    # /api/publish/*
-│   │   ├── task_routes.py       # /api/tasks/*
-│   │   └── health_routes.py     # /api/health
+│   │   ├── account.py           # Account management
+│   │   ├── publish.py           # Publishing operations
+│   │   ├── dashboard.py         # Dashboard stats
+│   │   ├── file.py              # File management
+│   │   ├── group.py             # Group management
+│   │   └── cookie.py            # Cookie operations
 │   │
 │   ├── services/                # Business logic layer
-│   │   ├── __init__.py
 │   │   ├── auth_service.py      # Authentication logic
-│   │   ├── account_service.py   # Account management
-│   │   ├── upload_service.py    # Upload orchestration
-│   │   ├── publish_service.py   # Publishing logic
 │   │   ├── task_service.py      # Task scheduling
+│   │   ├── publish_service.py   # Publishing orchestration
+│   │   ├── publish_executor.py  # Task execution logic
+│   │   ├── login_service.py     # Login management
+│   │   ├── login_impl.py        # Login implementations
 │   │   └── cookie_service.py    # Cookie management
 │   │
 │   ├── uploader/                # Platform-specific uploaders
@@ -208,39 +204,26 @@ apps/backend/
 │   │   ├── base_uploader.py     # Abstract base class
 │   │   ├── douyin_uploader/
 │   │   │   ├── __init__.py
-│   │   │   ├── uploader.py
+│   │   │   ├── main.py
 │   │   │   ├── login.py
 │   │   │   └── utils.py
 │   │   ├── xiaohongshu_uploader/
+│   │   │   ├── __init__.py
+│   │   │   └── main.py
 │   │   ├── ks_uploader/
+│   │   │   ├── __init__.py
+│   │   │   └── main.py
 │   │   └── tencent_uploader/
+│   │   │   ├── __init__.py
+│   │   │   └── main.py
 │   │
 │   ├── utils/                   # Utility functions
-│   │   ├── __init__.py
-│   │   ├── file_handler.py      # File operations
-│   │   ├── cookie_handler.py    # Cookie management
-│   │   ├── encrypt.py           # Encryption utilities
-│   │   ├── logger.py            # Logging setup
 │   │   ├── network.py           # Network utilities
-│   │   └── validators.py        # Input validation
+│   │   └── files_times.py       # File and time helpers
 │   │
 │   ├── db/                      # Database layer
-│   │   ├── __init__.py
-│   │   ├── models.py            # SQLAlchemy models
-│   │   ├── database.py          # Database connection
-│   │   ├── createTable.py       # Database initialization
-│   │   ├── user.py              # User model
-│   │   ├── account.py           # Account model
-│   │   ├── video.py             # Video model
-│   │   └── task.py              # Task model
-│   │
-│   ├── cookies/                 # Cookie storage by platform
-│   │   ├── douyin_uploader/
-│   │   ├── xiaohongshu_uploader/
-│   │   ├── ks_uploader/
-│   │   └── tencent_uploader/
-│   │
-│   ├── videoFile/               # Temporary video storage
+│   │   ├── db_manager.py        # Database connection & management
+│   │   └── createTable.py       # Database initialization
 │   │
 │   └── __init__.py
 │
@@ -264,38 +247,32 @@ apps/backend/
 ```
 /api/
 ├── /auth
-│   ├── POST /register          # User registration
-│   ├── POST /login             # User login
-│   ├── POST /logout            # User logout
-│   └── GET /me                 # Current user info
+│   ├── POST /auth/login             # User login
+│   ├── ...
 │
-├── /accounts
+├── /account
 │   ├── GET /                   # List all accounts
-│   ├── POST /                  # Create account
-│   ├── GET /<id>               # Get account details
-│   ├── PUT /<id>               # Update account
-│   ├── DELETE /<id>            # Delete account
-│   └── POST /<id>/login        # Login to platform
+│   ├── POST /add               # Add account
+│   ├── POST /update            # Update account
+│   ├── POST /delete            # Delete account
+│   └── GET /get_valid          # Get valid accounts
 │
-├── /videos
-│   ├── GET /                   # List videos
-│   ├── POST /                  # Upload video
-│   ├── GET /<id>               # Get video details
-│   ├── PUT /<id>               # Update video info
-│   └── DELETE /<id>            # Delete video
+├── /file
+│   ├── GET /get_all_files      # List files
+│   ├── POST /upload_file       # Upload video/image
+│   └── POST /delete_file       # Delete file
 │
 ├── /publish
-│   ├── POST /                  # Publish to platforms
-│   ├── GET /status/<task_id>   # Get publish status
-│   └── POST /<task_id>/cancel  # Cancel publishing
+│   ├── POST /post_video        # Publish video
+│   └── GET /get_tasks          # Get tasks list
 │
-├── /tasks
-│   ├── GET /                   # List publishing tasks
-│   ├── GET /<id>               # Get task details
-│   └── GET /<id>/logs          # Get task logs
+├── /dashboard
+│   └── GET /stats              # Dashboard statistics
 │
-└── /health
-    └── GET /                   # Health check
+├── /group
+│   ├── GET /get_groups         # Get groups
+│   ├── POST /create_group      # Create group
+│   └── ...
 ```
 
 ### Service Layer Architecture
@@ -323,36 +300,45 @@ class PublishService:
         # Implementation
 ```
 
-### Uploader Pattern
+# Uploader Pattern
+
+The project uses a consistent pattern for all platform uploaders, utilizing shared utilities for browser management.
 
 ```python
-# Base uploader interface
-class BaseUploader(ABC):
-    @abstractmethod
-    async def login(self, account_cookie):
-        """Login to platform using cookie."""
-        pass
+# Shared Browser Launcher (src/core/browser.py)
+async def launch_browser(playwright, headless=True, ...):
+    """
+    Centralized browser launch configuration.
+    Ensures consistent args (no-sandbox, disable-blink-features, etc.)
+    """
+    pass
 
-    @abstractmethod
-    async def upload(self, video_path, metadata):
-        """Upload video with metadata."""
-        pass
+# Platform Implementation Example (src/uploader/douyin_uploader/main.py)
+class DouYinVideo(object):
+    def __init__(self, title, file_path, tags, ...):
+        self.title = title
+        # ...
 
-    @abstractmethod
-    async def publish(self, video_id, publish_time):
-        """Schedule or immediately publish."""
-        pass
+    async def upload(self, playwright: Playwright) -> None:
+        """
+        Upload workflows follow a try...finally pattern for resource safety.
+        """
+        browser = None
+        context = None
+        try:
+            # unified browser launch
+            browser = await launch_browser(playwright, headless=self.headless)
 
-# Platform-specific implementation
-class DouyinUploader(BaseUploader):
-    async def login(self, account_cookie):
-        async with async_playwright() as playwright:
-            # Browser automation logic
-            pass
+            # Platform specific logic
+            context = await browser.new_context(...)
+            page = await context.new_page()
 
-    async def upload(self, video_path, metadata):
-        # Douyin-specific upload logic
-        pass
+            # ... automation steps ...
+
+        finally:
+            # Ensure resources are always cleaned up
+            if context: await context.close()
+            if browser: await browser.close()
 ```
 
 ## Database Schema

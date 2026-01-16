@@ -1,5 +1,0 @@
-from pathlib import Path
-
-from src.conf import BASE_DIR
-
-Path(BASE_DIR / "cookies").mkdir(exist_ok=True)

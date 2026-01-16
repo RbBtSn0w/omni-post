@@ -5,10 +5,9 @@ from playwright.async_api import Playwright, async_playwright
 import os
 import asyncio
 
-from src.conf import LOCAL_CHROME_PATH, LOCAL_CHROME_HEADLESS
-from src.utils.base_social_media import set_init_script
-from src.utils.files_times import get_absolute_path
-from src.utils.log import tencent_logger
+from src.core.config import LOCAL_CHROME_HEADLESS, DEBUG_MODE
+from src.core.browser import set_init_script, launch_browser
+from src.core.logger import tencent_logger
 
 
 def format_str_for_short_title(origin_title: str) -> str:
@@ -31,56 +30,6 @@ def format_str_for_short_title(origin_title: str) -> str:
     return formatted_string
 
 
-async def cookie_auth(account_file):
-    async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=LOCAL_CHROME_HEADLESS)
-        context = await browser.new_context(storage_state=account_file)
-        context = await set_init_script(context)
-        # 创建一个新的页面
-        page = await context.new_page()
-        # 访问指定的 URL
-        await page.goto("https://channels.weixin.qq.com/platform/post/create")
-        try:
-            await page.wait_for_selector('div.title-name:has-text("微信小店")', timeout=5000)  # 等待5秒
-            tencent_logger.error("[+] 等待5秒 cookie 失效")
-            return False
-        except:
-            tencent_logger.success("[+] cookie 有效")
-            return True
-
-
-async def get_tencent_cookie(account_file):
-    async with async_playwright() as playwright:
-        options = {
-            'args': [
-                '--lang en-GB'
-            ],
-            'headless': LOCAL_CHROME_HEADLESS,  # Set headless option here
-        }
-        # Make sure to run headed.
-        browser = await playwright.chromium.launch(**options)
-        # Setup context however you like.
-        context = await browser.new_context()  # Pass any options
-        # Pause the page, and start recording manually.
-        context = await set_init_script(context)
-        page = await context.new_page()
-        await page.goto("https://channels.weixin.qq.com")
-        await page.pause()
-        # 点击调试器的继续，保存cookie
-        await context.storage_state(path=account_file)
-
-
-async def weixin_setup(account_file, handle=False):
-    account_file = get_absolute_path(account_file, "tencent_uploader")
-    if not os.path.exists(account_file) or not await cookie_auth(account_file):
-        if not handle:
-            # Todo alert message
-            return False
-        tencent_logger.info('[+] cookie文件不存在或已失效，即将自动打开浏览器，请扫码登录，登陆后会自动生成cookie文件')
-        await get_tencent_cookie(account_file)
-    return True
-
-
 class TencentVideo(object):
     def __init__(self, title, file_path, tags, publish_date: datetime, account_file, category=None, is_draft=False):
         self.title = title  # 视频标题
@@ -91,7 +40,6 @@ class TencentVideo(object):
         self.category = category
         self.headless = LOCAL_CHROME_HEADLESS
         self.is_draft = is_draft  # 是否保存为草稿
-        self.local_executable_path = LOCAL_CHROME_PATH or None
 
     async def set_schedule_time_tencent(self, page, publish_date):
         label_element = page.locator("label").filter(has_text="定时").nth(1)
@@ -136,114 +84,119 @@ class TencentVideo(object):
         await file_input.set_input_files(self.file_path)
 
     async def upload(self, playwright: Playwright) -> None:
-        # 使用 Chromium (这里使用系统内浏览器，用chromium 会造成h264错误
-        # 添加更多启动参数以确保 headless 模式正常工作
-        launch_args = [
-            '--disable-blink-features=AutomationControlled',  # 隐藏自动化标识
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-        ]
-        browser = await playwright.chromium.launch(
-            headless=self.headless,
-            executable_path=self.local_executable_path,
-            args=launch_args
-        )
+        """
+        Upload video to Tencent Channels (视频号).
 
-        # 创建一个浏览器上下文，使用指定的 cookie 文件
-        # 添加 viewport 设置以确保页面正确渲染
-        context = await browser.new_context(
-            storage_state=f"{self.account_file}",
-            viewport={'width': 1920, 'height': 1080},  # 标准桌面分辨率
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
-        context = await set_init_script(context)
+        Uses try...finally to ensure browser resources are always released,
+        even if an exception occurs during the upload process.
+        """
+        browser = None
+        context = None
 
-        # 创建一个新的页面
-        page = await context.new_page()
-        # 访问指定的 URL
-        await page.goto("https://channels.weixin.qq.com/platform/post/create", wait_until='networkidle')
-        tencent_logger.info(f'[+]正在上传-------{self.title}.mp4')
-        # 等待页面跳转到指定的 URL，没进入，则自动等待到超时
-        await page.wait_for_url("https://channels.weixin.qq.com/platform/post/create")
-
-        # 等待页面完全加载
-        await asyncio.sleep(2)
-
-        # 尝试多种方式定位文件上传输入框
-        tencent_logger.info("  [-] 正在查找上传按钮...")
-        file_input = None
-
-        # 方法1: 标准 input[type="file"]
         try:
-            await page.wait_for_selector('input[type="file"]', timeout=5000)
-            file_input = page.locator('input[type="file"]').first
-            tencent_logger.info("  [+] 找到 input[type=file]")
-        except:
-            pass
+            # 使用统一的浏览器启动函数
+            browser = await launch_browser(playwright, headless=self.headless)
 
-        # 方法2: 查找上传区域内的input
-        if not file_input or not await file_input.count():
+            # 创建一个浏览器上下文，使用指定的 cookie 文件
+            context = await browser.new_context(
+                storage_state=f"{self.account_file}",
+                viewport={'width': 1920, 'height': 1080},  # 标准桌面分辨率
+            )
+            context = await set_init_script(context)
+
+            # 创建一个新的页面
+            page = await context.new_page()
+            # 访问指定的 URL
+            # 注意：使用 domcontentloaded 而非 networkidle，因为视频号后台有持续的 WebSocket 连接
+            # 会导致 networkidle 条件永远无法满足而超时
+            await page.goto("https://channels.weixin.qq.com/platform/post/create", wait_until='domcontentloaded')
+            tencent_logger.info(f'[+]正在上传-------{self.title}.mp4')
+
+            # 尝试多种方式定位文件上传输入框
+            tencent_logger.info("  [-] 正在查找上传按钮...")
+            file_input = None
+
+            # 方法1: 标准 input[type="file"]
             try:
-                file_input = page.locator('div.uploader input[type="file"]').first
-                if await file_input.count():
-                    tencent_logger.info("  [+] 找到 uploader 内的 file input")
+                await page.wait_for_selector('input[type="file"]', state='visible', timeout=10000)
+                file_input = page.locator('input[type="file"]').first
+                tencent_logger.info("  [+] 找到 input[type=file]")
             except:
                 pass
 
-        # 方法3: 查找任何可见的上传input
-        if not file_input or not await file_input.count():
-            try:
-                file_input = page.locator('input[accept*="video"]').first
-                if await file_input.count():
-                    tencent_logger.info("  [+] 找到 video accept input")
-            except:
-                pass
+            # 方法2: 查找上传区域内的input
+            if not file_input or not await file_input.count():
+                try:
+                    file_input = page.locator('div.uploader input[type="file"]').first
+                    if await file_input.count():
+                        tencent_logger.info("  [+] 找到 uploader 内的 file input")
+                except Exception:  # Ignore if locator fails, try next method
+                    pass
 
-        if not file_input or not await file_input.count():
-            # 调试：保存页面截图和HTML以便分析
-            debug_screenshot_path = "/tmp/tencent_upload_debug.png"
-            debug_html_path = "/tmp/tencent_upload_debug.html"
-            await page.screenshot(path=debug_screenshot_path, full_page=True)
-            html_content = await page.content()
-            with open(debug_html_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
-            tencent_logger.error(f"  [DEBUG] 已保存截图到: {debug_screenshot_path}")
-            tencent_logger.error(f"  [DEBUG] 已保存HTML到: {debug_html_path}")
+            # 方法3: 查找任何可见的上传input
+            if not file_input or not await file_input.count():
+                try:
+                    file_input = page.locator('input[accept*="video"]').first
+                    if await file_input.count():
+                        tencent_logger.info("  [+] 找到 video accept input")
+                except Exception:  # Ignore if locator fails
+                    pass
 
-            # 打印页面上所有的 input 元素以便调试
-            inputs = await page.locator("input").all()
-            tencent_logger.info(f"  [DEBUG] 页面上找到 {len(inputs)} 个 input 元素")
-            for i, inp in enumerate(inputs[:10]):  # 只打印前10个
-                inp_type = await inp.get_attribute("type") or "unknown"
-                inp_accept = await inp.get_attribute("accept") or ""
-                tencent_logger.info(f"    [{i}] type={inp_type}, accept={inp_accept}")
+            if not file_input or not await file_input.count():
+                # 调试：保存页面截图和HTML以便分析
+                debug_screenshot_path = "/tmp/tencent_upload_debug.png"
+                debug_html_path = "/tmp/tencent_upload_debug.html"
+                await page.screenshot(path=debug_screenshot_path, full_page=True)
+                html_content = await page.content()
+                with open(debug_html_path, "w", encoding="utf-8") as f:
+                    f.write(html_content)
+                tencent_logger.error(f"  [DEBUG] 已保存截图到: {debug_screenshot_path}")
+                tencent_logger.error(f"  [DEBUG] 已保存HTML到: {debug_html_path}")
 
-            raise Exception("无法找到文件上传输入框，页面结构可能已更改，请查看 /tmp/tencent_upload_debug.png")
+                # 打印页面上所有的 input 元素以便调试
+                inputs = await page.locator("input").all()
+                tencent_logger.info(f"  [DEBUG] 页面上找到 {len(inputs)} 个 input 元素")
+                for i, inp in enumerate(inputs[:10]):  # 只打印前10个
+                    inp_type = await inp.get_attribute("type") or "unknown"
+                    inp_accept = await inp.get_attribute("accept") or ""
+                    tencent_logger.info(f"    [{i}] type={inp_type}, accept={inp_accept}")
 
-        await file_input.set_input_files(self.file_path)
-        # 填充标题和话题
-        await self.add_title_tags(page)
-        # 添加商品
-        # await self.add_product(page)
-        # 合集功能
-        await self.add_collection(page)
-        # 原创选择
-        await self.add_original(page)
-        # 检测上传状态
-        await self.detect_upload_status(page)
-        if self.publish_date != 0:
-            await self.set_schedule_time_tencent(page, self.publish_date)
-        # 添加短标题
-        await self.add_short_title(page)
+                raise Exception("无法找到文件上传输入框，页面结构可能已更改，请查看 /tmp/tencent_upload_debug.png")
 
-        await self.click_publish(page)
+            await file_input.set_input_files(self.file_path)
+            # 填充标题和话题
+            await self.add_title_tags(page)
+            # 添加商品
+            # await self.add_product(page)
+            # 合集功能
+            await self.add_collection(page)
+            # 原创选择
+            await self.add_original(page)
+            # 检测上传状态
+            await self.detect_upload_status(page)
+            if self.publish_date != 0:
+                await self.set_schedule_time_tencent(page, self.publish_date)
+            # 添加短标题
+            await self.add_short_title(page)
 
-        await context.storage_state(path=f"{self.account_file}")  # 保存cookie
-        tencent_logger.success('  [-]cookie更新完毕！')
-        await asyncio.sleep(2)  # 这里延迟是为了方便眼睛直观的观看
-        # 关闭浏览器上下文和浏览器实例
-        await context.close()
-        await browser.close()
+            await self.click_publish(page)
+
+            await context.storage_state(path=f"{self.account_file}")  # 保存cookie
+            tencent_logger.success('  [-]cookie更新完毕！')
+
+            # 仅在调试模式下延迟，方便观察
+            if DEBUG_MODE:
+                await asyncio.sleep(2)
+
+        except Exception as e:
+            tencent_logger.error(f"上传过程中发生异常: {e}")
+            raise
+        finally:
+            # 确保浏览器资源释放，防止僵尸进程
+            if context:
+                await context.close()
+            if browser:
+                await browser.close()
 
     async def add_short_title(self, page):
         short_title_element = page.get_by_text("短标题", exact=True).locator("..").locator(

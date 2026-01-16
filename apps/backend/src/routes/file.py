@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 from pathlib import Path
-from src.conf import BASE_DIR
+from src.core.config import VIDEOS_DIR
 from src.db.db_manager import db_manager
 import sqlite3
 import uuid
@@ -28,7 +28,7 @@ def upload_file():
         # 保存文件到指定位置
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
-        filepath = Path(BASE_DIR / "videoFile" / f"{uuid_v1}_{file.filename}")
+        filepath = VIDEOS_DIR / f"{uuid_v1}_{file.filename}"
         file.save(filepath)
         return jsonify({"code":200,"msg": "File uploaded successfully", "data": f"{uuid_v1}_{file.filename}"}), 200
     except Exception as e:
@@ -47,7 +47,7 @@ def get_file():
         return {"error": "Invalid filename"}, 400
 
     # 拼接完整路径
-    file_path = str(Path(BASE_DIR / "videoFile"))
+    file_path = str(VIDEOS_DIR)
 
     # 返回文件
     return send_from_directory(file_path,filename)
@@ -68,7 +68,7 @@ def upload_save():
             "data": None,
             "msg": "No selected file"
         }), 400
-    
+
     # 添加文件大小检查，限制最大500MB
     max_size = 500 * 1024 * 1024  # 500MB
     if file.content_length and file.content_length > max_size:
@@ -92,7 +92,7 @@ def upload_save():
 
         # 构造文件名和路径
         final_filename = f"{uuid_v1}_{filename}"
-        filepath = Path(BASE_DIR / "videoFile" / f"{uuid_v1}_{filename}")
+        filepath = VIDEOS_DIR / f"{uuid_v1}_{filename}"
 
         # 保存文件
         file.save(filepath)
@@ -193,7 +193,7 @@ def delete_file():
             record = dict(record)
 
             # 获取文件路径并删除实际文件
-            file_path = Path(BASE_DIR / "videoFile" / record['file_path'])
+            file_path = VIDEOS_DIR / record['file_path']
             if file_path.exists():
                 try:
                     file_path.unlink()  # 删除文件

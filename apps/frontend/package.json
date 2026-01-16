@@ -5,16 +5,13 @@
   "author": "rbbtsn0w <hamiltonsnow@gmail.com>",
   "type": "module",
   "scripts": {
-    "clean": "npx rimraf node_modules dist coverage test-results",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "info": "echo '=== Frontend Info ===' && npm pkg get name version type",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "clean": "rm -rf node_modules dist coverage"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

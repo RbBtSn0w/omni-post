@@ -7,14 +7,56 @@
 """
 
 import asyncio
+import time
 import uuid
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Tuple
 from pathlib import Path
 
-from src.conf import BASE_DIR
-from src.utils.auth import check_cookie
+
 from src.db.db_manager import db_manager
+
+# 全局变量
+active_queues = {}
+
+
+# SSE 流生成器函数
+def sse_stream(status_queue):
+    while True:
+        if not status_queue.empty():
+            msg = status_queue.get()
+            yield f"data: {msg}\n\n"
+        else:
+            # 避免 CPU 占满
+            time.sleep(0.1)
+
+
+# 包装函数：在线程中运行异步函数
+def run_async_function(type, id, status_queue, group_name=None):
+    # 创建登录服务实例
+    login_service = DefaultLoginService()
+
+    match type:
+        case '1':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.xiaohongshu_cookie_gen(id, status_queue, group_name))
+            loop.close()
+        case '2':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.get_tencent_cookie(id, status_queue, group_name))
+            loop.close()
+        case '3':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.douyin_cookie_gen(id, status_queue, group_name))
+            loop.close()
+        case '4':
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.get_ks_cookie(id, status_queue, group_name))
+            loop.close()
 
 
 class LoginService(ABC):
@@ -121,22 +163,22 @@ class DefaultLoginService(LoginService):
 
     async def douyin_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的抖音登录逻辑"""
-        from src.utils.login import douyin_cookie_gen as original_douyin_login
+        from src.services.login_impl import douyin_cookie_gen as original_douyin_login
         return await original_douyin_login(id, status_queue, group_name)
 
     async def get_tencent_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的腾讯视频号登录逻辑"""
-        from src.utils.login import get_tencent_cookie as original_tencent_login
+        from src.services.login_impl import get_tencent_cookie as original_tencent_login
         return await original_tencent_login(id, status_queue, group_name)
 
     async def get_ks_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的快手登录逻辑"""
-        from src.utils.login import get_ks_cookie as original_ks_login
+        from src.services.login_impl import get_ks_cookie as original_ks_login
         return await original_ks_login(id, status_queue, group_name)
 
     async def xiaohongshu_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的小红书登录逻辑"""
-        from src.utils.login import xiaohongshu_cookie_gen as original_xhs_login
+        from src.services.login_impl import xiaohongshu_cookie_gen as original_xhs_login
         return await original_xhs_login(id, status_queue, group_name)
 
 

@@ -2,6 +2,13 @@
 parallel = True
 omit =
     */examples/*
-    src/cli_main.py
     tests/*
     */tests/*
+    src/services/login_impl.py
+    src/uploader/*/main.py
+    src/core/browser.py
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
+    pragma: no cover

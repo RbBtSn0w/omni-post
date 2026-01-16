@@ -63,3 +63,26 @@ class TestPublishRoutes:
     def test_post_video_batch_invalid(self, client):
         res = client.post('/postVideoBatch', json={"not": "list"})
         assert res.status_code == 400
+
+    def test_update_task_success(self, client):
+        """Test PATCH /tasks/<id> with valid status."""
+        with patch('src.routes.publish.task_service.update_task_status') as mock_update:
+            res = client.patch('/tasks/t1', json={'status': 'completed', 'progress': 100})
+            assert res.status_code == 200
+            assert res.json['code'] == 200
+            assert res.json['msg'] == 'Updated'
+            mock_update.assert_called_once_with('t1', 'completed', 100)
+
+    def test_update_task_no_status(self, client):
+        """Test PATCH /tasks/<id> without status returns 400."""
+        res = client.patch('/tasks/t1', json={'progress': 50})
+        assert res.status_code == 400
+        assert res.json['code'] == 400
+        assert 'Status required' in res.json['msg']
+
+    def test_update_task_partial(self, client):
+        """Test PATCH /tasks/<id> with status but no progress."""
+        with patch('src.routes.publish.task_service.update_task_status') as mock_update:
+            res = client.patch('/tasks/t1', json={'status': 'failed'})
+            assert res.status_code == 200
+            mock_update.assert_called_once_with('t1', 'failed', None)

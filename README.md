@@ -54,7 +54,7 @@
 - **Browser Automation**: Playwright
 - **Database**: SQLite
 - **Testing Framework**: pytest + pytest-asyncio
-- **Code Quality**: Black, isort, flake8
+- **Code Quality**: Black, isort, flake8, pylint, radon
 
 ### Frontend
 - **Framework**: Vue 3 + Vite
@@ -70,10 +70,10 @@ This project implements video upload functionality through platform-specific `up
 
 | Platform Name | Uploader Module |
 |--------------|-----------------|
-| Douyin | `src/uploader/douyin_uploader` |
-| WeChat Channels | `src/uploader/tencent_uploader` |
-| Xiaohongshu | `src/uploader/xiaohongshu_uploader` |
-| Kuaishou | `src/uploader/ks_uploader` |
+| Douyin | `src/uploader/douyin_uploader/main.py` |
+| WeChat Channels | `src/uploader/tencent_uploader/main.py` |
+| Xiaohongshu | `src/uploader/xiaohongshu_uploader/main.py` |
+| Kuaishou | `src/uploader/ks_uploader/main.py` |
 
 ## 💾 Installation Guide
 
@@ -144,23 +144,23 @@ omni-post/
 │   ├── backend/                 # Python Flask Backend
 │   │   ├── src/
 │   │   │   ├── app.py          # Flask application entry point
-│   │   │   ├── cli_main.py     # CLI entry point
-│   │   │   ├── routes/         # API endpoints
-│   │   │   ├── services/       # Business logic
+│   │   │   ├── core/           # Core configuration and logging
+│   │   │   ├── routes/         # API endpoints (account, publish, etc.)
+│   │   │   ├── services/       # Business logic (auth, task, publish)
 │   │   │   ├── uploader/       # Platform uploaders
 │   │   │   │   ├── douyin_uploader/
 │   │   │   │   ├── tencent_uploader/
 │   │   │   │   ├── xiaohongshu_uploader/
 │   │   │   │   └── ks_uploader/
 │   │   │   ├── utils/          # Utility functions
-│   │   │   └── db/             # Database models
+│   │   │   └── db/             # Database management
 │   │   ├── tests/              # Backend test suite
 │   │   ├── requirements.txt    # Python dependencies
 │   │   └── pytest.ini          # Pytest configuration
 │   │
 │   └── frontend/               # Vue.js Frontend
 │       ├── src/
-│       │   ├── views/          # Page components
+│       │   ├── views/          # Page components (Dashboard, Publish, etc.)
 │       │   ├── components/     # Reusable components
 │       │   ├── stores/         # Pinia state management
 │       │   ├── api/            # API service layer
@@ -175,8 +175,7 @@ omni-post/
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD
 │       ├── test.yml           # Automated testing
-│       ├── lint-backend.yml   # Backend code quality
-│       └── lint-frontend.yml  # Frontend code quality
+│       └── lint-backend.yml   # Backend code quality
 │
 ├── package.json                # Monorepo root configuration
 ├── ARCHITECTURE.md             # Architecture documentation
@@ -190,20 +189,18 @@ omni-post/
 
 ### Backend Structure
 
-- **routes/**: API endpoint definitions for account management, publishing, and status tracking
-- **services/**: Core business logic including upload orchestration and scheduling
-- **uploader/**: Platform-specific upload implementations using Playwright browser automation
-- **utils/**: Helper functions for authentication, file handling, and network operations
-- **db/**: SQLite database models and schema definitions
+- **routes/**: API endpoint definitions (`account.py`, `publish.py`, `dashboard.py`, `group.py`)
+- **services/**: Business logic layers (`auth_service.py`, `task_service.py`, `publish_service.py`, `login_service.py`)
+- **uploader/**: Platform-specific upload implementations (`main.py` entry points)
+- **utils/**: Network utilities and time helpers
+- **db/**: Database management and table creation
 
 ### Frontend Structure
 
-- **views/**: Main pages (Dashboard, Account Management, Video Publishing)
-- **components/**: Reusable UI components (Forms, Lists, Modals)
-- **stores/**: Pinia stores for state management (auth, videos, accounts)
-- **api/**: Axios-based API client for backend communication
-- **router/**: Vue Router configuration for navigation
-- **composables/**: Reusable Vue 3 composition functions
+- **views/**: Main pages (`Dashboard`, `AccountManagement`, `PublishCenter`, `TaskManagement`, `MaterialManagement`)
+- **components/**: UI components (`GroupSelector`)
+- **stores/**: Pinia stores (`user`, `account`, `task`, `group`, `app`)
+- **api/**: specific API clients (`account.js`, `task.js`, `material.js`, `user.js`)
 
 ## Development & Testing
 

@@ -5,60 +5,9 @@ from playwright.async_api import Playwright, async_playwright
 import os
 import asyncio
 
-from src.conf import LOCAL_CHROME_PATH, LOCAL_CHROME_HEADLESS
-from src.utils.base_social_media import set_init_script
-from src.utils.files_times import get_absolute_path
-from src.utils.log import kuaishou_logger
-
-
-async def cookie_auth(account_file):
-    async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=LOCAL_CHROME_HEADLESS)
-        context = await browser.new_context(storage_state=account_file)
-        context = await set_init_script(context)
-        # 创建一个新的页面
-        page = await context.new_page()
-        # 访问指定的 URL
-        await page.goto("https://cp.kuaishou.com/article/publish/video")
-        try:
-            await page.wait_for_selector("div.names div.container div.name:text('机构服务')", timeout=5000)  # 等待5秒
-
-            kuaishou_logger.info("[+] 等待5秒 cookie 失效")
-            return False
-        except:
-            kuaishou_logger.success("[+] cookie 有效")
-            return True
-
-
-async def ks_setup(account_file, handle=False):
-    account_file = get_absolute_path(account_file, "ks_uploader")
-    if not os.path.exists(account_file) or not await cookie_auth(account_file):
-        if not handle:
-            return False
-        kuaishou_logger.info('[+] cookie文件不存在或已失效，即将自动打开浏览器，请扫码登录，登陆后会自动生成cookie文件')
-        await get_ks_cookie(account_file)
-    return True
-
-
-async def get_ks_cookie(account_file):
-    async with async_playwright() as playwright:
-        options = {
-            'args': [
-                '--lang en-GB'
-            ],
-            'headless': LOCAL_CHROME_HEADLESS,  # Set headless option here
-        }
-        # Make sure to run headed.
-        browser = await playwright.chromium.launch(**options)
-        # Setup context however you like.
-        context = await browser.new_context()  # Pass any options
-        context = await set_init_script(context)
-        # Pause the page, and start recording manually.
-        page = await context.new_page()
-        await page.goto("https://cp.kuaishou.com")
-        await page.pause()
-        # 点击调试器的继续，保存cookie
-        await context.storage_state(path=account_file)
+from src.core.config import LOCAL_CHROME_HEADLESS, DEBUG_MODE
+from src.core.browser import set_init_script, launch_browser
+from src.core.logger import kuaishou_logger
 
 
 class KSVideo(object):
@@ -69,7 +18,6 @@ class KSVideo(object):
         self.publish_date = publish_date
         self.account_file = account_file
         self.date_format = '%Y-%m-%d %H:%M'
-        self.local_executable_path = LOCAL_CHROME_PATH
         self.headless = LOCAL_CHROME_HEADLESS
 
     async def handle_upload_error(self, page):
@@ -77,135 +25,127 @@ class KSVideo(object):
         await page.locator('div.progress-div [class^="upload-btn-input"]').set_input_files(self.file_path)
 
     async def upload(self, playwright: Playwright) -> None:
-        # 使用 Chromium 浏览器启动一个浏览器实例
-        print(self.local_executable_path)
-        # 添加启动参数以确保 headless 模式正常工作
-        launch_args = [
-            '--disable-blink-features=AutomationControlled',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-        ]
-        if self.local_executable_path:
-            browser = await playwright.chromium.launch(
-                headless=self.headless,
-                executable_path=self.local_executable_path,
-                args=launch_args
+        """
+        Upload video to Kuaishou Creator Platform.
+
+        Uses try...finally to ensure browser resources are always released.
+        """
+        browser = None
+        context = None
+
+        try:
+            # 使用统一的浏览器启动函数
+            browser = await launch_browser(playwright, headless=self.headless)
+
+            # 创建浏览器上下文
+            context = await browser.new_context(
+                storage_state=f"{self.account_file}",
+                viewport={'width': 1920, 'height': 1080}
             )
-        else:
-            browser = await playwright.chromium.launch(
-                headless=self.headless,
-                args=launch_args
-            )
-        # 创建一个浏览器上下文，使用指定的 cookie 文件
-        # 添加 viewport 和 user-agent 设置以确保页面正确渲染
-        context = await browser.new_context(
-            storage_state=f"{self.account_file}",
-            viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
-        context = await set_init_script(context)
-        # 创建一个新的页面
-        page = await context.new_page()
-        # 访问指定的 URL
-        await page.goto("https://cp.kuaishou.com/article/publish/video", wait_until='networkidle')
-        kuaishou_logger.info('正在上传-------{}.mp4'.format(self.title))
-        # 等待页面跳转到指定的 URL，没进入，则自动等待到超时
-        kuaishou_logger.info('正在打开主页...')
-        await page.wait_for_url("https://cp.kuaishou.com/article/publish/video")
-        # 点击 "上传视频" 按钮
-        upload_button = page.locator("button[class^='_upload-btn']")
-        await upload_button.wait_for(state='visible')  # 确保按钮可见
+            context = await set_init_script(context)
 
-        async with page.expect_file_chooser() as fc_info:
-            await upload_button.click()
-        file_chooser = await fc_info.value
-        await file_chooser.set_files(self.file_path)
+            # 创建一个新的页面
+            page = await context.new_page()
+            # 访问指定的 URL
+            await page.goto("https://cp.kuaishou.com/article/publish/video", wait_until='domcontentloaded')
+            kuaishou_logger.info('正在上传-------{}.mp4'.format(self.title))
+            kuaishou_logger.info('正在打开主页...')
 
-        await asyncio.sleep(2)
+            # 点击 "上传视频" 按钮
+            upload_button = page.locator("button[class^='_upload-btn']")
+            await upload_button.wait_for(state='visible')
 
-        # if not await page.get_by_text("封面编辑").count():
-        #     raise Exception("似乎没有跳转到到编辑页面")
+            async with page.expect_file_chooser() as fc_info:
+                await upload_button.click()
+            file_chooser = await fc_info.value
+            await file_chooser.set_files(self.file_path)
 
-        await asyncio.sleep(1)
-
-        # 等待按钮可交互
-        new_feature_button = page.locator('button[type="button"] span:text("我知道了")')
-        if await new_feature_button.count() > 0:
-            await new_feature_button.click()
-
-        kuaishou_logger.info("正在填充标题和话题...")
-        await page.get_by_text("描述").locator("xpath=following-sibling::div").click()
-        kuaishou_logger.info("clear existing title")
-        await page.keyboard.press("Backspace")
-        await page.keyboard.press("Control+KeyA")
-        await page.keyboard.press("Delete")
-        kuaishou_logger.info("filling new  title")
-        await page.keyboard.type(self.title)
-        await page.keyboard.press("Enter")
-
-        # 快手只能添加3个话题
-        for index, tag in enumerate(self.tags[:3], start=1):
-            kuaishou_logger.info("正在添加第%s个话题" % index)
-            await page.keyboard.type(f"#{tag} ")
             await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
-        max_retries = 60  # 设置最大重试次数,最大等待时间为 2 分钟
-        retry_count = 0
+            # 等待按钮可交互
+            new_feature_button = page.locator('button[type="button"] span:text("我知道了")')
+            if await new_feature_button.count() > 0:
+                await new_feature_button.click()
 
-        while retry_count < max_retries:
-            try:
-                # 获取包含 '上传中' 文本的元素数量
-                number = await page.locator("text=上传中").count()
+            kuaishou_logger.info("正在填充标题和话题...")
+            await page.get_by_text("描述").locator("xpath=following-sibling::div").click()
+            kuaishou_logger.info("clear existing title")
+            await page.keyboard.press("Backspace")
+            await page.keyboard.press("Control+KeyA")
+            await page.keyboard.press("Delete")
+            kuaishou_logger.info("filling new  title")
+            await page.keyboard.type(self.title)
+            await page.keyboard.press("Enter")
 
-                if number == 0:
-                    kuaishou_logger.success("视频上传完毕")
-                    break
-                else:
-                    if retry_count % 5 == 0:
-                        kuaishou_logger.info("正在上传视频中...")
+            # 快手只能添加3个话题
+            for index, tag in enumerate(self.tags[:3], start=1):
+                kuaishou_logger.info("正在添加第%s个话题" % index)
+                await page.keyboard.type(f"#{tag} ")
+                await asyncio.sleep(2)
+
+            max_retries = 60
+            retry_count = 0
+
+            while retry_count < max_retries:
+                try:
+                    number = await page.locator("text=上传中").count()
+                    if number == 0:
+                        kuaishou_logger.success("视频上传完毕")
+                        break
+                    else:
+                        if retry_count % 5 == 0:
+                            kuaishou_logger.info("正在上传视频中...")
+                        await asyncio.sleep(2)
+                except Exception as e:
+                    kuaishou_logger.error(f"检查上传状态时发生错误: {e}")
                     await asyncio.sleep(2)
-            except Exception as e:
-                kuaishou_logger.error(f"检查上传状态时发生错误: {e}")
-                await asyncio.sleep(2)  # 等待 2 秒后重试
-            retry_count += 1
+                retry_count += 1
 
-        if retry_count == max_retries:
-            kuaishou_logger.warning("超过最大重试次数，视频上传可能未完成。")
+            if retry_count == max_retries:
+                kuaishou_logger.warning("超过最大重试次数，视频上传可能未完成。")
 
-        # 定时任务
-        if self.publish_date != 0:
-            await self.set_schedule_time(page, self.publish_date)
+            # 定时任务
+            if self.publish_date != 0:
+                await self.set_schedule_time(page, self.publish_date)
 
-        # 判断视频是否发布成功
-        while True:
-            try:
-                publish_button = page.get_by_text("发布", exact=True)
-                if await publish_button.count() > 0:
-                    await publish_button.click()
+            # 判断视频是否发布成功
+            while True:
+                try:
+                    publish_button = page.get_by_text("发布", exact=True)
+                    if await publish_button.count() > 0:
+                        await publish_button.click()
 
-                await asyncio.sleep(1)
-                confirm_button = page.get_by_text("确认发布")
-                if await confirm_button.count() > 0:
-                    await confirm_button.click()
+                    await asyncio.sleep(1)
+                    confirm_button = page.get_by_text("确认发布")
+                    if await confirm_button.count() > 0:
+                        await confirm_button.click()
 
-                # 等待页面跳转，确认发布成功
-                await page.wait_for_url(
-                    "https://cp.kuaishou.com/article/manage/video?status=2&from=publish",
-                    timeout=5000,
-                )
-                kuaishou_logger.success("视频发布成功")
-                break
-            except Exception as e:
-                kuaishou_logger.info(f"视频正在发布中... 错误: {e}")
-                await page.screenshot(full_page=True)
-                await asyncio.sleep(1)
+                    await page.wait_for_url(
+                        "https://cp.kuaishou.com/article/manage/video?status=2&from=publish",
+                        timeout=5000,
+                    )
+                    kuaishou_logger.success("视频发布成功")
+                    break
+                except Exception as e:
+                    kuaishou_logger.info(f"视频正在发布中... 错误: {e}")
+                    await page.screenshot(full_page=True)
+                    await asyncio.sleep(1)
 
-        await context.storage_state(path=self.account_file)  # 保存cookie
-        kuaishou_logger.info('cookie更新完毕！')
-        await asyncio.sleep(2)  # 这里延迟是为了方便眼睛直观的观看
-        # 关闭浏览器上下文和浏览器实例
-        await context.close()
-        await browser.close()
+            await context.storage_state(path=self.account_file)
+            kuaishou_logger.info('cookie更新完毕！')
+
+            if DEBUG_MODE:
+                await asyncio.sleep(2)
+
+        except Exception as e:
+            kuaishou_logger.error(f"上传过程中发生异常: {e}")
+            raise
+        finally:
+            if context:
+                await context.close()
+            if browser:
+                await browser.close()
 
     async def main(self):
         async with async_playwright() as playwright:

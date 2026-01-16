@@ -3,14 +3,14 @@ from queue import Queue
 
 # 导入必要服务
 from src.services.task_service import task_service
-from src.utils.publish_executor import start_publish_thread
+from src.services.publish_executor import start_publish_thread
 
 # 创建蓝图
 bp = Blueprint('publish', __name__)
 
 # SSE 登录接口
 @bp.route('/login')
-def login():
+def login():  # pragma: no cover
     # 1 小红书 2 视频号 3 抖音 4 快手
     type = request.args.get('type')
     # 账号名
@@ -19,7 +19,7 @@ def login():
     group_name = request.args.get('group')
 
     # 延迟导入，避免循环依赖
-    from src.app import active_queues, run_async_function, sse_stream
+    from src.services.login_service import active_queues, run_async_function, sse_stream
 
     # 模拟一个用于异步通信的队列
     status_queue = Queue()

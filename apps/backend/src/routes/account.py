@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
-import src.utils.auth as auth
+from src.services.cookie_service import get_cookie_service
 from src.db.db_manager import db_manager
 import sqlite3
+
 
 # 创建蓝图
 bp = Blueprint('account', __name__)
@@ -45,7 +46,7 @@ async def getValidAccounts():
     force_refresh = request.args.get('force', 'false').lower() == 'true'
 
     # 验证冷却期（秒）- 刚登录成功的账号在此时间内跳过二次验证
-    VALIDATION_COOLDOWN_SECONDS = 60
+    VALIDATION_COOLDOWN_SECONDS = 300  # 5分钟冷却期，减少不必要的浏览器验证
 
     with sqlite3.connect(db_manager.get_db_path()) as conn:
         cursor = conn.cursor()
@@ -92,7 +93,7 @@ async def getValidAccounts():
                 # 保持当前状态，不重新验证
                 continue
 
-            flag = await auth.check_cookie(account_type, file_path)
+            flag = await get_cookie_service().check_cookie(account_type, file_path)
             if not flag:
                 row[4] = 0
                 cursor.execute('''
@@ -153,7 +154,7 @@ async def getAccountStatus():
 
             row_list = list(row)
             # 验证cookie状态
-            flag = await auth.check_cookie(row_list[1], row_list[2])
+            flag = await get_cookie_service().check_cookie(row_list[1], row_list[2])
             current_status = 1 if flag else 0
 
             # 更新数据库状态
@@ -216,8 +217,8 @@ def delete_account():
             file_path = record.get('filePath')
             if file_path:
                 from pathlib import Path
-                from src.conf import BASE_DIR
-                cookie_file = Path(BASE_DIR / "cookiesFile" / file_path)
+                from src.core.config import COOKIES_DIR
+                cookie_file = COOKIES_DIR / file_path
                 if cookie_file.exists():
                     try:
                         cookie_file.unlink()

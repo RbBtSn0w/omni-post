@@ -31,18 +31,24 @@ jobs:
 
         if [ -z "$LAST_TAG" ]; then
           # 如果没有标签，获取所有提交
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "## 📝 变更日志" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          git log --pretty=format:"- %s (%h)" | head -20 >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            echo "## 📝 变更日志"
+            echo ""
+            git log --pretty=format:"- %s (%h)" | head -20
+            echo ""
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
         else
           # 获取上一个标签之后的提交
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "## 📝 变更日志 (从 $LAST_TAG 开始)" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            echo "## 📝 变更日志 (从 $LAST_TAG 开始)"
+            echo ""
+            git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)"
+            echo ""
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
         fi
 
     - name: Display changelog

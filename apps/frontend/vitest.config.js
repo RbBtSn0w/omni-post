@@ -35,15 +35,15 @@ export default defineConfig({
         lines: 80
       },
       reportOnFailure: true,
-      failOnError: false
+      failOnError: true
     },
     reporters: [
       'default',
-      ['junit', { 
+      ['junit', {
         outputFile: './test-results/reports/test-results.xml',
         includeConsoleOutput: true
       }],
-      ['json', { 
+      ['json', {
         outputFile: './test-results/reports/test-results.json'
       }]
     ]

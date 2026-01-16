@@ -51,6 +51,7 @@
 - **浏览器自动化**: Playwright
 - **数据库**: SQLite
 - **测试框架**: pytest + pytest-asyncio
+- **代码质量**: Black, isort, flake8, pylint, radon
 
 ### 前端
 - **框架**: Vue 3 + Vite
@@ -65,10 +66,10 @@
 
 | 平台名称 | 上传器模块 |
 |---------|------------|
-| 抖音 | `src/uploader/douyin_uploader` |
-| 视频号 | `src/uploader/tencent_uploader` |
-| 小红书 | `src/uploader/xiaohongshu_uploader` |
-| 快手 | `src/uploader/ks_uploader` |
+| 抖音 | `src/uploader/douyin_uploader/main.py` |
+| 视频号 | `src/uploader/tencent_uploader/main.py` |
+| 小红书 | `src/uploader/xiaohongshu_uploader/main.py` |
+| 快手 | `src/uploader/ks_uploader/main.py` |
 
 ## 💾 安装指南
 
@@ -138,20 +139,24 @@ omni-post/
 │   ├── backend/                 # Python Flask 后端
 │   │   ├── src/
 │   │   │   ├── app.py          # Flask 应用入口
-│   │   │   ├── cli_main.py     # CLI 入口
-│   │   │   ├── routes/         # API 路由
-│   │   │   ├── services/       # 业务逻辑
+│   │   │   ├── core/           # 核心配置与日志
+│   │   │   ├── routes/         # API 路由 (account, publish 等)
+│   │   │   ├── services/       # 业务逻辑 (auth, task, publish)
 │   │   │   ├── uploader/       # 平台上传器
+│   │   │   │   ├── douyin_uploader/
+│   │   │   │   ├── tencent_uploader/
+│   │   │   │   ├── xiaohongshu_uploader/
+│   │   │   │   └── ks_uploader/
 │   │   │   ├── utils/          # 工具函数
-│   │   │   └── db/             # 数据库模型
+│   │   │   └── db/             # 数据库管理
 │   │   └── tests/              # 后端测试
 │   │
 │   └── frontend/               # Vue.js 前端
 │       ├── src/
-│       │   ├── views/          # 页面组件
+│       │   ├── views/          # 页面组件 (Dashboard, PublishCenter 等)
 │       │   ├── components/     # 公共组件
 │       │   ├── stores/         # Pinia 状态管理
-│       │   ├── api/            # API 调用
+│       │   ├── api/            # API 调用层
 │       │   └── router/         # 路由配置
 │       └── tests/              # 前端测试
 │
