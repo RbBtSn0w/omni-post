@@ -64,20 +64,28 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Run pip-audit and save results
-        pip-audit --format json --output audit_report.json --progress-spinner=off || true
-        pip-audit --format markdown >> $GITHUB_STEP_SUMMARY || echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        # Check if there are vulnerabilities
-        if [ -s audit_report.json ]; then
-          vuln_count=$(jq '[.dependencies[] | select(.vulns | length > 0)] | length' audit_report.json 2>/dev/null || echo "0")
-          if [ "$vuln_count" -gt "0" ]; then
-            echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
-            echo "VULN_COUNT=$vuln_count" >> $GITHUB_OUTPUT
+        if pip-audit --format json --output audit_report.json --progress-spinner=off 2>&1; then
+          echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+        else
+          # Vulnerabilities found or error occurred
+          if [ -s audit_report.json ] && jq empty audit_report.json 2>/dev/null; then
+            # Valid JSON exists, show markdown output
+            pip-audit --format markdown >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Count packages with vulnerabilities
+            vuln_count=$(jq '[.dependencies[] | select(.vulns | length > 0)] | length' audit_report.json 2>/dev/null || echo "0")
+            if [ "$vuln_count" -gt "0" ]; then
+              echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
+              echo "VULN_COUNT=$vuln_count" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            echo "⚠️ Error running pip-audit or invalid output" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
         fi
-        echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
 
     - name: Upload Python report
       if: always()
@@ -113,23 +121,27 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Only check production dependencies for high and critical vulnerabilities
-        npm audit --audit-level=high --production --json > npm_audit.json || true
-        
-        if [ -s npm_audit.json ]; then
-          high=$(jq '.metadata.vulnerabilities.high // 0' npm_audit.json)
-          critical=$(jq '.metadata.vulnerabilities.critical // 0' npm_audit.json)
-          
-          if [ "$high" -gt "0" ] || [ "$critical" -gt "0" ]; then
-            echo "⚠️ Found $critical critical and $high high severity vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            npm audit --audit-level=high --production >> $GITHUB_STEP_SUMMARY
-            echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
-            exit 1
+        if npm audit --audit-level=high --production --json > npm_audit.json 2>&1; then
+          echo "✅ No high or critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+        else
+          # Vulnerabilities found or error occurred
+          if [ -s npm_audit.json ] && jq empty npm_audit.json 2>/dev/null; then
+            # Valid JSON, parse vulnerability counts
+            high=$(jq '.metadata.vulnerabilities.high // 0' npm_audit.json 2>/dev/null || echo "0")
+            critical=$(jq '.metadata.vulnerabilities.critical // 0' npm_audit.json 2>/dev/null || echo "0")
+            
+            if [ "$high" -gt "0" ] || [ "$critical" -gt "0" ]; then
+              echo "⚠️ Found $critical critical and $high high severity vulnerabilities" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              npm audit --audit-level=high --production >> $GITHUB_STEP_SUMMARY 2>&1 || true
+              echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            echo "⚠️ Error running npm audit or no valid JSON output" >> $GITHUB_STEP_SUMMARY
           fi
         fi
-        
-        echo "✅ No high or critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-        echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
 
   critical-updates:
     name: Check Critical Dependencies
