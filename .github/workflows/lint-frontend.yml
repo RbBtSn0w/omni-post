@@ -9,11 +9,15 @@ on:
     branches: [ main, develop ]
     paths:
       - 'apps/frontend/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/lint-frontend.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'apps/frontend/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/lint-frontend.yml'
 
 permissions:
@@ -33,23 +37,20 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
-        cache-dependency-path: apps/frontend/package-lock.json
+        cache-dependency-path: package-lock.json
 
-    - name: Install frontend dependencies
-      working-directory: apps/frontend
+    - name: Install dependencies (monorepo)
       run: npm ci
 
     - name: Run ESLint
       id: eslint
-      working-directory: apps/frontend
-      run: npm run lint
+      run: npm run lint:frontend
       continue-on-error: true
 
     - name: Check for Vue build errors
       id: vue-build
-      working-directory: apps/frontend
       run: |
-        npm run build 2>&1 | tee build-output.txt
+        npm run build -w apps/frontend 2>&1 | tee build-output.txt
         if grep -qi "error" build-output.txt; then
           echo "::warning::Build contained errors"
           exit 1

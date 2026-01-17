@@ -11,14 +11,16 @@ on:
       - 'apps/backend/pyproject.toml'
       - 'apps/backend/requirements.txt'
       - 'apps/frontend/package.json'
-      - 'apps/frontend/package-lock.json'
+      - 'package.json'
+      - 'package-lock.json'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'apps/backend/pyproject.toml'
       - 'apps/backend/requirements.txt'
       - 'apps/frontend/package.json'
-      - 'apps/frontend/package-lock.json'
+      - 'package.json'
+      - 'package-lock.json'
   schedule:
     - cron: '0 0 * * 0'  # Weekly on Sunday
 
@@ -86,15 +88,13 @@ jobs:
       with:
         node-version: 18.x
         cache: 'npm'
-        cache-dependency-path: apps/frontend/package-lock.json
+        cache-dependency-path: package-lock.json
 
-    - name: Install dependencies
-      working-directory: apps/frontend
+    - name: Install dependencies (monorepo)
       run: npm ci
 
     - name: Run npm audit
       id: npm-audit
-      working-directory: apps/frontend
       run: |
         echo "## 📦 NPM Security Audit" >> $GITHUB_STEP_SUMMARY
         if npm audit --audit-level=moderate 2>&1 | tee audit-output.txt; then
@@ -106,7 +106,6 @@ jobs:
       continue-on-error: true
 
     - name: Check for deprecated packages
-      working-directory: apps/frontend
       run: |
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## 📋 Outdated Packages" >> $GITHUB_STEP_SUMMARY

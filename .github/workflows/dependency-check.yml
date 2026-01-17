@@ -85,40 +85,18 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
+        cache-dependency-path: package-lock.json
 
-    - name: Install root dependencies
+    - name: Install dependencies (monorepo)
       run: npm ci
 
-    - name: Audit root dependencies
-      id: root-audit
+    - name: Audit all dependencies
+      id: audit
       run: |
-        echo "=== Root Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
+        echo "=== NPM Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
         npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
-        npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
-
-    - name: Install frontend dependencies
-      working-directory: apps/frontend
-      run: npm ci
-
-    - name: Audit frontend dependencies
-      id: frontend-audit
-      working-directory: apps/frontend
-      run: |
-        echo "=== Frontend Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
-        npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
-        npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
-
-    - name: Install backend npm dependencies
-      working-directory: apps/backend
-      run: npm ci
-
-    - name: Audit backend npm dependencies
-      id: backend-npm-audit
-      working-directory: apps/backend
-      run: |
-        echo "=== Backend NPM Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
-        npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "=== Outdated Packages ===" >> $GITHUB_STEP_SUMMARY
         npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
 
   critical-updates:
@@ -161,11 +139,10 @@ jobs:
         " >> $GITHUB_STEP_SUMMARY
 
     - name: Check Vue version
-      working-directory: apps/frontend
       run: |
-        if [ -f "package.json" ]; then
+        if [ -f "apps/frontend/package.json" ]; then
           echo "📦 Frontend Dependencies:" >> $GITHUB_STEP_SUMMARY
-          grep -E '"vue"|"vite"|"@vitejs"' package.json >> $GITHUB_STEP_SUMMARY || true
+          grep -E '"vue"|"vite"|"@vitejs"' apps/frontend/package.json >> $GITHUB_STEP_SUMMARY || true
         fi
 
   create-issue:
@@ -202,7 +179,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "✅ **Checks Performed:**" >> $GITHUB_STEP_SUMMARY
         echo "- Python dependencies audit" >> $GITHUB_STEP_SUMMARY
-        echo "- NPM dependencies audit (root, frontend, backend)" >> $GITHUB_STEP_SUMMARY
+        echo "- NPM dependencies audit (monorepo)" >> $GITHUB_STEP_SUMMARY
         echo "- Critical dependencies version check" >> $GITHUB_STEP_SUMMARY
         echo "- Security vulnerability scan" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
