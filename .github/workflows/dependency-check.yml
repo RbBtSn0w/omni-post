@@ -1,0 +1,199 @@
+name: Dependency Security Check
+
+on:
+  schedule:
+    # 每周一上午 9:00 UTC 运行 (北京时间 17:00)
+    - cron: '0 9 * * 1'
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  python-dependencies:
+    name: Python Dependencies Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Upgrade pip
+      run: python -m pip install --upgrade pip
+
+    - name: Install backend dependencies
+      working-directory: ./apps/backend
+      run: |
+        pip install -r requirements.txt
+        pip install safety
+
+    - name: Check for outdated packages
+      id: outdated
+      working-directory: ./apps/backend
+      run: |
+        echo "=== Outdated Python Packages ===" >> $GITHUB_STEP_SUMMARY
+        pip list --outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+    - name: Run safety check
+      id: safety
+      working-directory: ./apps/backend
+      run: |
+        echo "=== Python Security Check ===" >> $GITHUB_STEP_SUMMARY
+        safety check --json > safety_report.json || true
+        if grep -q "vulnerabilities" safety_report.json; then
+          echo "⚠️ Security vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+          cat safety_report.json >> $GITHUB_STEP_SUMMARY
+          exit 1
+        else
+          echo "✅ No security vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Upload Python report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-dependency-report
+        path: apps/backend/safety_report.json
+        retention-days: 30
+
+  npm-dependencies:
+    name: NPM Dependencies Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: Install root dependencies
+      run: npm ci
+
+    - name: Audit root dependencies
+      id: root-audit
+      run: |
+        echo "=== Root Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
+        npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
+
+    - name: Install frontend dependencies
+      working-directory: ./apps/frontend
+      run: npm ci
+
+    - name: Audit frontend dependencies
+      id: frontend-audit
+      working-directory: ./apps/frontend
+      run: |
+        echo "=== Frontend Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
+        npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
+
+    - name: Install backend npm dependencies
+      working-directory: ./apps/backend
+      run: npm ci
+
+    - name: Audit backend npm dependencies
+      id: backend-npm-audit
+      working-directory: ./apps/backend
+      run: |
+        echo "=== Backend NPM Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
+        npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
+
+  critical-updates:
+    name: Check Critical Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Check Playwright version
+      working-directory: ./apps/backend
+      run: |
+        python -c "
+        import pkg_resources
+        try:
+          playwright_version = pkg_resources.get_distribution('playwright').version
+          print(f'📦 Current Playwright version: {playwright_version}')
+          print('⚠️ Note: Playwright requires regular updates to support browser versions')
+        except:
+          print('⚠️ Playwright not installed')
+        " >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Flask version
+      working-directory: ./apps/backend
+      run: |
+        python -c "
+        import pkg_resources
+        try:
+          flask_version = pkg_resources.get_distribution('flask').version
+          print(f'📦 Current Flask version: {flask_version}')
+        except:
+          print('⚠️ Flask not installed')
+        " >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Vue version
+      working-directory: ./apps/frontend
+      run: |
+        if [ -f "package.json" ]; then
+          echo "📦 Frontend Dependencies:" >> $GITHUB_STEP_SUMMARY
+          grep -E '"vue"|"vite"|"@vitejs"' package.json >> $GITHUB_STEP_SUMMARY || true
+        fi
+
+  create-issue:
+    name: Create Issue if Vulnerabilities Found
+    runs-on: ubuntu-latest
+    needs: [python-dependencies, npm-dependencies]
+    if: failure()
+
+    steps:
+    - name: Create issue for vulnerabilities
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 Dependency Vulnerabilities Detected',
+            body: 'Security Alert: Automated dependency check has detected security vulnerabilities or critical updates.\n\nAction Required:\n- Review the workflow run details\n- Check the uploaded dependency reports\n- Address vulnerabilities with priority\n\nCritical Dependencies to Monitor:\n- Playwright - Browser automation core\n- Flask - Web framework\n- Vue 3 - Frontend framework\n- SQLite3 - Database driver\n\nNote: This is an automated check. Review carefully before updating.',
+            labels: ['🔒 security', '📦 dependencies', 'automated']
+          })
+
+  summary:
+    name: Generate Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [python-dependencies, npm-dependencies, critical-updates]
+
+    steps:
+    - name: Print Summary
+      run: |
+        echo "## 📋 Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Checks Performed:**" >> $GITHUB_STEP_SUMMARY
+        echo "- Python dependencies audit" >> $GITHUB_STEP_SUMMARY
+        echo "- NPM dependencies audit (root, frontend, backend)" >> $GITHUB_STEP_SUMMARY
+        echo "- Critical dependencies version check" >> $GITHUB_STEP_SUMMARY
+        echo "- Security vulnerability scan" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📌 **Next Steps:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Review the uploaded dependency reports" >> $GITHUB_STEP_SUMMARY
+        echo "2. Check for critical security updates" >> $GITHUB_STEP_SUMMARY
+        echo "3. Create PRs for outdated dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "4. Test thoroughly before merging" >> $GITHUB_STEP_SUMMARY
