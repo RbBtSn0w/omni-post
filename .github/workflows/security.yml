@@ -1,5 +1,9 @@
 name: Security Check
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, develop ]
@@ -18,39 +22,61 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly on Sunday
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   python-security:
     name: Python Dependencies Security
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
+        cache-dependency-path: apps/backend/pyproject.toml
 
     - name: Install safety tool
       run: |
         pip install safety bandit
 
     - name: Check for known vulnerabilities
+      id: safety
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         pip install -e .
-        safety check --json || true
+        echo "## 🔒 Python Security Check" >> $GITHUB_STEP_SUMMARY
+        if safety check --json > safety-report.json 2>&1; then
+          echo "✅ No known vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Potential vulnerabilities detected (see details below)" >> $GITHUB_STEP_SUMMARY
+          cat safety-report.json >> $GITHUB_STEP_SUMMARY
+        fi
       continue-on-error: true
 
     - name: Run Bandit security checks
+      id: bandit
+      working-directory: apps/backend
       run: |
-        cd apps/backend
-        bandit -r src/ -f json -o /tmp/bandit-report.json || true
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 🛡️ Bandit Security Analysis" >> $GITHUB_STEP_SUMMARY
+        if bandit -r src/ -f json -o bandit-report.json 2>&1; then
+          echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Security issues detected" >> $GITHUB_STEP_SUMMARY
+        fi
       continue-on-error: true
 
   npm-security:
     name: npm Dependencies Security
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
@@ -59,15 +85,30 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
+        cache: 'npm'
+        cache-dependency-path: apps/frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: apps/frontend
+      run: npm ci
 
     - name: Run npm audit
+      id: npm-audit
+      working-directory: apps/frontend
       run: |
-        cd apps/frontend
-        npm audit --audit-level=moderate || true
+        echo "## 📦 NPM Security Audit" >> $GITHUB_STEP_SUMMARY
+        if npm audit --audit-level=moderate 2>&1 | tee audit-output.txt; then
+          echo "✅ No moderate or higher vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Vulnerabilities detected" >> $GITHUB_STEP_SUMMARY
+          cat audit-output.txt >> $GITHUB_STEP_SUMMARY
+        fi
       continue-on-error: true
 
     - name: Check for deprecated packages
+      working-directory: apps/frontend
       run: |
-        cd apps/frontend
-        npm outdated || true
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Outdated Packages" >> $GITHUB_STEP_SUMMARY
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "All packages are up to date" >> $GITHUB_STEP_SUMMARY
       continue-on-error: true

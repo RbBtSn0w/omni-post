@@ -1,5 +1,9 @@
 name: Changelog Generator
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main ]
@@ -12,6 +16,7 @@ jobs:
   generate-changelog:
     name: Generate Changelog
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.ref == 'refs/heads/main'
 
     permissions:
@@ -26,24 +31,24 @@ jobs:
     - name: Generate changelog
       id: changelog
       run: |
-        # 获取最后一条标签（如果存在）
+        # Get the last tag (if exists)
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
         if [ -z "$LAST_TAG" ]; then
-          # 如果没有标签，获取所有提交
+          # If no tag exists, get all commits
           {
             echo "changelog<<EOF"
-            echo "## 📝 变更日志"
+            echo "## 📝 Changelog"
             echo ""
             git log --pretty=format:"- %s (%h)" | head -20
             echo ""
             echo "EOF"
           } >> $GITHUB_OUTPUT
         else
-          # 获取上一个标签之后的提交
+          # Get commits since last tag
           {
             echo "changelog<<EOF"
-            echo "## 📝 变更日志 (从 $LAST_TAG 开始)"
+            echo "## 📝 Changelog (since $LAST_TAG)"
             echo ""
             git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)"
             echo ""

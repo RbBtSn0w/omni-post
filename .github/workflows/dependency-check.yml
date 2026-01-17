@@ -1,39 +1,49 @@
 name: Dependency Security Check
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   schedule:
-    # 每周一上午 9:00 UTC 运行 (北京时间 17:00)
+    # Weekly on Monday at 9:00 UTC (17:00 Beijing Time)
     - cron: '0 9 * * 1'
-  # 允许手动触发
+  # Allow manual trigger
   workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   python-dependencies:
     name: Python Dependencies Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         cache: 'pip'
+        cache-dependency-path: apps/backend/pyproject.toml
 
     - name: Upgrade pip
       run: python -m pip install --upgrade pip
 
     - name: Install backend dependencies
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         pip install -r requirements.txt
         pip install safety
 
     - name: Check for outdated packages
       id: outdated
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         echo "=== Outdated Python Packages ===" >> $GITHUB_STEP_SUMMARY
         pip list --outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
@@ -41,7 +51,7 @@ jobs:
 
     - name: Run safety check
       id: safety
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         echo "=== Python Security Check ===" >> $GITHUB_STEP_SUMMARY
         safety check --json > safety_report.json || true
@@ -64,6 +74,7 @@ jobs:
   npm-dependencies:
     name: NPM Dependencies Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
     - name: Checkout code
@@ -74,6 +85,7 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
 
     - name: Install root dependencies
       run: npm ci
@@ -86,24 +98,24 @@ jobs:
         npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
 
     - name: Install frontend dependencies
-      working-directory: ./apps/frontend
+      working-directory: apps/frontend
       run: npm ci
 
     - name: Audit frontend dependencies
       id: frontend-audit
-      working-directory: ./apps/frontend
+      working-directory: apps/frontend
       run: |
         echo "=== Frontend Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
         npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
         npm outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
 
     - name: Install backend npm dependencies
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: npm ci
 
     - name: Audit backend npm dependencies
       id: backend-npm-audit
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         echo "=== Backend NPM Dependencies Audit ===" >> $GITHUB_STEP_SUMMARY
         npm audit --audit-level=moderate 2>&1 >> $GITHUB_STEP_SUMMARY || true
@@ -112,18 +124,19 @@ jobs:
   critical-updates:
     name: Check Critical Dependencies
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
     - name: Check Playwright version
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         python -c "
         import pkg_resources
@@ -136,7 +149,7 @@ jobs:
         " >> $GITHUB_STEP_SUMMARY
 
     - name: Check Flask version
-      working-directory: ./apps/backend
+      working-directory: apps/backend
       run: |
         python -c "
         import pkg_resources
@@ -148,7 +161,7 @@ jobs:
         " >> $GITHUB_STEP_SUMMARY
 
     - name: Check Vue version
-      working-directory: ./apps/frontend
+      working-directory: apps/frontend
       run: |
         if [ -f "package.json" ]; then
           echo "📦 Frontend Dependencies:" >> $GITHUB_STEP_SUMMARY
@@ -178,6 +191,7 @@ jobs:
   summary:
     name: Generate Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     needs: [python-dependencies, npm-dependencies, critical-updates]
 

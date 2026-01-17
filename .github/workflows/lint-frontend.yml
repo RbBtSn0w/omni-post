@@ -1,5 +1,9 @@
 name: Frontend Lint
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, develop ]
@@ -12,10 +16,14 @@ on:
       - 'apps/frontend/**'
       - '.github/workflows/lint-frontend.yml'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: JavaScript/Vue Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
@@ -24,25 +32,44 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
+        cache: 'npm'
+        cache-dependency-path: apps/frontend/package-lock.json
 
     - name: Install frontend dependencies
-      run: |
-        cd apps/frontend
-        npm install
+      working-directory: apps/frontend
+      run: npm ci
 
     - name: Run ESLint
-      run: |
-        cd apps/frontend
-        npm run lint
+      id: eslint
+      working-directory: apps/frontend
+      run: npm run lint
       continue-on-error: true
 
-    - name: Check for Vue issues
+    - name: Check for Vue build errors
+      id: vue-build
+      working-directory: apps/frontend
       run: |
-        cd apps/frontend
-        npm run build 2>&1 | grep -i error || echo "No errors detected"
+        npm run build 2>&1 | tee build-output.txt
+        if grep -qi "error" build-output.txt; then
+          echo "::warning::Build contained errors"
+          exit 1
+        fi
       continue-on-error: true
 
-    - name: Report lint results
+    - name: Summarize lint results
       if: always()
       run: |
-        echo "Frontend lint checks completed. Review the results above."
+        echo "## 📋 Frontend Lint Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.eslint.outcome }}" == "failure" ]; then
+          echo "❌ **ESLint**: Issues detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **ESLint**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ "${{ steps.vue-build.outcome }}" == "failure" ]; then
+          echo "❌ **Vue Build**: Errors detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Vue Build**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Review the step outputs above for details." >> $GITHUB_STEP_SUMMARY

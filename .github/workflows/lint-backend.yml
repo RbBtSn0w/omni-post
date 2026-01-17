@@ -1,5 +1,9 @@
 name: Backend Lint
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, develop ]
@@ -12,18 +16,23 @@ on:
       - 'apps/backend/**'
       - '.github/workflows/lint-backend.yml'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Python Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
 
     - name: Install linting tools
       run: |
@@ -31,52 +40,77 @@ jobs:
         pip install black flake8 isort pylint radon
 
     - name: Check code formatting with black
+      id: black
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         black --check src/ --line-length=100
       continue-on-error: true
 
     - name: Check import sorting with isort
+      id: isort
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         isort --check-only src/ --profile black
       continue-on-error: true
 
     - name: Lint with flake8
+      id: flake8
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
       continue-on-error: true
 
     - name: Lint with pylint
+      id: pylint
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         pip install -e .
-        pylint src/ --disable=all --enable=E,F --exit-zero || true
+        pylint src/ --disable=all --enable=E,F --exit-zero
       continue-on-error: true
 
     - name: Check code duplication
+      id: duplication
+      working-directory: apps/backend
       run: |
-        cd apps/backend
-        pylint --disable=all --enable=duplicate-code src/ || true
+        pylint --disable=all --enable=duplicate-code src/ --exit-zero
       continue-on-error: true
 
     - name: Analyze Python complexity
+      id: complexity
+      working-directory: apps/backend
       run: |
-        cd apps/backend
-        echo "=== Cyclomatic Complexity ==="
-        radon cc src/ -a --total-average || true
-        echo ""
-        echo "=== Maintainability Index ==="
-        radon mi src/ || true
+        echo "=== Cyclomatic Complexity ===" >> $GITHUB_STEP_SUMMARY
+        radon cc src/ -a --total-average >> $GITHUB_STEP_SUMMARY || true
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "=== Maintainability Index ===" >> $GITHUB_STEP_SUMMARY
+        radon mi src/ >> $GITHUB_STEP_SUMMARY || true
       continue-on-error: true
 
     - name: Count lines of code
       run: |
-        echo "=== Backend ==="
-        find apps/backend/src -name "*.py" | xargs wc -l | tail -1
+        echo "=== Backend ===" >> $GITHUB_STEP_SUMMARY
+        find apps/backend/src -name "*.py" | xargs wc -l | tail -1 >> $GITHUB_STEP_SUMMARY
 
-    - name: Report lint results
+    - name: Summarize lint results
       if: always()
       run: |
-        echo "Lint checks completed. Review the results above."
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Lint Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.black.outcome }}" == "failure" ]; then
+          echo "❌ **Black**: Formatting issues detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Black**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ "${{ steps.isort.outcome }}" == "failure" ]; then
+          echo "❌ **isort**: Import sorting issues detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **isort**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ "${{ steps.flake8.outcome }}" == "failure" ]; then
+          echo "❌ **flake8**: Linting issues detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **flake8**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Review the step outputs above for details." >> $GITHUB_STEP_SUMMARY

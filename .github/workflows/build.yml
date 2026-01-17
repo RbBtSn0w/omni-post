@@ -1,43 +1,62 @@
 name: Build Verification
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/frontend/**'
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'apps/backend/**'
+      - 'apps/frontend/**'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: read
 
 jobs:
   backend-build:
     name: Backend Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip'
+        cache-dependency-path: apps/backend/pyproject.toml
 
     - name: Install dependencies
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         python -m pip install --upgrade pip
         pip install -e .
 
     - name: Verify backend imports
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         python -c "from src.app import create_app; print('✓ Backend imports successful')"
 
     - name: Check Flask app creation
+      working-directory: apps/backend
       run: |
-        cd apps/backend
         python -c "from src.app import create_app; app = create_app(); print('✓ Flask app created successfully')"
 
   frontend-build:
     name: Frontend Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
@@ -46,16 +65,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
+        cache: 'npm'
+        cache-dependency-path: apps/frontend/package-lock.json
 
     - name: Install dependencies
-      run: |
-        cd apps/frontend
-        npm install
+      working-directory: apps/frontend
+      run: npm ci
 
     - name: Build frontend
-      run: |
-        cd apps/frontend
-        npm run build
+      working-directory: apps/frontend
+      run: npm run build
 
     - name: Verify build output
       run: |
