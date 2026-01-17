@@ -36,12 +36,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
-        # No npm cache - platform-specific deps cause issues
+
+    - name: Clear npm cache
+      run: npm cache clean --force
 
     - name: Clean install dependencies
       run: |
-        rm -rf node_modules apps/*/node_modules
-        npm install
+        rm -rf package-lock.json node_modules apps/*/node_modules
+        npm ci --verbose
 
     - name: Run ESLint
       id: eslint
@@ -57,6 +59,8 @@ jobs:
           exit 1
         fi
       continue-on-error: true
+      env:
+        NODE_OPTIONS: --max_old_space_size=4096
 
     - name: Summarize lint results
       if: always()
