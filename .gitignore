@@ -218,7 +218,6 @@ videos/*
 .vite/
 dist/
 node_modules/
-package-lock.json
 
 # ==========================================
 # Python egg-info (build artifacts)
