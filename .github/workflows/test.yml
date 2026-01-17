@@ -81,13 +81,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Clear npm cache
-      run: npm cache clean --force
-
-    - name: Clean install dependencies
-      run: |
-        rm -rf package-lock.json node_modules apps/*/node_modules
-        npm ci --verbose
+    - name: Install dependencies
+      run: npm ci
 
     - name: Run frontend tests
       run: npm run test:frontend:coverage
