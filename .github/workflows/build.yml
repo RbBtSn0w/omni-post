@@ -70,13 +70,8 @@ jobs:
       with:
         node-version: 18.x
 
-    - name: Clear npm cache
-      run: npm cache clean --force
-
-    - name: Clean install dependencies
-      run: |
-        rm -rf package-lock.json node_modules apps/*/node_modules
-        npm ci --verbose
+    - name: Install dependencies
+      run: npm ci
 
     - name: Build frontend
       run: npm run build -w apps/frontend
