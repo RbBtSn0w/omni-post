@@ -501,6 +501,7 @@ import GroupSelector from '@/components/GroupSelector.vue'
 import dataCache from '@/utils/dataCache'
 import { useAccountFilter } from '@/composables/useAccountFilter'
 import { useAccountActions } from '@/composables/useAccountActions'
+import { API_BASE_URL } from '@/core/config'
 
 // 获取账号状态管理
 const accountStore = useAccountStore()
@@ -881,8 +882,7 @@ const handleEdit = (row) => {
 // 下载Cookie文件
 const handleDownloadCookie = (row) => {
   // 从后端获取Cookie文件
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5409'
-  const downloadUrl = `${baseUrl}/downloadCookie?filePath=${encodeURIComponent(row.filePath)}`
+  const downloadUrl = `${API_BASE_URL}/downloadCookie?filePath=${encodeURIComponent(row.filePath)}`
 
   // 创建一个隐藏的链接来触发下载
   const link = document.createElement('a')
@@ -923,8 +923,7 @@ const handleUploadCookie = (row) => {
       formData.append('platform', row.platform)
 
       // 发送上传请求
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5409'
-      const response = await fetch(`${baseUrl}/uploadCookie`, {
+      const response = await fetch(`${API_BASE_URL}/uploadCookie`, {
         method: 'POST',
         body: formData
       })
@@ -1018,8 +1017,7 @@ const connectSSE = (platform, name, groupName) => {
   const type = platformTypeMap[platform] || '1'
 
   // 创建SSE连接
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5409'
-  let url = `${baseUrl}/login?type=${type}&id=${encodeURIComponent(name)}`
+  let url = `${API_BASE_URL}/login?type=${type}&id=${encodeURIComponent(name)}`
   if (groupName) {
     url += `&group=${encodeURIComponent(groupName)}`
   }

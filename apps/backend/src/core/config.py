@@ -22,7 +22,12 @@ COOKIES_DIR.mkdir(exist_ok=True)
 VIDEOS_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 
+# File upload settings
+MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500MB
+
 # Server settings
+SERVER_HOST = "0.0.0.0"
+SERVER_PORT = 5409
 XHS_SERVER = "http://127.0.0.1:11901"
 
 # Debug / Test mode switches

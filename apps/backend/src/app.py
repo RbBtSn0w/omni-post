@@ -4,7 +4,7 @@ from pathlib import Path
 from queue import Queue
 from flask_cors import CORS
 from flask import Flask, Response, send_from_directory
-from src.core.config import BASE_DIR
+from src.core.config import BASE_DIR, MAX_UPLOAD_SIZE
 
 def create_app():
     """Flask应用工厂函数"""
@@ -14,8 +14,8 @@ def create_app():
     # 允许所有来源跨域访问
     CORS(app)
 
-    # 限制上传文件大小为160MB
-    app.config['MAX_CONTENT_LENGTH'] = 160 * 1024 * 1024
+    # 限制上传文件大小
+    app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_SIZE
 
     # 获取当前目录（假设 index.html 和 assets 在这里）
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,5 +56,6 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5409)
+    from src.core.config import SERVER_HOST, SERVER_PORT
+    app.run(host=SERVER_HOST, port=SERVER_PORT)
 

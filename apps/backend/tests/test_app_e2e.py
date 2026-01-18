@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from flask import Flask
 from queue import Queue
+from src.core.config import MAX_UPLOAD_SIZE
 
 class TestAppE2E:
     """E2E和集成测试 Flask应用"""
@@ -28,7 +29,7 @@ class TestAppE2E:
 
     def test_max_content_length(self):
         """测试文件上传大小限制"""
-        assert self.app.config['MAX_CONTENT_LENGTH'] == 160 * 1024 * 1024
+        assert self.app.config['MAX_CONTENT_LENGTH'] == MAX_UPLOAD_SIZE
 
     def test_favicon_route_exists(self):
         """测试favicon路由存在"""

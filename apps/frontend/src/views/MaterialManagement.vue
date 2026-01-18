@@ -3,7 +3,7 @@
     <div class="page-header">
       <h1>视频资源管理</h1>
     </div>
-    
+
     <div class="material-list-container">
       <div class="material-search">
         <el-input
@@ -22,7 +22,7 @@
           </el-button>
         </div>
       </div>
-      
+
       <div v-if="filteredMaterials.length > 0" class="material-list">
         <el-table :data="filteredMaterials" style="width: 100%">
           <el-table-column prop="uuid" label="UUID" width="180" />
@@ -41,12 +41,12 @@
           </el-table-column>
         </el-table>
       </div>
-      
+
       <div v-else class="empty-data">
         <el-empty description="暂无素材数据" />
       </div>
     </div>
-    
+
     <!-- 上传对话框 -->
     <el-dialog
       v-model="uploadDialogVisible"
@@ -113,7 +113,7 @@
         </div>
       </template>
     </el-dialog>
-    
+
     <!-- 预览对话框 -->
     <el-dialog
       v-model="previewDialogVisible"
@@ -148,6 +148,7 @@ import { Refresh, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { materialApi } from '@/api/material'
 import { useAppStore } from '@/stores/app'
+import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '@/core/config'
 
 // 获取应用状态管理
 const appStore = useAppStore()
@@ -182,7 +183,7 @@ const fetchMaterials = async () => {
   isRefreshing.value = true
   try {
     const response = await materialApi.getAllMaterials()
-    
+
     if (response.code === 200) {
       appStore.setMaterials(response.data)
       ElMessage.success('刷新成功')
@@ -200,9 +201,9 @@ const fetchMaterials = async () => {
 // 过滤素材
 const filteredMaterials = computed(() => {
   if (!searchKeyword.value) return appStore.materials
-  
+
   const keyword = searchKeyword.value.toLowerCase()
-  return appStore.materials.filter(material => 
+  return appStore.materials.filter(material =>
     material.filename.toLowerCase().includes(keyword)
   )
 })
@@ -233,22 +234,21 @@ const validateFileType = (file) => {
   const allowedVideoTypes = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm'];
   const allowedImageTypes = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
   const allowedTypes = [...allowedVideoTypes, ...allowedImageTypes];
-  
+
   const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
   const isAllowedType = allowedTypes.includes(fileExtension);
-  
+
   if (!isAllowedType) {
     ElMessage.error(`文件类型不支持：${file.name}。仅支持视频（.mp4、.mov、.avi等）和图片（.jpg、.png、.gif等）格式。`);
     return false;
   }
-  
-  // 添加文件大小检查，限制最大500MB
-  const maxSize = 500 * 1024 * 1024; // 500MB
-  if (file.size > maxSize) {
-    ElMessage.error(`文件大小超过限制：${file.name}。最大允许上传500MB的文件。`);
+
+  // 添加文件大小检查
+  if (file.size > MAX_UPLOAD_SIZE) {
+    ElMessage.error(`文件大小超过限制：${file.name}。最大允许上传${MAX_UPLOAD_SIZE_MB}MB的文件。`);
     return false;
   }
-  
+
   return true;
 };
 
@@ -259,9 +259,9 @@ const handleFileChange = (file, uploadFileList) => {
     if (f.status === 'removed') return true; // 保留已移除的文件记录用于后续处理
     return validateFileType(f);
   });
-  
+
   fileList.value = validFiles;
-  
+
   const newProgress = {};
   for (const f of validFiles) {
     if (f.status !== 'removed') {
@@ -287,21 +287,21 @@ const handleFileRemove = (file, uploadFileList) => {
 const submitUpload = async () => {
   // 过滤出实际要上传的文件（排除已移除的文件）
   const filesToUpload = fileList.value.filter(f => f.status !== 'removed' && f.raw);
-  
+
   if (filesToUpload.length === 0) {
     ElMessage.warning('请选择要上传的文件')
     return
   }
-  
+
   // 再次验证所有要上传的文件类型
   const allValid = filesToUpload.every(file => validateFileType(file));
   if (!allValid) {
     ElMessage.error('存在不支持的文件类型，请检查后重新上传。');
     return;
   }
-  
+
   isUploading.value = true
-  
+
   for (const file of filesToUpload) {
     try {
       // 确保文件对象存在
@@ -309,15 +309,15 @@ const submitUpload = async () => {
         ElMessage.warning(`文件 ${file.name} 对象无效，已跳过`)
         continue
       }
-      
+
       const formData = new FormData()
       formData.append('file', file.raw)
-      
+
       // 只有当只有一个文件时，自定义文件名才生效
       if (filesToUpload.length === 1 && customFilename.value.trim()) {
         formData.append('filename', customFilename.value.trim())
       }
-      
+
       let lastLoaded = 0;
       let lastTime = Date.now();
 
@@ -343,7 +343,7 @@ const submitUpload = async () => {
           lastTime = currentTime;
         }
       })
-      
+
       if (response.code === 200) {
         ElMessage.success(`文件 ${file.name} 上传成功`)
         const progressData = uploadProgress.value[file.uid];
@@ -356,10 +356,10 @@ const submitUpload = async () => {
       ElMessage.error(`文件 ${file.name} 上传失败: ${error.message || '未知错误'}`)
     }
   }
-  
+
   isUploading.value = false
   // Keep dialog open to show results
-  // uploadDialogVisible.value = false 
+  // uploadDialogVisible.value = false
   await fetchMaterials()
 }
 
@@ -393,7 +393,7 @@ const handleDelete = (material) => {
     .then(async () => {
       try {
         const response = await materialApi.deleteMaterial(material.id)
-        
+
         if (response.code === 200) {
           appStore.removeMaterial(material.id)
           ElMessage.success('删除成功')
@@ -455,10 +455,10 @@ onMounted(() => {
 }
 
 .video-resource-management {
-  
+
   .page-header {
     margin-bottom: 20px;
-    
+
     h1 {
       font-size: 24px;
       font-weight: 500;
@@ -466,53 +466,53 @@ onMounted(() => {
       margin: 0;
     }
   }
-  
+
   .material-list-container {
     background-color: #fff;
     border-radius: 4px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     padding: 20px;
-    
+
     .material-search {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
-      
+
       .el-input {
         width: 300px;
       }
-      
+
       .action-buttons {
         display: flex;
         gap: 10px;
-        
+
         .is-loading {
           animation: rotate 1s linear infinite;
         }
       }
     }
-    
+
     .material-list {
       margin-top: 20px;
     }
-    
+
     .empty-data {
       padding: 40px 0;
     }
   }
-  
+
   .material-upload {
     width: 100%;
   }
-  
+
   .preview-container {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
     padding: 0 20px;
-    
+
     .file-info {
       text-align: center;
       margin-top: 20px;
@@ -522,13 +522,13 @@ onMounted(() => {
 
 .upload-form {
   padding: 0 20px;
-  
+
   .form-tip {
     font-size: 12px;
     color: #909399;
     margin-top: 5px;
   }
-  
+
   .upload-demo {
     width: 100%;
   }

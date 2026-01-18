@@ -819,9 +819,10 @@ import { materialApi } from '@/api/material'
 import { accountApi } from '@/api/account'
 import { groupApi } from '@/api/group'
 import { useGroupStore } from '@/stores/group'
+import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB, API_BASE_URL } from '@/core/config'
 
 // API base URL
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5409'
+const apiBaseUrl = API_BASE_URL
 
 // Authorization headers
 const authHeaders = computed(() => ({
@@ -1183,10 +1184,9 @@ const validateFileType = (file) => {
     return false;
   }
 
-  // 添加文件大小检查，限制最大500MB
-  const maxSize = 500 * 1024 * 1024; // 500MB
-  if (file.size > maxSize) {
-    ElMessage.error(`文件大小超过限制：${file.name}。最大允许上传500MB的文件。`);
+  // 添加文件大小检查
+  if (file.size > MAX_UPLOAD_SIZE) {
+    ElMessage.error(`文件大小超过限制：${file.name}。最大允许上传${MAX_UPLOAD_SIZE_MB}MB的文件。`);
     return false;
   }
 

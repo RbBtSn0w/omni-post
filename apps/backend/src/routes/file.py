@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 from pathlib import Path
-from src.core.config import VIDEOS_DIR
+from src.core.config import VIDEOS_DIR, MAX_UPLOAD_SIZE
 from src.db.db_manager import db_manager
 import sqlite3
 import uuid
@@ -69,12 +69,11 @@ def upload_save():
             "msg": "No selected file"
         }), 400
 
-    # 添加文件大小检查，限制最大500MB
-    max_size = 500 * 1024 * 1024  # 500MB
-    if file.content_length and file.content_length > max_size:
+    # 添加文件大小检查
+    if file.content_length and file.content_length > MAX_UPLOAD_SIZE:
         return jsonify({
             "code": 400,
-            "msg": f"File too large. Maximum size allowed is {max_size / (1024*1024)}MB",
+            "msg": f"File too large. Maximum size allowed is {MAX_UPLOAD_SIZE / (1024*1024)}MB",
             "data": None
         }), 400
 
