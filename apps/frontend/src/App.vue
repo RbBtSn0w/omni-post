@@ -62,7 +62,7 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
-  HomeFilled, User, Monitor, DataAnalysis, 
+  HomeFilled, User,
   Fold, VideoCamera, Upload, List
 } from '@element-plus/icons-vue'
 

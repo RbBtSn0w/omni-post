@@ -7,7 +7,7 @@ name = "omni-post-backend"
 version = "2.0.0"
 description = "OmniPost Backend - Multi-platform content publishing service powered by Flask and Playwright"
 readme = "README.md"
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "aiofiles==24.1.0",
     "aiohttp==3.9.5",

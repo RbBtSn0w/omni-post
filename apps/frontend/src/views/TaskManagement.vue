@@ -225,7 +225,7 @@
           v-model:page-size="taskPagination.pageSize"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          :total="filteredTasks.length"
+          :total="filteredTasksForCount.length"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -323,10 +323,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   List, CircleCheckFilled, CircleCloseFilled, Loading,
-  Refresh, Delete, InfoFilled, Search,
+  Delete, InfoFilled, Search,
   VideoPlay, VideoPause
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -367,8 +367,8 @@ const selectedTask = ref(null)
 // 任务统计数据 - 从taskStore获取
 const taskStats = computed(() => taskStore.taskStats)
 
-// 过滤后的任务列表
-const filteredTasks = computed(() => {
+// 过滤后的任务列表（用于总数统计）
+const filteredTasksForCount = computed(() => {
   let result = [...taskStore.tasks]
 
   // 按状态过滤
@@ -396,8 +396,12 @@ const filteredTasks = computed(() => {
     )
   }
 
-  // 更新分页总数
-  taskPagination.value.total = result.length
+  return result
+})
+
+// 过滤后的任务列表
+const filteredTasks = computed(() => {
+  const result = filteredTasksForCount.value
 
   // 按优先级和创建时间排序
   return result.sort((a, b) => {

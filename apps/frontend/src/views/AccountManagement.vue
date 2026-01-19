@@ -523,8 +523,6 @@ const {
 
 const {
   hasInitiallyLoaded,
-  lastRefreshTime,
-  isGlobalRefreshing,
   fetchAccountsQuick,
   fetchAccounts,
   forceRefreshAccounts,

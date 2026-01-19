@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ElMessage } from 'element-plus'
-import request, { http } from '@/utils/request'
+import { http } from '@/utils/request'
 
 // Mock外部依赖
 vi.mock('axios', () => {

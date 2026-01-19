@@ -90,7 +90,7 @@ global.document = {
 }
 
 // 模拟 MutationObserver
-global.MutationObserver = vi.fn().mockImplementation(function(callback) {
+global.MutationObserver = vi.fn().mockImplementation(function() {
   return {
     observe: vi.fn(),
     disconnect: vi.fn(),
@@ -99,7 +99,7 @@ global.MutationObserver = vi.fn().mockImplementation(function(callback) {
 });
 
 // 模拟 ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(function(callback) {
+global.ResizeObserver = vi.fn().mockImplementation(function() {
   return {
     observe: vi.fn(),
     unobserve: vi.fn(),
@@ -183,15 +183,6 @@ vi.mock('@element-plus/icons-vue', () => {
     // 额外需要的图标
     Grid: mockIcon,
     Management: mockIcon,
-    Plus: mockIcon,
-    Delete: mockIcon,
-    Edit: mockIcon,
-    Check: mockIcon,
-    Close: mockIcon,
-    InfoFilled: mockIcon,
-    WarningFilled: mockIcon,
-    ErrorFilled: mockIcon,
-    SuccessFilled: mockIcon,
     RefreshRight: mockIcon,
     UploadFilled: mockIcon,
     DownloadFilled: mockIcon,
