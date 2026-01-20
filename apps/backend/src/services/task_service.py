@@ -1,8 +1,10 @@
-import sqlite3
 import json
+import sqlite3
 import uuid
 from datetime import datetime
+
 from src.db.db_manager import db_manager
+
 
 class TaskService:
     def _get_conn(self):
@@ -13,20 +15,23 @@ class TaskService:
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                task_id,
-                title,
-                'waiting', # Initial status
-                0,
-                priority,
-                json.dumps(platforms),
-                json.dumps(file_list),
-                json.dumps(account_list),
-                json.dumps(schedule_data)
-            ))
+            """,
+                (
+                    task_id,
+                    title,
+                    "waiting",  # Initial status
+                    0,
+                    priority,
+                    json.dumps(platforms),
+                    json.dumps(file_list),
+                    json.dumps(account_list),
+                    json.dumps(schedule_data),
+                ),
+            )
             conn.commit()
             return task_id
         except Exception as e:
@@ -72,15 +77,27 @@ class TaskService:
             for row in rows:
                 task = dict(row)
                 # Parse JSON fields
-                try: task['platforms'] = json.loads(task['platforms']) if task['platforms'] else []
-                except: pass
-                try: task['file_list'] = json.loads(task['file_list']) if task['file_list'] else []
-                except: pass
-                try: task['account_list'] = json.loads(task['account_list']) if task['account_list'] else []
-                except: pass
+                try:
+                    task["platforms"] = json.loads(task["platforms"]) if task["platforms"] else []
+                except:
+                    pass
+                try:
+                    task["file_list"] = json.loads(task["file_list"]) if task["file_list"] else []
+                except:
+                    pass
+                try:
+                    task["account_list"] = (
+                        json.loads(task["account_list"]) if task["account_list"] else []
+                    )
+                except:
+                    pass
                 # Parse schedule_data
-                try: task['schedule_data'] = json.loads(task['schedule_data']) if task['schedule_data'] else {}
-                except: pass
+                try:
+                    task["schedule_data"] = (
+                        json.loads(task["schedule_data"]) if task["schedule_data"] else {}
+                    )
+                except:
+                    pass
                 # Clean up schedule_data if needed
                 tasks.append(task)
             return tasks
@@ -99,5 +116,6 @@ class TaskService:
             return False
         finally:
             conn.close()
+
 
 task_service = TaskService()

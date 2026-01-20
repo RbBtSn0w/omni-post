@@ -9,10 +9,9 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import async_playwright
-
-from src.core.config import COOKIES_DIR
 from src.core.browser import launch_browser, set_init_script
-from src.core.logger import tencent_logger, kuaishou_logger, douyin_logger
+from src.core.config import COOKIES_DIR
+from src.core.logger import douyin_logger, kuaishou_logger, tencent_logger
 
 
 class CookieService(ABC):
@@ -61,7 +60,9 @@ class DefaultCookieService(CookieService):
                 page = await context.new_page()
                 await page.goto("https://creator.douyin.com/creator-micro/content/upload")
                 try:
-                    await page.wait_for_url("https://creator.douyin.com/creator-micro/content/upload", timeout=5000)
+                    await page.wait_for_url(
+                        "https://creator.douyin.com/creator-micro/content/upload", timeout=5000
+                    )
                     try:
                         await page.get_by_text("扫码登录").wait_for(timeout=5000)
                         douyin_logger.error("[+] cookie 失效，需要扫码登录")
@@ -90,7 +91,9 @@ class DefaultCookieService(CookieService):
                 page = await context.new_page()
                 await page.goto("https://channels.weixin.qq.com/platform/post/create")
                 try:
-                    await page.wait_for_selector('div.title-name:has-text("微信小店")', timeout=5000)
+                    await page.wait_for_selector(
+                        'div.title-name:has-text("微信小店")', timeout=5000
+                    )
                     tencent_logger.error("[+] 等待5秒 cookie 失效")
                     return False
                 except Exception:  # Timeout means cookie is valid (element not found)
@@ -114,7 +117,9 @@ class DefaultCookieService(CookieService):
                 page = await context.new_page()
                 await page.goto("https://cp.kuaishou.com/article/publish/video")
                 try:
-                    await page.wait_for_selector("div.names div.container div.name:text('机构服务')", timeout=5000)
+                    await page.wait_for_selector(
+                        "div.names div.container div.name:text('机构服务')", timeout=5000
+                    )
                     kuaishou_logger.info("[+] 等待5秒 cookie 失效")
                     return False
                 except Exception:  # Timeout means cookie is valid (element not found)
@@ -138,11 +143,16 @@ class DefaultCookieService(CookieService):
                 page = await context.new_page()
                 await page.goto("https://creator.xiaohongshu.com/creator-micro/content/upload")
                 try:
-                    await page.wait_for_url("https://creator.xiaohongshu.com/creator-micro/content/upload", timeout=5000)
+                    await page.wait_for_url(
+                        "https://creator.xiaohongshu.com/creator-micro/content/upload", timeout=5000
+                    )
                 except Exception:  # Failed to reach upload page, cookie invalid
                     print("[+] 等待5秒 cookie 失效")
                     return False
-                if await page.get_by_text('手机号登录').count() or await page.get_by_text('扫码登录').count():
+                if (
+                    await page.get_by_text("手机号登录").count()
+                    or await page.get_by_text("扫码登录").count()
+                ):
                     print("[+] 等待5秒 cookie 失效")
                     return False
                 else:

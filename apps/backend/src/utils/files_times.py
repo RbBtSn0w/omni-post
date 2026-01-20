@@ -1,15 +1,14 @@
 import sys
-from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-
-
 
 # Allow tests to patch via utils.files_times.* aliases
 sys.modules.setdefault("utils.files_times", sys.modules[__name__])
 
 
-def generate_schedule_time_next_day(total_videos, videos_per_day = 1, daily_times=None, timestamps=False, start_days=0):
+def generate_schedule_time_next_day(
+    total_videos, videos_per_day=1, daily_times=None, timestamps=False, start_days=0
+):
     """
     Generate a schedule for video uploads, starting from the next day.
 
@@ -43,8 +42,13 @@ def generate_schedule_time_next_day(total_videos, videos_per_day = 1, daily_time
 
         # Calculate the time for the current video
         hour = daily_times[daily_video_index]
-        time_offset = timedelta(days=day, hours=hour - current_time.hour, minutes=-current_time.minute,
-                                seconds=-current_time.second, microseconds=-current_time.microsecond)
+        time_offset = timedelta(
+            days=day,
+            hours=hour - current_time.hour,
+            minutes=-current_time.minute,
+            seconds=-current_time.second,
+            microseconds=-current_time.microsecond,
+        )
         timestamp = current_time + time_offset
 
         schedule.append(timestamp)

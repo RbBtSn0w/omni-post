@@ -1,86 +1,88 @@
-from flask import Blueprint, request, jsonify, send_from_directory
-from pathlib import Path
-from src.core.config import VIDEOS_DIR, MAX_UPLOAD_SIZE
-from src.db.db_manager import db_manager
+import os
 import sqlite3
 import uuid
-import os
+from pathlib import Path
+
+from flask import Blueprint, jsonify, request, send_from_directory
+from src.core.config import MAX_UPLOAD_SIZE, VIDEOS_DIR
+from src.db.db_manager import db_manager
 
 # 创建蓝图
-bp = Blueprint('file', __name__)
+bp = Blueprint("file", __name__)
 
-@bp.route('/upload', methods=['POST'])
+
+@bp.route("/upload", methods=["POST"])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({
-            "code": 200,
-            "data": None,
-            "msg": "No file part in the request"
-        }), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "code": 200,
-            "data": None,
-            "msg": "No selected file"
-        }), 400
+    if "file" not in request.files:
+        return jsonify({"code": 200, "data": None, "msg": "No file part in the request"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"code": 200, "data": None, "msg": "No selected file"}), 400
     try:
         # 保存文件到指定位置
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
         filepath = VIDEOS_DIR / f"{uuid_v1}_{file.filename}"
         file.save(filepath)
-        return jsonify({"code":200,"msg": "File uploaded successfully", "data": f"{uuid_v1}_{file.filename}"}), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "msg": "File uploaded successfully",
+                    "data": f"{uuid_v1}_{file.filename}",
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        return jsonify({"code":200,"msg": str(e),"data":None}), 500
+        return jsonify({"code": 200, "msg": str(e), "data": None}), 500
 
-@bp.route('/getFile', methods=['GET'])
+
+@bp.route("/getFile", methods=["GET"])
 def get_file():
     # 获取 filename 参数
-    filename = request.args.get('filename')
+    filename = request.args.get("filename")
 
     if not filename:
         return {"error": "filename is required"}, 400
 
     # 防止路径穿越攻击
-    if '..' in filename or filename.startswith('/'):
+    if ".." in filename or filename.startswith("/"):
         return {"error": "Invalid filename"}, 400
 
     # 拼接完整路径
     file_path = str(VIDEOS_DIR)
 
     # 返回文件
-    return send_from_directory(file_path,filename)
+    return send_from_directory(file_path, filename)
 
-@bp.route('/uploadSave', methods=['POST'])
+
+@bp.route("/uploadSave", methods=["POST"])
 def upload_save():
-    if 'file' not in request.files:
-        return jsonify({
-            "code": 400,
-            "data": None,
-            "msg": "No file part in the request"
-        }), 400
+    if "file" not in request.files:
+        return jsonify({"code": 400, "data": None, "msg": "No file part in the request"}), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({
-            "code": 400,
-            "data": None,
-            "msg": "No selected file"
-        }), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"code": 400, "data": None, "msg": "No selected file"}), 400
 
     # 添加文件大小检查
     if file.content_length and file.content_length > MAX_UPLOAD_SIZE:
-        return jsonify({
-            "code": 400,
-            "msg": f"File too large. Maximum size allowed is {MAX_UPLOAD_SIZE / (1024*1024)}MB",
-            "data": None
-        }), 400
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "msg": f"File too large. Maximum size allowed is {MAX_UPLOAD_SIZE / (1024*1024)}MB",
+                    "data": None,
+                }
+            ),
+            400,
+        )
 
     # 获取表单中的自定义文件名（可选）
-    custom_filename = request.form.get('filename', None)
+    custom_filename = request.form.get("filename", None)
     if custom_filename:
-        filename = custom_filename + "." + file.filename.split('.')[-1]
+        filename = custom_filename + "." + file.filename.split(".")[-1]
     else:
         filename = file.filename
 
@@ -98,31 +100,37 @@ def upload_save():
 
         with sqlite3.connect(db_manager.get_db_path()) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
+            cursor.execute(
+                """
                                 INSERT INTO file_records (filename, filesize, file_path)
             VALUES (?, ?, ?)
-                                ''', (filename, round(float(os.path.getsize(filepath)) / (1024 * 1024),2), final_filename))
+                                """,
+                (
+                    filename,
+                    round(float(os.path.getsize(filepath)) / (1024 * 1024), 2),
+                    final_filename,
+                ),
+            )
             conn.commit()
             print("✅ 上传文件已记录")
 
-        return jsonify({
-            "code": 200,
-            "msg": "File uploaded and saved successfully",
-            "data": {
-                "filename": filename,
-                "filepath": final_filename
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "msg": "File uploaded and saved successfully",
+                    "data": {"filename": filename, "filepath": final_filename},
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         print(f"Upload failed: {e}")
-        return jsonify({
-            "code": 500,
-            "msg": f"upload failed: {e}",
-            "data": None
-        }), 500
+        return jsonify({"code": 500, "msg": f"upload failed: {e}", "data": None}), 500
 
-@bp.route('/getFiles', methods=['GET'])
+
+@bp.route("/getFiles", methods=["GET"])
 def get_all_files():
     try:
         # 使用 with 自动管理数据库连接
@@ -139,38 +147,27 @@ def get_all_files():
             for row in rows:
                 row_dict = dict(row)
                 # 从 file_path 中提取 UUID (文件名的第一部分，下划线前)
-                if row_dict.get('file_path'):
-                    file_path_parts = row_dict['file_path'].split('_', 1)  # 只分割第一个下划线
+                if row_dict.get("file_path"):
+                    file_path_parts = row_dict["file_path"].split("_", 1)  # 只分割第一个下划线
                     if len(file_path_parts) > 0:
-                        row_dict['uuid'] = file_path_parts[0]  # UUID 部分
+                        row_dict["uuid"] = file_path_parts[0]  # UUID 部分
                     else:
-                        row_dict['uuid'] = ''
+                        row_dict["uuid"] = ""
                 else:
-                    row_dict['uuid'] = ''
+                    row_dict["uuid"] = ""
                 data.append(row_dict)
 
-            return jsonify({
-                "code": 200,
-                "msg": "success",
-                "data": data
-            }), 200
+            return jsonify({"code": 200, "msg": "success", "data": data}), 200
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "msg": str("get file failed!"),
-            "data": None
-        }), 500
+        return jsonify({"code": 500, "msg": str("get file failed!"), "data": None}), 500
 
-@bp.route('/deleteFile', methods=['GET'])
+
+@bp.route("/deleteFile", methods=["GET"])
 def delete_file():
-    file_id = request.args.get('id')
+    file_id = request.args.get("id")
 
     if not file_id or not file_id.isdigit():
-        return jsonify({
-            "code": 400,
-            "msg": "Invalid or missing file ID",
-            "data": None
-        }), 400
+        return jsonify({"code": 400, "msg": "Invalid or missing file ID", "data": None}), 400
 
     try:
         # 获取数据库连接
@@ -183,16 +180,12 @@ def delete_file():
             record = cursor.fetchone()
 
             if not record:
-                return jsonify({
-                    "code": 404,
-                    "msg": "File not found",
-                    "data": None
-                }), 404
+                return jsonify({"code": 404, "msg": "File not found", "data": None}), 404
 
             record = dict(record)
 
             # 获取文件路径并删除实际文件
-            file_path = VIDEOS_DIR / record['file_path']
+            file_path = VIDEOS_DIR / record["file_path"]
             if file_path.exists():
                 try:
                     file_path.unlink()  # 删除文件
@@ -207,18 +200,16 @@ def delete_file():
             cursor.execute("DELETE FROM file_records WHERE id = ?", (file_id,))
             conn.commit()
 
-        return jsonify({
-            "code": 200,
-            "msg": "File deleted successfully",
-            "data": {
-                "id": record['id'],
-                "filename": record['filename']
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "msg": "File deleted successfully",
+                    "data": {"id": record["id"], "filename": record["filename"]},
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "msg": str("delete failed!"),
-            "data": None
-        }), 500
+        return jsonify({"code": 500, "msg": str("delete failed!"), "data": None}), 500

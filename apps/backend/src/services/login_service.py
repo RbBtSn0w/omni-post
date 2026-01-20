@@ -10,9 +10,8 @@ import asyncio
 import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Tuple
 from pathlib import Path
-
+from typing import Dict, Optional, Tuple
 
 from src.db.db_manager import db_manager
 
@@ -37,22 +36,24 @@ def run_async_function(type, id, status_queue, group_name=None):
     login_service = DefaultLoginService()
 
     match type:
-        case '1':
+        case "1":
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(login_service.xiaohongshu_cookie_gen(id, status_queue, group_name))
+            loop.run_until_complete(
+                login_service.xiaohongshu_cookie_gen(id, status_queue, group_name)
+            )
             loop.close()
-        case '2':
+        case "2":
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(login_service.get_tencent_cookie(id, status_queue, group_name))
             loop.close()
-        case '3':
+        case "3":
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(login_service.douyin_cookie_gen(id, status_queue, group_name))
             loop.close()
-        case '4':
+        case "4":
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(login_service.get_ks_cookie(id, status_queue, group_name))
@@ -62,11 +63,13 @@ def run_async_function(type, id, status_queue, group_name=None):
 class LoginService(ABC):
     """登录服务抽象接口"""
 
-    def __init__(self,
-                 login_status: bool = True,
-                 cookie_valid: bool = True,
-                 poll_timeout: int = 30,  # 优化：默认超时30秒，适合测试环境
-                 poll_interval: float = 1.0):  # 优化：添加轮询间隔参数
+    def __init__(
+        self,
+        login_status: bool = True,
+        cookie_valid: bool = True,
+        poll_timeout: int = 30,  # 优化：默认超时30秒，适合测试环境
+        poll_interval: float = 1.0,
+    ):  # 优化：添加轮询间隔参数
         """
         初始化登录服务
 
@@ -82,12 +85,16 @@ class LoginService(ABC):
         self.poll_interval = poll_interval
 
     @abstractmethod
-    async def douyin_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def douyin_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """抖音登录"""
         pass
 
     @abstractmethod
-    async def get_tencent_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def get_tencent_cookie(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """腾讯视频号登录"""
         pass
 
@@ -97,7 +104,9 @@ class LoginService(ABC):
         pass
 
     @abstractmethod
-    async def xiaohongshu_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def xiaohongshu_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """小红书登录"""
         pass
 
@@ -105,7 +114,9 @@ class LoginService(ABC):
 class MockLoginService(LoginService):
     """用于测试的Mock登录服务实现"""
 
-    async def douyin_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def douyin_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """模拟抖音登录"""
         # 发送模拟二维码
         status_queue.put("https://mock-qrcode-url.com/douyin")
@@ -118,7 +129,9 @@ class MockLoginService(LoginService):
 
         return {}
 
-    async def get_tencent_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def get_tencent_cookie(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """模拟腾讯视频号登录"""
         # 发送模拟二维码
         status_queue.put("https://mock-qrcode-url.com/tencent")
@@ -144,7 +157,9 @@ class MockLoginService(LoginService):
 
         return {}
 
-    async def xiaohongshu_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def xiaohongshu_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """模拟小红书登录"""
         # 发送模拟二维码
         status_queue.put("https://mock-qrcode-url.com/xiaohongshu")
@@ -161,24 +176,34 @@ class MockLoginService(LoginService):
 class DefaultLoginService(LoginService):
     """默认登录服务实现，调用实际的登录逻辑"""
 
-    async def douyin_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def douyin_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """调用实际的抖音登录逻辑"""
         from src.services.login_impl import douyin_cookie_gen as original_douyin_login
+
         return await original_douyin_login(id, status_queue, group_name)
 
-    async def get_tencent_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def get_tencent_cookie(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """调用实际的腾讯视频号登录逻辑"""
         from src.services.login_impl import get_tencent_cookie as original_tencent_login
+
         return await original_tencent_login(id, status_queue, group_name)
 
     async def get_ks_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """调用实际的快手登录逻辑"""
         from src.services.login_impl import get_ks_cookie as original_ks_login
+
         return await original_ks_login(id, status_queue, group_name)
 
-    async def xiaohongshu_cookie_gen(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
+    async def xiaohongshu_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
         """调用实际的小红书登录逻辑"""
         from src.services.login_impl import xiaohongshu_cookie_gen as original_xhs_login
+
         return await original_xhs_login(id, status_queue, group_name)
 
 
@@ -195,10 +220,10 @@ def get_login_service(config: Optional[Dict] = None) -> LoginService:
     if config is not None:  # 只要提供了config参数，即使是空字典，也返回MockLoginService
         # 如果提供了配置，返回MockLoginService实例
         return MockLoginService(
-            login_status=config.get('login_status', True),
-            cookie_valid=config.get('cookie_valid', True),
-            poll_timeout=config.get('poll_timeout', 30),
-            poll_interval=config.get('poll_interval', 1.0)
+            login_status=config.get("login_status", True),
+            cookie_valid=config.get("cookie_valid", True),
+            poll_timeout=config.get("poll_timeout", 30),
+            poll_interval=config.get("poll_interval", 1.0),
         )
     else:
         # 否则返回DefaultLoginService实例

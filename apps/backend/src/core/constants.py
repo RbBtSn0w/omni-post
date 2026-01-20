@@ -9,34 +9,36 @@ import enum
 
 class TencentZoneTypes(enum.Enum):
     """腾讯视频号分区类型"""
-    LIFESTYLE = '生活'
-    CUTE_KIDS = '萌娃'
-    MUSIC = '音乐'
-    KNOWLEDGE = '知识'
-    EMOTION = '情感'
-    TRAVEL_SCENERY = '旅行风景'
-    FASHION = '时尚'
-    FOOD = '美食'
-    LIFE_HACKS = '生活技巧'
-    DANCE = '舞蹈'
-    MOVIES_TV_SHOWS = '影视综艺'
-    SPORTS = '运动'
-    FUNNY = '搞笑'
-    CELEBRITIES = '明星名人'
-    NEWS_INFO = '新闻资讯'
-    GAMING = '游戏'
-    AUTOMOTIVE = '车'
-    ANIME = '二次元'
-    TALENT = '才艺'
-    CUTE_PETS = '萌宠'
-    INDUSTRY_MACHINERY_CONSTRUCTION = '机械'
-    ANIMALS = '动物'
-    PARENTING = '育儿'
-    TECHNOLOGY = '科技'
+
+    LIFESTYLE = "生活"
+    CUTE_KIDS = "萌娃"
+    MUSIC = "音乐"
+    KNOWLEDGE = "知识"
+    EMOTION = "情感"
+    TRAVEL_SCENERY = "旅行风景"
+    FASHION = "时尚"
+    FOOD = "美食"
+    LIFE_HACKS = "生活技巧"
+    DANCE = "舞蹈"
+    MOVIES_TV_SHOWS = "影视综艺"
+    SPORTS = "运动"
+    FUNNY = "搞笑"
+    CELEBRITIES = "明星名人"
+    NEWS_INFO = "新闻资讯"
+    GAMING = "游戏"
+    AUTOMOTIVE = "车"
+    ANIME = "二次元"
+    TALENT = "才艺"
+    CUTE_PETS = "萌宠"
+    INDUSTRY_MACHINERY_CONSTRUCTION = "机械"
+    ANIMALS = "动物"
+    PARENTING = "育儿"
+    TECHNOLOGY = "科技"
 
 
 class VideoZoneTypes(enum.Enum):
     """B站视频分区类型"""
+
     MAINPAGE = 0
     ANIME = 13
     ANIME_SERIAL = 33
@@ -167,6 +169,7 @@ class VideoZoneTypes(enum.Enum):
 
 class PlatformType(enum.Enum):
     """平台类型枚举"""
+
     XIAOHONGSHU = 1
     TENCENT = 2
     DOUYIN = 3
@@ -174,17 +177,12 @@ class PlatformType(enum.Enum):
 
 
 # Platform names mapping
-PLATFORM_NAMES = {
-    1: '小红书',
-    2: '视频号',
-    3: '抖音',
-    4: '快手'
-}
+PLATFORM_NAMES = {1: "小红书", 2: "视频号", 3: "抖音", 4: "快手"}
 
 # Platform login URLs
 PLATFORM_LOGIN_URLS = {
     PlatformType.XIAOHONGSHU: "https://creator.xiaohongshu.com/",
     PlatformType.TENCENT: "https://channels.weixin.qq.com",
     PlatformType.DOUYIN: "https://creator.douyin.com/",
-    PlatformType.KUAISHOU: "https://cp.kuaishou.com"
+    PlatformType.KUAISHOU: "https://cp.kuaishou.com",
 }

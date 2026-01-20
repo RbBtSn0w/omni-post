@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.core.config import DATA_DIR
 
+
 class DatabaseManager:
     """
     数据库文件路径管理类
@@ -45,6 +46,7 @@ class DatabaseManager:
             Path: 数据目录的绝对路径
         """
         return self.data_dir
+
 
 # 创建全局实例
 db_manager = DatabaseManager()

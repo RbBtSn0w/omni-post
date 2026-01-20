@@ -44,14 +44,14 @@ jobs:
       working-directory: apps/backend
       run: |
         black --check src/ --line-length=100
-      continue-on-error: true
+      # Black is a hard gate - code must be properly formatted
 
     - name: Check import sorting with isort
       id: isort
       working-directory: apps/backend
       run: |
         isort --check-only src/ --profile black
-      continue-on-error: true
+      # isort is a hard gate - imports must be properly sorted
 
     - name: Lint with flake8
       id: flake8

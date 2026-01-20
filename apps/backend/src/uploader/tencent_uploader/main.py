@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+import asyncio
+import os
 from datetime import datetime
 
 from playwright.async_api import Playwright, async_playwright
-import os
-import asyncio
-
-from src.core.config import LOCAL_CHROME_HEADLESS, DEBUG_MODE
-from src.core.browser import set_init_script, launch_browser
+from src.core.browser import launch_browser, set_init_script
+from src.core.config import DEBUG_MODE, LOCAL_CHROME_HEADLESS
 from src.core.logger import tencent_logger
 
 
@@ -15,9 +14,11 @@ def format_str_for_short_title(origin_title: str) -> str:
     allowed_special_chars = "《》“”:+?%°"
 
     # 移除不允许的特殊字符
-    filtered_chars = [char if char.isalnum() or char in allowed_special_chars else ' ' if char == ',' else '' for
-                      char in origin_title]
-    formatted_string = ''.join(filtered_chars)
+    filtered_chars = [
+        char if char.isalnum() or char in allowed_special_chars else " " if char == "," else ""
+        for char in origin_title
+    ]
+    formatted_string = "".join(filtered_chars)
 
     # 调整字符串长度
     if len(formatted_string) > 16:
@@ -25,13 +26,22 @@ def format_str_for_short_title(origin_title: str) -> str:
         formatted_string = formatted_string[:16]
     elif len(formatted_string) < 6:
         # 使用空格来填充字符串
-        formatted_string += ' ' * (6 - len(formatted_string))
+        formatted_string += " " * (6 - len(formatted_string))
 
     return formatted_string
 
 
 class TencentVideo(object):
-    def __init__(self, title, file_path, tags, publish_date: datetime, account_file, category=None, is_draft=False):
+    def __init__(
+        self,
+        title,
+        file_path,
+        tags,
+        publish_date: datetime,
+        account_file,
+        category=None,
+        is_draft=False,
+    ):
         self.title = title  # 视频标题
         self.file_path = file_path
         self.tags = tags
@@ -47,21 +57,23 @@ class TencentVideo(object):
 
         await page.click('input[placeholder="请选择发表时间"]')
 
-        str_month = str(publish_date.month) if publish_date.month > 9 else "0" + str(publish_date.month)
+        str_month = (
+            str(publish_date.month) if publish_date.month > 9 else "0" + str(publish_date.month)
+        )
         current_month = str_month + "月"
         # 获取当前的月份
         page_month = await page.inner_text('span.weui-desktop-picker__panel__label:has-text("月")')
 
         # 检查当前月份是否与目标月份相同
         if page_month != current_month:
-            await page.click('button.weui-desktop-btn__icon__right')
+            await page.click("button.weui-desktop-btn__icon__right")
 
         # 获取页面元素
-        elements = await page.query_selector_all('table.weui-desktop-picker__table a')
+        elements = await page.query_selector_all("table.weui-desktop-picker__table a")
 
         # 遍历元素并点击匹配的元素
         for element in elements:
-            if 'weui-desktop-picker__disabled' in await element.evaluate('el => el.className'):
+            if "weui-desktop-picker__disabled" in await element.evaluate("el => el.className"):
                 continue
             text = await element.inner_text()
             if text.strip() == str(publish_date.day):
@@ -79,7 +91,7 @@ class TencentVideo(object):
     async def handle_upload_error(self, page):
         tencent_logger.info("视频出错了，重新上传中")
         await page.locator('div.media-status-content div.tag-inner:has-text("删除")').click()
-        await page.get_by_role('button', name="删除", exact=True).click()
+        await page.get_by_role("button", name="删除", exact=True).click()
         file_input = page.locator('input[type="file"]')
         await file_input.set_input_files(self.file_path)
 
@@ -100,7 +112,7 @@ class TencentVideo(object):
             # 创建一个浏览器上下文，使用指定的 cookie 文件
             context = await browser.new_context(
                 storage_state=f"{self.account_file}",
-                viewport={'width': 1920, 'height': 1080},  # 标准桌面分辨率
+                viewport={"width": 1920, "height": 1080},  # 标准桌面分辨率
             )
             context = await set_init_script(context)
 
@@ -109,8 +121,10 @@ class TencentVideo(object):
             # 访问指定的 URL
             # 注意：使用 domcontentloaded 而非 networkidle，因为视频号后台有持续的 WebSocket 连接
             # 会导致 networkidle 条件永远无法满足而超时
-            await page.goto("https://channels.weixin.qq.com/platform/post/create", wait_until='domcontentloaded')
-            tencent_logger.info(f'[+]正在上传-------{self.title}.mp4')
+            await page.goto(
+                "https://channels.weixin.qq.com/platform/post/create", wait_until="domcontentloaded"
+            )
+            tencent_logger.info(f"[+]正在上传-------{self.title}.mp4")
 
             # 尝试多种方式定位文件上传输入框
             tencent_logger.info("  [-] 正在查找上传按钮...")
@@ -118,7 +132,7 @@ class TencentVideo(object):
 
             # 方法1: 标准 input[type="file"]
             try:
-                await page.wait_for_selector('input[type="file"]', state='visible', timeout=10000)
+                await page.wait_for_selector('input[type="file"]', state="visible", timeout=10000)
                 file_input = page.locator('input[type="file"]').first
                 tencent_logger.info("  [+] 找到 input[type=file]")
             except:
@@ -161,7 +175,9 @@ class TencentVideo(object):
                     inp_accept = await inp.get_attribute("accept") or ""
                     tencent_logger.info(f"    [{i}] type={inp_type}, accept={inp_accept}")
 
-                raise Exception("无法找到文件上传输入框，页面结构可能已更改，请查看 /tmp/tencent_upload_debug.png")
+                raise Exception(
+                    "无法找到文件上传输入框，页面结构可能已更改，请查看 /tmp/tencent_upload_debug.png"
+                )
 
             await file_input.set_input_files(self.file_path)
             # 填充标题和话题
@@ -182,7 +198,7 @@ class TencentVideo(object):
             await self.click_publish(page)
 
             await context.storage_state(path=f"{self.account_file}")  # 保存cookie
-            tencent_logger.success('  [-]cookie更新完毕！')
+            tencent_logger.success("  [-]cookie更新完毕！")
 
             # 仅在调试模式下延迟，方便观察
             if DEBUG_MODE:
@@ -199,9 +215,12 @@ class TencentVideo(object):
                 await browser.close()
 
     async def add_short_title(self, page):
-        short_title_element = page.get_by_text("短标题", exact=True).locator("..").locator(
-            "xpath=following-sibling::div").locator(
-            'span input[type="text"]')
+        short_title_element = (
+            page.get_by_text("短标题", exact=True)
+            .locator("..")
+            .locator("xpath=following-sibling::div")
+            .locator('span input[type="text"]')
+        )
         if await short_title_element.count():
             short_title = format_str_for_short_title(self.title)
             await short_title_element.fill(short_title)
@@ -215,14 +234,18 @@ class TencentVideo(object):
                     if await draft_button.count():
                         await draft_button.click()
                     # 等待跳转到草稿箱页面或确认保存成功
-                    await page.wait_for_url("**/post/list**", timeout=5000)  # 使用通配符匹配包含post/list的URL
+                    await page.wait_for_url(
+                        "**/post/list**", timeout=5000
+                    )  # 使用通配符匹配包含post/list的URL
                     tencent_logger.success("  [-]视频草稿保存成功")
                 else:
                     # 点击"发表"按钮
                     publish_button = page.locator('div.form-btns button:has-text("发表")')
                     if await publish_button.count():
                         await publish_button.click()
-                    await page.wait_for_url("https://channels.weixin.qq.com/platform/post/list", timeout=5000)
+                    await page.wait_for_url(
+                        "https://channels.weixin.qq.com/platform/post/list", timeout=5000
+                    )
                     tencent_logger.success("  [-]视频发布成功")
                 break
             except Exception as e:
@@ -246,16 +269,21 @@ class TencentVideo(object):
             # 匹配删除按钮，代表视频上传完毕，如果不存在，代表视频正在上传，则等待
             try:
                 # 匹配删除按钮，代表视频上传完毕
-                if "weui-desktop-btn_disabled" not in await page.get_by_role("button", name="发表").get_attribute(
-                        'class'):
+                if "weui-desktop-btn_disabled" not in await page.get_by_role(
+                    "button", name="发表"
+                ).get_attribute("class"):
                     tencent_logger.info("  [-]视频上传完毕")
                     break
                 else:
                     tencent_logger.info("  [-] 正在上传视频中...")
                     await asyncio.sleep(2)
                     # 出错了视频出错
-                    if await page.locator('div.status-msg.error').count() and await page.locator(
-                            'div.media-status-content div.tag-inner:has-text("删除")').count():
+                    if (
+                        await page.locator("div.status-msg.error").count()
+                        and await page.locator(
+                            'div.media-status-content div.tag-inner:has-text("删除")'
+                        ).count()
+                    ):
                         tencent_logger.error("  [-] 发现上传出错了...准备重试")
                         await self.handle_upload_error(page)
             except:
@@ -272,8 +300,11 @@ class TencentVideo(object):
         tencent_logger.info(f"成功添加hashtag: {len(self.tags)}")
 
     async def add_collection(self, page):
-        collection_elements = page.get_by_text("添加到合集").locator("xpath=following-sibling::div").locator(
-            '.option-list-wrap > div')
+        collection_elements = (
+            page.get_by_text("添加到合集")
+            .locator("xpath=following-sibling::div")
+            .locator(".option-list-wrap > div")
+        )
         if await collection_elements.count() > 1:
             await page.get_by_text("添加到合集").locator("xpath=following-sibling::div").click()
             await collection_elements.first.click()
@@ -282,22 +313,32 @@ class TencentVideo(object):
         if await page.get_by_label("视频为原创").count():
             await page.get_by_label("视频为原创").check()
         # 检查 "我已阅读并同意 《视频号原创声明使用条款》" 元素是否存在
-        label_locator = await page.locator('label:has-text("我已阅读并同意 《视频号原创声明使用条款》")').is_visible()
+        label_locator = await page.locator(
+            'label:has-text("我已阅读并同意 《视频号原创声明使用条款》")'
+        ).is_visible()
         if label_locator:
             await page.get_by_label("我已阅读并同意 《视频号原创声明使用条款》").check()
             await page.get_by_role("button", name="声明原创").click()
         # 2023年11月20日 wechat更新: 可能新账号或者改版账号，出现新的选择页面
         if await page.locator('div.label span:has-text("声明原创")').count() and self.category:
             # 因处罚无法勾选原创，故先判断是否可用
-            if not await page.locator('div.declare-original-checkbox input.ant-checkbox-input').is_disabled():
-                await page.locator('div.declare-original-checkbox input.ant-checkbox-input').click()
+            if not await page.locator(
+                "div.declare-original-checkbox input.ant-checkbox-input"
+            ).is_disabled():
+                await page.locator("div.declare-original-checkbox input.ant-checkbox-input").click()
                 if not await page.locator(
-                        'div.declare-original-dialog label.ant-checkbox-wrapper.ant-checkbox-wrapper-checked:visible').count():
-                    await page.locator('div.declare-original-dialog input.ant-checkbox-input:visible').click()
-            if await page.locator('div.original-type-form > div.form-label:has-text("原创类型"):visible').count():
-                await page.locator('div.form-content:visible').click()  # 下拉菜单
+                    "div.declare-original-dialog label.ant-checkbox-wrapper.ant-checkbox-wrapper-checked:visible"
+                ).count():
+                    await page.locator(
+                        "div.declare-original-dialog input.ant-checkbox-input:visible"
+                    ).click()
+            if await page.locator(
+                'div.original-type-form > div.form-label:has-text("原创类型"):visible'
+            ).count():
+                await page.locator("div.form-content:visible").click()  # 下拉菜单
                 await page.locator(
-                    f'div.form-content:visible ul.weui-desktop-dropdown__list li.weui-desktop-dropdown__list-ele:has-text("{self.category}")').first.click()
+                    f'div.form-content:visible ul.weui-desktop-dropdown__list li.weui-desktop-dropdown__list-ele:has-text("{self.category}")'
+                ).first.click()
                 await page.wait_for_timeout(1000)
             if await page.locator('button:has-text("声明原创"):visible').count():
                 await page.locator('button:has-text("声明原创"):visible').click()

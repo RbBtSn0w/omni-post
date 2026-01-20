@@ -43,7 +43,7 @@ jobs:
     - name: Run ESLint
       id: eslint
       run: npm run lint:frontend
-      continue-on-error: true
+      # Lint is a hard gate - failures will block the CI
 
     - name: Check for Vue build errors
       id: vue-build

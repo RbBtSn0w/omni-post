@@ -1,6 +1,6 @@
-import sqlite3
 import json
 import os
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -15,7 +15,7 @@ conn = sqlite3.connect(db_file)
 cursor = conn.cursor()
 
 # 创建账号组表
-cursor.execute('''
+cursor.execute("""
 CREATE TABLE IF NOT EXISTS account_groups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,        -- 组名称（唯一）
@@ -23,10 +23,10 @@ CREATE TABLE IF NOT EXISTS account_groups (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
-''')
+""")
 
 # 创建账号记录表
-cursor.execute('''
+cursor.execute("""
 CREATE TABLE IF NOT EXISTS user_info (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type INTEGER NOT NULL,
@@ -39,19 +39,19 @@ CREATE TABLE IF NOT EXISTS user_info (
     UNIQUE(type, userName),  -- 确保每个平台每个用户名只有一条记录
     FOREIGN KEY (group_id) REFERENCES account_groups(id)
 )
-''')
+""")
 
 # 创建文件记录表
-cursor.execute('''CREATE TABLE IF NOT EXISTS file_records (
+cursor.execute("""CREATE TABLE IF NOT EXISTS file_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- 唯一标识每条记录
     filename TEXT NOT NULL,               -- 文件名
     filesize REAL,                     -- 文件大小（单位：MB）
     upload_time DATETIME DEFAULT CURRENT_TIMESTAMP, -- 上传时间，默认当前时间
     file_path TEXT                        -- 文件路径
-)''')
+)""")
 
 # 创建 tasks 表（原迁移逻辑合并进来）
-cursor.execute('''
+cursor.execute("""
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     title TEXT,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )
-''')
+""")
 
 # 提交更改
 conn.commit()

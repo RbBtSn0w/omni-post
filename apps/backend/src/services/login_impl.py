@@ -8,14 +8,13 @@ import asyncio
 import datetime
 import logging
 import sqlite3
-import uuid
 import sys
+import uuid
 from pathlib import Path
 
 from playwright.async_api import async_playwright
-
-from src.core.config import BASE_DIR, DEBUG_MODE, LOGS_DIR, COOKIES_DIR
 from src.core.browser import launch_browser, set_init_script
+from src.core.config import BASE_DIR, COOKIES_DIR, DEBUG_MODE, LOGS_DIR
 from src.db.db_manager import db_manager
 from src.services.cookie_service import get_cookie_service
 
@@ -42,17 +41,14 @@ async def debug_screenshot(page, session_dir: Path, filename: str, description: 
     if not DEBUG_MODE:
         return
 
-    if not filename.lower().endswith('.png'):
+    if not filename.lower().endswith(".png"):
         filename = f"{filename}.png"
 
     screenshot_path = session_dir / filename
 
     try:
         await page.screenshot(
-            path=screenshot_path,
-            timeout=10000,
-            omit_background=True,
-            animations="disabled"
+            path=screenshot_path, timeout=10000, omit_background=True, animations="disabled"
         )
         print(f"[DEBUG] 截图保存: {screenshot_path}" + (f" - {description}" if description else ""))
     except Exception as e:
@@ -64,13 +60,15 @@ def get_or_create_group(cursor, group_name):
     if not group_name:
         return None
 
-    cursor.execute('SELECT id FROM account_groups WHERE name = ?', (group_name,))
+    cursor.execute("SELECT id FROM account_groups WHERE name = ?", (group_name,))
     result = cursor.fetchone()
     if result:
         return result[0]
 
-    cursor.execute('INSERT INTO account_groups (name, description) VALUES (?, ?)',
-                   (group_name, f'自动创建的组: {group_name}'))
+    cursor.execute(
+        "INSERT INTO account_groups (name, description) VALUES (?, ?)",
+        (group_name, f"自动创建的组: {group_name}"),
+    )
     return cursor.lastrowid
 
 
@@ -82,7 +80,9 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
     async def on_url_change():
         if page.url != original_url:
             debug_print(f"[DEBUG] 原页面URL变化: {original_url} -> {page.url}")
-            await debug_screenshot(page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后")
+            await debug_screenshot(
+                page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后"
+            )
             url_changed_event.set()
 
     async with async_playwright() as playwright:
@@ -104,8 +104,12 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
         print("✅ 图片地址:", src)
         status_queue.put(src)
 
-        page.on('framenavigated',
-                lambda frame: asyncio.create_task(on_url_change()) if frame == page.main_frame else None)
+        page.on(
+            "framenavigated",
+            lambda frame: (
+                asyncio.create_task(on_url_change()) if frame == page.main_frame else None
+            ),
+        )
 
         try:
             await asyncio.wait_for(url_changed_event.wait(), timeout=30)
@@ -117,7 +121,7 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
             await context.close()
             await browser.close()
             status_queue.put("500")
-            return {'success': False, 'error': 'TIMEOUT', 'message': error_msg}
+            return {"success": False, "error": "TIMEOUT", "message": error_msg}
 
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
@@ -140,7 +144,8 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
         with sqlite3.connect(db_manager.get_db_path()) as conn:
             cursor = conn.cursor()
             group_id = get_or_create_group(cursor, group_name)
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO user_info (type, filePath, userName, status, group_id, created_at, last_validated_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(type, userName) DO UPDATE SET
@@ -148,7 +153,9 @@ async def douyin_cookie_gen(id, status_queue, group_name=None):
                     status = excluded.status,
                     group_id = COALESCE(excluded.group_id, user_info.group_id),
                     last_validated_at = CURRENT_TIMESTAMP
-            ''', (3, f"{uuid_v1}.json", id, 1, group_id))
+            """,
+                (3, f"{uuid_v1}.json", id, 1, group_id),
+            )
             conn.commit()
             print("✅ 用户状态已记录")
 
@@ -163,7 +170,9 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
     async def on_url_change():
         if page.url != original_url:
             debug_print(f"[DEBUG] 原页面URL变化: {original_url} -> {page.url}")
-            await debug_screenshot(page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后")
+            await debug_screenshot(
+                page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后"
+            )
             url_changed_event.set()
 
     async with async_playwright() as playwright:
@@ -180,35 +189,53 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
 
         async def on_new_page(new_page):
             debug_print(f"[DEBUG] 新窗口创建，URL：{new_page.url}")
-            await debug_screenshot(new_page, screenshot_dir, "new_window_created.png", "新窗口创建时")
+            await debug_screenshot(
+                new_page, screenshot_dir, "new_window_created.png", "新窗口创建时"
+            )
 
             async def on_new_page_load():
                 debug_print(f"[DEBUG] 新窗口加载完成，URL：{new_page.url}")
-                await debug_screenshot(new_page, screenshot_dir, "new_window_loaded.png", "新窗口加载完成后")
+                await debug_screenshot(
+                    new_page, screenshot_dir, "new_window_loaded.png", "新窗口加载完成后"
+                )
                 url_changed_event.set()
 
             async def on_new_page_navigate(frame):
                 if frame == new_page.main_frame:
                     debug_print(f"[DEBUG] 新窗口导航，当前URL：{frame.url}")
-                    await debug_screenshot(new_page, screenshot_dir, "new_window_navigated.png", "新窗口导航后")
+                    await debug_screenshot(
+                        new_page, screenshot_dir, "new_window_navigated.png", "新窗口导航后"
+                    )
                     url_changed_event.set()
 
-            new_page.on('load', lambda: asyncio.create_task(on_new_page_load()))
-            new_page.on('framenavigated', lambda frame: asyncio.create_task(on_new_page_navigate(frame)))
+            new_page.on("load", lambda: asyncio.create_task(on_new_page_load()))
+            new_page.on(
+                "framenavigated", lambda frame: asyncio.create_task(on_new_page_navigate(frame))
+            )
 
-        context.on('page', lambda new_page: asyncio.create_task(on_new_page(new_page)))
+        context.on("page", lambda new_page: asyncio.create_task(on_new_page(new_page)))
 
         async def _on_frame_navigated(frame):
             timestamp = datetime.datetime.now().strftime("%H%M%S_%f")[:-3]
             if frame == page.main_frame:
                 debug_print(f"[DEBUG] 主窗口framenavigated事件触发，当前URL：{frame.url}")
-                await debug_screenshot(page, screenshot_dir, f"framenavigated_main_frame_{timestamp}.png", "主框架导航后")
+                await debug_screenshot(
+                    page,
+                    screenshot_dir,
+                    f"framenavigated_main_frame_{timestamp}.png",
+                    "主框架导航后",
+                )
                 await on_url_change()
             else:
                 debug_print(f"[DEBUG] 主窗口framenavigated事件触发（子框架），当前URL：{frame.url}")
-                await debug_screenshot(page, screenshot_dir, f"framenavigated_sub_frame_{timestamp}.png", f"子框架导航后: {frame.url}")
+                await debug_screenshot(
+                    page,
+                    screenshot_dir,
+                    f"framenavigated_sub_frame_{timestamp}.png",
+                    f"子框架导航后: {frame.url}",
+                )
 
-        page.on('framenavigated', lambda frame: asyncio.create_task(_on_frame_navigated(frame)))
+        page.on("framenavigated", lambda frame: asyncio.create_task(_on_frame_navigated(frame)))
 
         iframe_locator = page.frame_locator("iframe").first
         img_locator = iframe_locator.get_by_role("img").first
@@ -226,9 +253,14 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
             status_queue.put("500")
             error_msg = "监听页面跳转超时，登录失败"
             print(error_msg)
-            await debug_screenshot(page, screenshot_dir, "url_change_timeout.png", "URL变化监听超时")
-            logging.error(error_msg, extra={'platform': 'tencent', 'screenshot_dir': screenshot_dir, 'user_id': id})
-            return {'success': False, 'error': 'TIMEOUT', 'message': error_msg}
+            await debug_screenshot(
+                page, screenshot_dir, "url_change_timeout.png", "URL变化监听超时"
+            )
+            logging.error(
+                error_msg,
+                extra={"platform": "tencent", "screenshot_dir": screenshot_dir, "user_id": id},
+            )
+            return {"success": False, "error": "TIMEOUT", "message": error_msg}
 
         uuid_v1 = uuid.uuid1()
         debug_print(f"[DEBUG] UUID v1: {uuid_v1}")
@@ -242,7 +274,15 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
             status_queue.put("500")
             error_msg = "Cookie验证失败，登录状态无效"
             print(error_msg)
-            logging.error(error_msg, extra={'platform': 'tencent', 'cookie_file': f"{uuid_v1}.json", 'screenshot_dir': screenshot_dir, 'user_id': id})
+            logging.error(
+                error_msg,
+                extra={
+                    "platform": "tencent",
+                    "cookie_file": f"{uuid_v1}.json",
+                    "screenshot_dir": screenshot_dir,
+                    "user_id": id,
+                },
+            )
             return {}
 
         await page.close()
@@ -253,7 +293,8 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
         with sqlite3.connect(db_manager.get_db_path()) as conn:
             cursor = conn.cursor()
             group_id = get_or_create_group(cursor, group_name)
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO user_info (type, filePath, userName, status, group_id, created_at, last_validated_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(type, userName) DO UPDATE SET
@@ -261,13 +302,23 @@ async def get_tencent_cookie(id, status_queue, group_name=None):
                     status = excluded.status,
                     group_id = COALESCE(excluded.group_id, user_info.group_id),
                     last_validated_at = CURRENT_TIMESTAMP
-            ''', (2, f"{uuid_v1}.json", id, 1, group_id))
+            """,
+                (2, f"{uuid_v1}.json", id, 1, group_id),
+            )
             conn.commit()
             debug_print(f"[DEBUG] 用户状态已记录到数据库，user_id: {id}")
             print("✅ 用户状态已记录")
 
         status_queue.put("200")
-        logging.info("腾讯视频号登录成功", extra={'platform': 'tencent', 'user_id': id, 'cookie_file': f"{uuid_v1}.json", 'screenshot_dir': screenshot_dir})
+        logging.info(
+            "腾讯视频号登录成功",
+            extra={
+                "platform": "tencent",
+                "user_id": id,
+                "cookie_file": f"{uuid_v1}.json",
+                "screenshot_dir": screenshot_dir,
+            },
+        )
         return {}
 
 
@@ -314,7 +365,9 @@ async def get_ks_cookie(id, status_queue, group_name=None):
             await log_func(f"当前页面标题: {page_title}")
 
             try:
-                avatar_locator = page.get_by_role("img").filter(has_attribute="class", containing="avatar")
+                avatar_locator = page.get_by_role("img").filter(
+                    has_attribute="class", containing="avatar"
+                )
                 if await avatar_locator.count() > 0:
                     await log_func("检测到用户头像，可能登录成功")
                     return True
@@ -359,8 +412,26 @@ async def get_ks_cookie(id, status_queue, group_name=None):
         context = await set_init_script(context)
         page = await context.new_page()
 
-        page.on("request", lambda request: asyncio.create_task(log_with_timestamp(f"请求URL: {request.url}, 方法: {request.method}")) if ("cp.kuaishou.com" in request.url or "passport.kuaishou.com" in request.url) else None)
-        page.on("response", lambda response: asyncio.create_task(log_with_timestamp(f"响应URL: {response.url}, 状态码: {response.status}")) if ("cp.kuaishou.com" in response.url or "passport.kuaishou.com" in response.url) else None)
+        page.on(
+            "request",
+            lambda request: (
+                asyncio.create_task(
+                    log_with_timestamp(f"请求URL: {request.url}, 方法: {request.method}")
+                )
+                if ("cp.kuaishou.com" in request.url or "passport.kuaishou.com" in request.url)
+                else None
+            ),
+        )
+        page.on(
+            "response",
+            lambda response: (
+                asyncio.create_task(
+                    log_with_timestamp(f"响应URL: {response.url}, 状态码: {response.status}")
+                )
+                if ("cp.kuaishou.com" in response.url or "passport.kuaishou.com" in response.url)
+                else None
+            ),
+        )
 
         initial_url = "https://cp.kuaishou.com"
         response = await page.goto(initial_url, wait_until="networkidle")
@@ -374,8 +445,13 @@ async def get_ks_cookie(id, status_queue, group_name=None):
         print("✅ 图片地址:", src)
         status_queue.put(src)
 
-        page.on('framenavigated', lambda frame: asyncio.create_task(on_url_change(frame)))
-        page.on('load', lambda: asyncio.create_task(log_with_timestamp(f"页面加载完成事件触发，当前URL: {page.url}")))
+        page.on("framenavigated", lambda frame: asyncio.create_task(on_url_change(frame)))
+        page.on(
+            "load",
+            lambda: asyncio.create_task(
+                log_with_timestamp(f"页面加载完成事件触发，当前URL: {page.url}")
+            ),
+        )
 
         try:
             await asyncio.wait_for(url_changed_event.wait(), timeout=30)
@@ -385,14 +461,18 @@ async def get_ks_cookie(id, status_queue, group_name=None):
             status_queue.put("500")
             error_msg = "监听页面跳转超时，登录失败"
             print(error_msg)
-            logging.error(error_msg, extra={'platform': 'kuaishou', 'user_id': id})
-            return {'success': False, 'error': 'URL_CHANGE_TIMEOUT', 'message': error_msg}
+            logging.error(error_msg, extra={"platform": "kuaishou", "user_id": id})
+            return {"success": False, "error": "URL_CHANGE_TIMEOUT", "message": error_msg}
 
         final_login_success = await verify_login_success(page, log_with_timestamp)
         if not final_login_success:
             await log_with_timestamp("最终页面内容验证失败", "ERROR")
             status_queue.put("500")
-            return {'success': False, 'error': 'FINAL_VERIFICATION_FAILED', 'message': "登录成功后基于页面内容验证失败"}
+            return {
+                "success": False,
+                "error": "FINAL_VERIFICATION_FAILED",
+                "message": "登录成功后基于页面内容验证失败",
+            }
 
         uuid_v1 = uuid.uuid1()
         cookies_dir = COOKIES_DIR
@@ -406,8 +486,11 @@ async def get_ks_cookie(id, status_queue, group_name=None):
             status_queue.put("500")
             error_msg = "Cookie验证失败，登录状态无效"
             print(error_msg)
-            logging.error(error_msg, extra={'platform': 'kuaishou', 'cookie_file': f"{uuid_v1}.json", 'user_id': id})
-            return {'success': False, 'error': 'COOKIE_VALIDATION_FAILED', 'message': error_msg}
+            logging.error(
+                error_msg,
+                extra={"platform": "kuaishou", "cookie_file": f"{uuid_v1}.json", "user_id": id},
+            )
+            return {"success": False, "error": "COOKIE_VALIDATION_FAILED", "message": error_msg}
 
         await page.close()
         await context.close()
@@ -416,7 +499,8 @@ async def get_ks_cookie(id, status_queue, group_name=None):
         with sqlite3.connect(db_manager.get_db_path()) as conn:
             cursor = conn.cursor()
             group_id = get_or_create_group(cursor, group_name)
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO user_info (type, filePath, userName, status, group_id, created_at, last_validated_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(type, userName) DO UPDATE SET
@@ -424,7 +508,9 @@ async def get_ks_cookie(id, status_queue, group_name=None):
                     status = excluded.status,
                     group_id = COALESCE(excluded.group_id, user_info.group_id),
                     last_validated_at = CURRENT_TIMESTAMP
-            ''', (4, f"{uuid_v1}.json", id, 1, group_id))
+            """,
+                (4, f"{uuid_v1}.json", id, 1, group_id),
+            )
             conn.commit()
             print("✅ 用户状态已记录")
 
@@ -439,7 +525,9 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
     async def on_url_change():
         if page.url != original_url:
             debug_print(f"[DEBUG] 原页面URL变化: {original_url} -> {page.url}")
-            await debug_screenshot(page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后")
+            await debug_screenshot(
+                page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后"
+            )
             url_changed_event.set()
 
     async with async_playwright() as playwright:
@@ -454,7 +542,7 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
         debug_print(f"[DEBUG] 页面加载完成: {original_url}")
 
         await debug_screenshot(page, screenshot_dir, "after_navigation.png", "导航后")
-        await page.locator('img.css-wemwzq').click()
+        await page.locator("img.css-wemwzq").click()
         await debug_screenshot(page, screenshot_dir, "after_login_click.png", "点击登录按钮后")
 
         img_locator = page.get_by_role("img").nth(2)
@@ -464,8 +552,12 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
         print("✅ 图片地址:", src)
         status_queue.put(src)
 
-        page.on('framenavigated',
-                lambda frame: asyncio.create_task(on_url_change()) if frame == page.main_frame else None)
+        page.on(
+            "framenavigated",
+            lambda frame: (
+                asyncio.create_task(on_url_change()) if frame == page.main_frame else None
+            ),
+        )
 
         try:
             await asyncio.wait_for(url_changed_event.wait(), timeout=30)
@@ -477,7 +569,7 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
             await page.close()
             await context.close()
             await browser.close()
-            return {'success': False, 'error': 'TIMEOUT', 'message': error_msg}
+            return {"success": False, "error": "TIMEOUT", "message": error_msg}
 
         uuid_v1 = uuid.uuid1()
         print(f"UUID v1: {uuid_v1}")
@@ -500,7 +592,8 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
         with sqlite3.connect(db_manager.get_db_path()) as conn:
             cursor = conn.cursor()
             group_id = get_or_create_group(cursor, group_name)
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO user_info (type, filePath, userName, status, group_id, created_at, last_validated_at)
                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(type, userName) DO UPDATE SET
@@ -508,7 +601,9 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
                     status = excluded.status,
                     group_id = COALESCE(excluded.group_id, user_info.group_id),
                     last_validated_at = CURRENT_TIMESTAMP
-            ''', (1, f"{uuid_v1}.json", id, 1, group_id))
+            """,
+                (1, f"{uuid_v1}.json", id, 1, group_id),
+            )
             conn.commit()
             print("✅ 用户状态已记录")
         status_queue.put("200")

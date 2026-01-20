@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        // Python
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.pylint",
+        // JavaScript/Vue
+        "dbaeumer.vscode-eslint",
+        "Vue.volar",
+        // Git
+        "eamodio.gitlens"
+    ]
+}

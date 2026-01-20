@@ -10,15 +10,13 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import Browser, BrowserContext, Page
-
 from src.core.config import (
     BASE_DIR,
+    DEBUG_MODE,
     LOCAL_CHROME_HEADLESS,
     LOCAL_CHROME_PATH,
-    DEBUG_MODE,
     LOGS_DIR,
 )
-
 
 # Social media platform identifiers
 SOCIAL_MEDIA_DOUYIN = "douyin"
@@ -63,27 +61,25 @@ async def launch_browser(playwright, headless: Optional[bool] = None) -> Browser
         Launched browser instance
     """
     browser_args = [
-        '--lang=en-GB',
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-blink-features=AutomationControlled',
-        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36'
+        "--lang=en-GB",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-blink-features=AutomationControlled",
+        "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36",
     ]
 
     launch_options = {
-        'headless': headless if headless is not None else LOCAL_CHROME_HEADLESS,
-        'args': browser_args
+        "headless": headless if headless is not None else LOCAL_CHROME_HEADLESS,
+        "args": browser_args,
     }
 
     if LOCAL_CHROME_PATH:
         debug_print(f"[DEBUG] 使用系统 Chrome: {LOCAL_CHROME_PATH}")
-        launch_options['executable_path'] = LOCAL_CHROME_PATH
+        launch_options["executable_path"] = LOCAL_CHROME_PATH
     else:
         debug_print("[DEBUG] 使用 Playwright 内置 Chromium")
 
     return await playwright.chromium.launch(**launch_options)
-
-
 
 
 def create_screenshot_dir(platform: str) -> Path:
@@ -117,18 +113,17 @@ async def debug_screenshot(page: Page, session_dir: Path, filename: str, descrip
     if not DEBUG_MODE:
         return
 
-    if not filename.lower().endswith('.png'):
+    if not filename.lower().endswith(".png"):
         filename = f"{filename}.png"
 
     screenshot_path = session_dir / filename
 
     try:
         await page.screenshot(
-            path=screenshot_path,
-            timeout=10000,
-            omit_background=True,
-            animations="disabled"
+            path=screenshot_path, timeout=10000, omit_background=True, animations="disabled"
         )
-        debug_print(f"[DEBUG] 截图保存: {screenshot_path}" + (f" - {description}" if description else ""))
+        debug_print(
+            f"[DEBUG] 截图保存: {screenshot_path}" + (f" - {description}" if description else "")
+        )
     except Exception as e:
         debug_print(f"[DEBUG] 截图失败: {screenshot_path} - {e}")

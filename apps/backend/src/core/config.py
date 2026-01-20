@@ -35,10 +35,7 @@ DEBUG_MODE = True  # Set to True to enable debug logs and screenshots
 TEST_MODE = False  # Default off, tests will patch as needed
 
 # Mock configuration (for test patching)
-MOCK_CONFIG = {
-    'login_status': False,
-    'cookie_valid': False
-}
+MOCK_CONFIG = {"login_status": False, "cookie_valid": False}
 
 # Chrome browser path configuration
 if platform.system() == "Windows":
@@ -50,6 +47,7 @@ else:
 
 # Headless mode setting
 LOCAL_CHROME_HEADLESS = True
+
 
 # Browser info logging (moved to avoid execution during import)
 # Call log_browser_info() explicitly from app startup if needed
@@ -65,6 +63,7 @@ def log_browser_info():
                 print("💡 建议将 LOCAL_CHROME_PATH 设置为 None 以使用 Playwright 自带的 Chromium")
             else:
                 print(f"📌 使用系统 Chrome: {LOCAL_CHROME_PATH}")
+
 
 # Register module alias for test patching compatibility
 sys.modules.setdefault("conf", sys.modules.get("src.conf", sys.modules.get(__name__)))

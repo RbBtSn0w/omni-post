@@ -1,5 +1,7 @@
 {
-  // Python 基础配置
+  // =====================================
+  // Python 配置
+  // =====================================
   "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python",
   "python.defaultInterpreterPath.windows": "${workspaceFolder}\\apps\\backend\\.venv\\Scripts\\python.exe",
   "python.envFile": "${workspaceFolder}/apps/backend/.env",
@@ -12,14 +14,49 @@
     "tests"
   ],
   "python.testing.cwd": "${workspaceFolder}/apps/backend",
-  // 前端 Vitest 配置
+  // =====================================
+  // 前端配置
+  // =====================================
   "vitest.enable": true,
   "vitest.commandLine": "npm run test",
   "vitest.root": "${workspaceFolder}/apps/frontend",
-  // 编辑器优化
+  // =====================================
+  // Lint & Format 配置 (开发时第一层防护)
+  // =====================================
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  // ESLint 配置
+  "eslint.workingDirectories": [
+    {
+      "directory": "apps/frontend",
+      "changeProcessCWD": true
+    }
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "vue"
+  ],
+  // Python 格式化配置 (需安装 Black Formatter 和 isort 扩展)
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  // Vue 文件配置
+  "[vue]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  // =====================================
+  // 通用编辑器配置
+  // =====================================
   "files.trimTrailingWhitespace": true,
-  // 文件排除配置
+  "files.insertFinalNewline": true,
   "files.exclude": {
     "**/.venv": true,
     "**/node_modules": true

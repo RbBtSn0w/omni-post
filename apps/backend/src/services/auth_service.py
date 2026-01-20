@@ -41,26 +41,31 @@ class DefaultAuthService(AuthService):
     async def cookie_auth_douyin(self, account_file: Path) -> bool:
         """抖音cookie认证"""
         from src.services.cookie_service import get_cookie_service
+
         return await get_cookie_service().cookie_auth_douyin(account_file)
 
     async def cookie_auth_tencent(self, account_file: Path) -> bool:
         """腾讯视频号cookie认证"""
         from src.services.cookie_service import get_cookie_service
+
         return await get_cookie_service().cookie_auth_tencent(account_file)
 
     async def cookie_auth_ks(self, account_file: Path) -> bool:
         """快手cookie认证"""
         from src.services.cookie_service import get_cookie_service
+
         return await get_cookie_service().cookie_auth_ks(account_file)
 
     async def cookie_auth_xhs(self, account_file: Path) -> bool:
         """小红书cookie认证"""
         from src.services.cookie_service import get_cookie_service
+
         return await get_cookie_service().cookie_auth_xhs(account_file)
 
     async def check_cookie(self, platform_type: int, file_path: str) -> bool:
         """检查指定平台的cookie有效性"""
         from src.services.cookie_service import get_cookie_service
+
         return await get_cookie_service().check_cookie(platform_type, file_path)
 
 

@@ -1,21 +1,23 @@
-from datetime import datetime
-from playwright.async_api import Playwright, async_playwright, Page
-import os
 import asyncio
+import os
+from datetime import datetime
 
-from src.core.config import LOCAL_CHROME_HEADLESS, DEBUG_MODE
-from src.core.browser import set_init_script, launch_browser
+from playwright.async_api import Page, Playwright, async_playwright
+from src.core.browser import launch_browser, set_init_script
+from src.core.config import DEBUG_MODE, LOCAL_CHROME_HEADLESS
 from src.core.logger import xiaohongshu_logger
 
 
 class XiaoHongShuVideo(object):
-    def __init__(self, title, file_path, tags, publish_date: datetime, account_file, thumbnail_path=None):
+    def __init__(
+        self, title, file_path, tags, publish_date: datetime, account_file, thumbnail_path=None
+    ):
         self.title = title  # 视频标题
         self.file_path = file_path
         self.tags = tags
         self.publish_date = publish_date
         self.account_file = account_file
-        self.date_format = '%Y年%m月%d日 %H:%M'
+        self.date_format = "%Y年%m月%d日 %H:%M"
         self.headless = LOCAL_CHROME_HEADLESS
         self.thumbnail_path = thumbnail_path
 
@@ -38,8 +40,10 @@ class XiaoHongShuVideo(object):
         await asyncio.sleep(1)
 
     async def handle_upload_error(self, page):
-        xiaohongshu_logger.info('视频出错了，重新上传中')
-        await page.locator('div.progress-div [class^="upload-btn-input"]').set_input_files(self.file_path)
+        xiaohongshu_logger.info("视频出错了，重新上传中")
+        await page.locator('div.progress-div [class^="upload-btn-input"]').set_input_files(
+            self.file_path
+        )
 
     async def upload(self, playwright: Playwright) -> None:
         """
@@ -56,32 +60,39 @@ class XiaoHongShuVideo(object):
 
             # 创建浏览器上下文
             context = await browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                storage_state=f"{self.account_file}"
+                viewport={"width": 1920, "height": 1080}, storage_state=f"{self.account_file}"
             )
             context = await set_init_script(context)
 
             # 创建一个新的页面
             page = await context.new_page()
             # 访问指定的 URL
-            await page.goto("https://creator.xiaohongshu.com/publish/publish?from=homepage&target=video", wait_until='domcontentloaded')
-            xiaohongshu_logger.info(f'[+]正在上传-------{self.title}.mp4')
-            xiaohongshu_logger.info(f'[-] 正在打开主页...')
+            await page.goto(
+                "https://creator.xiaohongshu.com/publish/publish?from=homepage&target=video",
+                wait_until="domcontentloaded",
+            )
+            xiaohongshu_logger.info(f"[+]正在上传-------{self.title}.mp4")
+            xiaohongshu_logger.info(f"[-] 正在打开主页...")
             # 点击 "上传视频" 按钮
-            await page.locator("div[class^='upload-content'] input[class='upload-input']").set_input_files(self.file_path)
+            await page.locator(
+                "div[class^='upload-content'] input[class='upload-input']"
+            ).set_input_files(self.file_path)
 
             # 等待上传成功
             while True:
                 try:
-                    upload_input = await page.wait_for_selector('input.upload-input', timeout=3000)
+                    upload_input = await page.wait_for_selector("input.upload-input", timeout=3000)
                     preview_new = await upload_input.query_selector(
-                        'xpath=following-sibling::div[contains(@class, "preview-new")]')
+                        'xpath=following-sibling::div[contains(@class, "preview-new")]'
+                    )
                     if preview_new:
-                        stage_elements = await preview_new.query_selector_all('div.stage')
+                        stage_elements = await preview_new.query_selector_all("div.stage")
                         upload_success = False
                         for stage in stage_elements:
-                            text_content = await page.evaluate('(element) => element.textContent', stage)
-                            if '上传成功' in text_content:
+                            text_content = await page.evaluate(
+                                "(element) => element.textContent", stage
+                            )
+                            if "上传成功" in text_content:
                                 upload_success = True
                                 break
                         if upload_success:
@@ -98,8 +109,8 @@ class XiaoHongShuVideo(object):
 
             # 填充标题和话题
             await asyncio.sleep(1)
-            xiaohongshu_logger.info(f'  [-] 正在填充标题和话题...')
-            title_container = page.locator('div.plugin.title-container').locator('input.d-text')
+            xiaohongshu_logger.info(f"  [-] 正在填充标题和话题...")
+            title_container = page.locator("div.plugin.title-container").locator("input.d-text")
             if await title_container.count():
                 await title_container.fill(self.title[:30])
             else:
@@ -114,7 +125,7 @@ class XiaoHongShuVideo(object):
             for index, tag in enumerate(self.tags, start=1):
                 await page.type(css_selector, "#" + tag)
                 await page.press(css_selector, "Space")
-            xiaohongshu_logger.info(f'总共添加{len(self.tags)}个话题')
+            xiaohongshu_logger.info(f"总共添加{len(self.tags)}个话题")
 
             if self.publish_date != 0:
                 await self.set_schedule_time_xiaohongshu(page, self.publish_date)
@@ -127,8 +138,7 @@ class XiaoHongShuVideo(object):
                     else:
                         await page.locator('button:has-text("发布")').click()
                     await page.wait_for_url(
-                        "https://creator.xiaohongshu.com/publish/success?**",
-                        timeout=3000
+                        "https://creator.xiaohongshu.com/publish/success?**", timeout=3000
                     )
                     xiaohongshu_logger.success("  [-]视频发布成功")
                     break
@@ -138,7 +148,7 @@ class XiaoHongShuVideo(object):
                     await asyncio.sleep(0.5)
 
             await context.storage_state(path=self.account_file)
-            xiaohongshu_logger.success('  [-]cookie更新完毕！')
+            xiaohongshu_logger.success("  [-]cookie更新完毕！")
 
             if DEBUG_MODE:
                 await asyncio.sleep(2)
@@ -158,15 +168,21 @@ class XiaoHongShuVideo(object):
             await page.wait_for_selector("div.semi-modal-content:visible")
             await page.click('text="设置竖封面"')
             await page.wait_for_timeout(2000)
-            await page.locator("div[class^='semi-upload upload'] >> input.semi-upload-hidden-input").set_input_files(thumbnail_path)
+            await page.locator(
+                "div[class^='semi-upload upload'] >> input.semi-upload-hidden-input"
+            ).set_input_files(thumbnail_path)
             await page.wait_for_timeout(2000)
-            await page.locator("div[class^='extractFooter'] button:visible:has-text('完成')").click()
+            await page.locator(
+                "div[class^='extractFooter'] button:visible:has-text('完成')"
+            ).click()
 
     async def set_location(self, page: Page, location: str = "青岛市"):
         xiaohongshu_logger.info(f"开始设置位置: {location}")
 
         xiaohongshu_logger.info("等待地点输入框加载...")
-        loc_ele = await page.wait_for_selector('div.d-text.d-select-placeholder.d-text-ellipsis.d-text-nowrap')
+        loc_ele = await page.wait_for_selector(
+            "div.d-text.d-select-placeholder.d-text-ellipsis.d-text-nowrap"
+        )
         xiaohongshu_logger.info(f"已定位到地点输入框: {loc_ele}")
         await loc_ele.click()
         xiaohongshu_logger.info("点击地点输入框完成")
@@ -177,7 +193,7 @@ class XiaoHongShuVideo(object):
         xiaohongshu_logger.info(f"位置名称输入完成: {location}")
 
         xiaohongshu_logger.info("等待下拉列表加载...")
-        dropdown_selector = 'div.d-popover.d-popover-default.d-dropdown.--size-min-width-large'
+        dropdown_selector = "div.d-popover.d-popover-default.d-dropdown.--size-min-width-large"
         await page.wait_for_timeout(3000)
         try:
             await page.wait_for_selector(dropdown_selector, timeout=3000)
@@ -199,10 +215,7 @@ class XiaoHongShuVideo(object):
 
         xiaohongshu_logger.info(f"尝试定位包含'{location}'的选项...")
         try:
-            location_option = await page.wait_for_selector(
-                flexible_xpath,
-                timeout=3000
-            )
+            location_option = await page.wait_for_selector(flexible_xpath, timeout=3000)
 
             if location_option:
                 xiaohongshu_logger.info(f"使用灵活选择器定位成功: {location_option}")
@@ -213,7 +226,7 @@ class XiaoHongShuVideo(object):
                     f'//div[contains(@class, "d-options-wrapper")]'
                     f'//div[contains(@class, "d-grid") and contains(@class, "d-options")]'
                     f'/div[1]//div[contains(@class, "name") and text()="{location}"]',
-                    timeout=2000
+                    timeout=2000,
                 )
 
             xiaohongshu_logger.info("滚动到目标选项...")
@@ -237,7 +250,7 @@ class XiaoHongShuVideo(object):
                     '//div[contains(@class, "d-popover") and contains(@class, "d-dropdown")]'
                     '//div[contains(@class, "d-options-wrapper")]'
                     '//div[contains(@class, "d-grid") and contains(@class, "d-options")]'
-                    '/div'
+                    "/div"
                 )
                 xiaohongshu_logger.info(f"找到 {len(all_options)} 个选项")
 

@@ -21,7 +21,8 @@
     "test:backend": "npm run test -w apps/backend",
     "test:frontend": "npm run test -w apps/frontend",
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
-    "clean": "npm run clean --workspaces --if-present"
+    "clean": "npm run clean --workspaces --if-present",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -62,5 +63,18 @@
     "Use the :venv suffix commands to run in a virtual environment.",
     "For example: npm run install:all:venv, npm run dev:backend:venv.",
     "Please follow the setup instructions in the README.md file."
-  ]
+  ],
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  },
+  "lint-staged": {
+    "apps/frontend/**/*.{js,vue}": [
+      "eslint --fix"
+    ],
+    "apps/backend/**/*.py": [
+      "black --line-length=100",
+      "isort --profile black"
+    ]
+  }
 }
