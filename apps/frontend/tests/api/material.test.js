@@ -16,8 +16,8 @@ vi.mock('@/core/config', () => ({
   MAX_UPLOAD_SIZE_MB: 500
 }))
 
-// Import after mocking
-const { materialApi } = await import('@/api/material')
+// Import materialApi dynamically to ensure mocks are applied first
+import { materialApi } from '@/api/material'
 
 describe('materialApi.js', () => {
   beforeEach(() => {
