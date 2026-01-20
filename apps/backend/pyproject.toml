@@ -32,6 +32,8 @@ dev = [
     "freezegun>=1.2.0",
     "pytest-timeout>=2.1.0",
     "pytest-env>=0.8.1",
+    "black>=24.0.0",
+    "isort>=5.0.0",
 ]
 
 [tool.setuptools]
@@ -39,6 +41,16 @@ packages = {find = {where = ["."], include = ["src*"]}}
 
 [tool.setuptools.package-dir]
 "" = "."
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+src_paths = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

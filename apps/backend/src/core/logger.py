@@ -7,6 +7,7 @@ This module provides centralized logging configuration.
 from sys import stdout
 
 from loguru import logger
+
 from src.core.config import BASE_DIR, LOGS_DIR
 
 

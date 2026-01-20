@@ -73,8 +73,8 @@
       "eslint --fix"
     ],
     "apps/backend/**/*.py": [
-      "black --line-length=100",
-      "isort --profile black"
+      "apps/backend/.venv/bin/black",
+      "apps/backend/.venv/bin/isort"
     ]
   }
 }

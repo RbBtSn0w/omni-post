@@ -13,6 +13,7 @@ import uuid
 from pathlib import Path
 
 from playwright.async_api import async_playwright
+
 from src.core.browser import launch_browser, set_init_script
 from src.core.config import BASE_DIR, COOKIES_DIR, DEBUG_MODE, LOGS_DIR
 from src.db.db_manager import db_manager

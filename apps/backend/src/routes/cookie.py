@@ -3,6 +3,7 @@ import sqlite3
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_from_directory
+
 from src.core.config import COOKIES_DIR
 from src.db.db_manager import db_manager
 

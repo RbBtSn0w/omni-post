@@ -5,6 +5,7 @@ from queue import Queue
 
 from flask import Flask, Response, send_from_directory
 from flask_cors import CORS
+
 from src.core.config import BASE_DIR, MAX_UPLOAD_SIZE
 
 

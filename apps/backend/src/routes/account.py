@@ -1,6 +1,7 @@
 import sqlite3
 
 from flask import Blueprint, jsonify, request
+
 from src.db.db_manager import db_manager
 from src.services.cookie_service import get_cookie_service
 

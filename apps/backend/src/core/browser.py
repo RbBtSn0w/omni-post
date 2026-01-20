@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import Browser, BrowserContext, Page
+
 from src.core.config import (
     BASE_DIR,
     DEBUG_MODE,

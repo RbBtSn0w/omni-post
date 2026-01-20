@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_from_directory
+
 from src.core.config import MAX_UPLOAD_SIZE, VIDEOS_DIR
 from src.db.db_manager import db_manager
 

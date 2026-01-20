@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import async_playwright
+
 from src.core.browser import launch_browser, set_init_script
 from src.core.config import COOKIES_DIR
 from src.core.logger import douyin_logger, kuaishou_logger, tencent_logger
