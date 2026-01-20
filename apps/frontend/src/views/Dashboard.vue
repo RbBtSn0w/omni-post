@@ -290,11 +290,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'// 导入图标
 import {
-  User, Platform, List, Document,
-  Upload, Timer, DataAnalysis, Search, Refresh, InfoFilled
+  User, Platform, List, Document, InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { use } from 'echarts/core'
@@ -378,24 +377,6 @@ const contentStats = ref({
 
 // 最近任务数据 - 从taskStore获取
 const recentTasks = computed(() => taskStore.recentTasks)
-
-// 格式化日期
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-// 平台列表
-const platforms = ref(['快手', '抖音', '视频号', '小红书'])
-
-// 任务状态列表
-const taskStatuses = ref(['已完成', '进行中', '待执行', '已失败'])
 
 // 移除不再需要的函数：
 // - handlePageChange

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AccountManagement from '@/views/AccountManagement.vue'
-import { ref } from 'vue'
 
 // 提升 mock 变量
 const { mockForceRefreshAccounts } = vi.hoisted(() => ({

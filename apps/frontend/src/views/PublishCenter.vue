@@ -809,8 +809,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Upload, Plus, Close, Folder, Management, Delete, InfoFilled, Search, Grid, ArrowDown, VideoPlay } from '@element-plus/icons-vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { Upload, Plus, Close, Folder, Management, Delete, InfoFilled, Search, Grid, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
@@ -1019,15 +1019,6 @@ const recommendedTopics = [
   '健康', '时尚', '美妆', '摄影', '宠物', '汽车'
 ]
 
-// 定时发布预设
-const schedulePresets = [
-  { name: 'daily', label: '每日1次', videosPerDay: 1, dailyTimes: ['19:00'] },
-  { name: 'twiceDaily', label: '每日2次', videosPerDay: 2, dailyTimes: ['12:00', '19:00'] },
-  { name: 'threeDaily', label: '每日3次', videosPerDay: 3, dailyTimes: ['08:00', '14:00', '20:00'] },
-  { name: 'workout', label: '健身计划', videosPerDay: 1, dailyTimes: ['07:00'] },
-  { name: 'entertainment', label: '娱乐高峰', videosPerDay: 5, dailyTimes: ['18:00', '19:00', '20:00', '21:00', '22:00'] }
-]
-
 // 常用发布时间
 const commonTimes = [
   '06:00', '07:00', '08:00', '09:00', '10:00',
@@ -1072,22 +1063,6 @@ const tabs = reactive([
   makeNewTab()
 ])
 
-// 根据选择的平台获取可用账号列表
-const availableAccounts = computed(() => {
-  if (!currentTab.value || currentTab.value.selectedPlatforms.length === 0) {
-    return accountStore.accounts
-  }
-
-  const platformMap = {
-    3: '抖音',
-    2: '视频号',
-    1: '小红书',
-    4: '快手'
-  }
-  const currentPlatform = platformMap[currentTab.value.selectedPlatforms[0]]
-  return currentPlatform ? accountStore.accounts.filter(acc => acc.platform === currentPlatform) : accountStore.accounts
-})
-
 // 计算每个平台对应的可用账号数量
 const getPlatformAccountCount = (tab, platformKey) => {
   if (!tab.selectedAccounts || tab.selectedAccounts.length === 0) {
@@ -1124,19 +1099,6 @@ const updatePlatformSelection = (tab) => {
 
   // 自动选中所有可选择的平台
   tab.selectedPlatforms = selectablePlatforms
-}
-
-// 选择所有平台
-const selectAllPlatforms = (tab) => {
-  // 只选择可选择的平台
-  tab.selectedPlatforms = platforms
-    .filter(platform => isPlatformSelectable(tab, platform.key))
-    .map(platform => platform.key)
-}
-
-// 取消选择所有平台
-const deselectAllPlatforms = (tab) => {
-  tab.selectedPlatforms = []
 }
 
 // 过滤后的任务列表
@@ -1194,7 +1156,7 @@ const validateFileType = (file) => {
 };
 
 // 文件选择变更（用于本地文件选择）
-const handleFileChange = (file, uploadFileList) => {
+const handleFileChange = (file) => {
   // 验证文件类型
   validateFileType(file);
 };
@@ -1271,12 +1233,6 @@ const removeTab = (tabName) => {
       activeTab.value = tabs[0].name
     }
   }
-}
-
-// 显示上传选项
-const showUploadOptions = (tab) => {
-  currentUploadTab.value = tab
-  uploadOptionsVisible.value = true
 }
 
 // 选择本地上传
@@ -1456,12 +1412,6 @@ const confirmAccountSelection = () => {
 // 删除选中的账号
 const removeAccount = (tab, index) => {
   tab.selectedAccounts.splice(index, 1)
-}
-
-// 打开添加话题弹窗
-const openTopicDialog = (tab) => {
-  currentTab.value = tab
-  topicDialogVisible.value = true
 }
 
 // 添加自定义话题
@@ -1684,100 +1634,6 @@ const confirmPublish = async (tab) => {
   }
 }
 
-// 处理批量发布命令
-const handleBatchCommand = (command) => {
-  let publishTabs = []
-
-  switch (command) {
-    case 'all':
-      publishTabs = tabs
-      break
-    case 'normal':
-      publishTabs = tabs.filter(t => !t.label.includes('批量'))
-      break
-    case 'batch':
-      publishTabs = tabs.filter(t => t.label.includes('批量'))
-      break
-    default:
-      publishTabs = tabs
-  }
-
-  if (publishTabs.length === 0) {
-    ElMessage.warning('没有符合条件的发布项')
-    return
-  }
-
-  batchPublish(publishTabs)
-}
-
-// 批量发布 (并发控制)
-const batchPublish = async (publishTabs = tabs) => {
-  if (batchPublishing.value) return
-
-  batchPublishing.value = true
-  batchProgress.value = 0
-  batchCurrent.value = 0
-  batchTotal.value = publishTabs.length
-
-  try {
-    const results = []
-
-    // 限制并发数为 2
-    const CONCURRENCY = 2
-    const queue = [...publishTabs]
-    const workers = []
-
-    const runWorker = async () => {
-      while (queue.length > 0) {
-        const tab = queue.shift()
-        batchCurrent.value++
-        // 乐观进度更新
-        batchProgress.value = Math.round(((batchCurrent.value - 0.5) / batchTotal.value) * 100)
-
-        try {
-          await confirmPublish(tab)
-          results.push({ tab: tab.label, success: true })
-        } catch (error) {
-          results.push({ tab: tab.label, success: false, error: error.message })
-        }
-
-        // 完成进度更新
-        batchProgress.value = Math.round((batchCurrent.value / batchTotal.value) * 100)
-      }
-    }
-
-    // 启动工作线程
-    for (let i = 0; i < Math.min(publishTabs.length, CONCURRENCY); i++) {
-        workers.push(runWorker())
-    }
-
-    await Promise.all(workers)
-
-    batchProgress.value = 100
-
-    const successCount = results.filter(r => r.success).length
-    const failCount = results.filter(r => !r.success).length
-
-    if (failCount === 0) {
-      ElMessage.success(`批量发布完成，${successCount}个成功`)
-    } else {
-      ElMessage.warning(`批量发布完成，${successCount}个成功，${failCount}个失败`)
-    }
-  } finally {
-    batchPublishing.value = false
-  }
-}
-
-// 添加批量发布Tab
-const addBatchPublishTab = () => {
-  tabCounter++
-  const newTab = makeNewTab()
-  newTab.name = `tab${tabCounter}`
-  newTab.label = `批量发布${tabCounter - 1}`
-  tabs.push(newTab)
-  activeTab.value = newTab.name
-}
-
 // 打开任务管理中心
 const openTaskCenter = () => {
   taskCenterVisible.value = true
@@ -1861,29 +1717,6 @@ const clearCompletedTasks = async () => {
     ElMessage.success(`已清空 ${deletedCount} 个已完成任务`)
   } else {
     ElMessage.info('没有可清空的任务')
-  }
-}
-
-// 判断预设是否激活
-const isPresetActive = (tab, preset) => {
-  return tab.videosPerDay === preset.videosPerDay &&
-         tab.dailyTimes.length === preset.dailyTimes.length &&
-         tab.dailyTimes.every(time => preset.dailyTimes.includes(time)) &&
-         preset.dailyTimes.every(time => tab.dailyTimes.includes(time))
-}
-
-// 应用发布计划预设
-const applySchedulePreset = (tab, preset) => {
-  tab.videosPerDay = preset.videosPerDay
-  tab.dailyTimes = [...preset.dailyTimes]
-}
-
-// 添加自定义时间
-const addCustomTime = (tab) => {
-  if (tab.dailyTimes.length < tab.videosPerDay) {
-    tab.dailyTimes.push('12:00')
-  } else {
-    ElMessage.warning(`已达到每日发布数量上限 (${tab.videosPerDay}个)`)
   }
 }
 

@@ -272,34 +272,30 @@ export function useAccountActions() {
             const exceptionAccounts = accountStore.getAccountsForRetry()
             if (exceptionAccounts.length === 0) return
 
-            const refreshPromises = exceptionAccounts.map(account => {
-                return new Promise(async (resolve) => {
-                    try {
-                        accountStore.updateAccountStatus(account.id, '验证中')
-                        const res = await accountApi.getValidAccounts(account.id)
-                        if (res.code === 200 && res.data && res.data.length > 0) {
-                            const updatedAccount = res.data[0]
-                            const statusText = updatedAccount[4] === 1 ? '正常' : '异常'
-                            accountStore.updateAccount(account.id, {
-                                status: statusText
-                            })
-                            if (statusText === '正常') {
-                                accountStore.resetRetryCount(account.id)
-                                console.log(`异常账号 ${account.name} 自动恢复正常`)
-                            } else {
-                                accountStore.incrementRetryCount(account.id)
-                            }
+            const refreshPromises = exceptionAccounts.map(async (account) => {
+                try {
+                    accountStore.updateAccountStatus(account.id, '验证中')
+                    const res = await accountApi.getValidAccounts(account.id)
+                    if (res.code === 200 && res.data && res.data.length > 0) {
+                        const updatedAccount = res.data[0]
+                        const statusText = updatedAccount[4] === 1 ? '正常' : '异常'
+                        accountStore.updateAccount(account.id, {
+                            status: statusText
+                        })
+                        if (statusText === '正常') {
+                            accountStore.resetRetryCount(account.id)
+                            console.log(`异常账号 ${account.name} 自动恢复正常`)
                         } else {
-                            accountStore.updateAccountStatus(account.id, '异常')
                             accountStore.incrementRetryCount(account.id)
                         }
-                    } catch (error) {
+                    } else {
                         accountStore.updateAccountStatus(account.id, '异常')
                         accountStore.incrementRetryCount(account.id)
-                    } finally {
-                        resolve()
                     }
-                })
+                } catch {
+                    accountStore.updateAccountStatus(account.id, '异常')
+                    accountStore.incrementRetryCount(account.id)
+                }
             })
             await Promise.all(refreshPromises)
         } catch (error) {
@@ -323,29 +319,25 @@ export function useAccountActions() {
                 duration: 0
             })
 
-            const refreshPromises = selectedAccounts.map(account => {
-                return new Promise(async (resolve) => {
-                    try {
-                        accountStore.updateAccountStatus(account.id, '验证中', true)
-                        const res = await accountApi.getValidAccounts(account.id)
+            const refreshPromises = selectedAccounts.map(async (account) => {
+                try {
+                    accountStore.updateAccountStatus(account.id, '验证中', true)
+                    const res = await accountApi.getValidAccounts(account.id)
 
-                        if (res.code === 200 && res.data && res.data.length > 0) {
-                            const updatedAccount = res.data[0]
-                            const statusText = updatedAccount[4] === 1 ? '正常' : '异常'
-                            accountStore.updateAccount(account.id, {
-                                status: statusText,
-                                isRefreshing: false
-                            })
-                        } else {
-                            accountStore.updateAccountStatus(account.id, '异常', false)
-                        }
-                    } catch (error) {
-                        console.error(`刷新账号 ${account.name} 失败:`, error)
+                    if (res.code === 200 && res.data && res.data.length > 0) {
+                        const updatedAccount = res.data[0]
+                        const statusText = updatedAccount[4] === 1 ? '正常' : '异常'
+                        accountStore.updateAccount(account.id, {
+                            status: statusText,
+                            isRefreshing: false
+                        })
+                    } else {
                         accountStore.updateAccountStatus(account.id, '异常', false)
-                    } finally {
-                        resolve()
                     }
-                })
+                } catch (error) {
+                    console.error(`刷新账号 ${account.name} 失败:`, error)
+                    accountStore.updateAccountStatus(account.id, '异常', false)
+                }
             })
 
             await Promise.allSettled(refreshPromises)
