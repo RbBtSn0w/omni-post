@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useTaskStore } from '@/stores/task'
 import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('Task Store', () => {
   let taskStore
@@ -130,8 +130,12 @@ describe('Task Store', () => {
       expect(result).toBeNull()
     })
 
-    it('should update task progress correctly', () => {
-      const updatedTask = taskStore.updateTaskProgress('test-task-1', 50)
+    it('should update task progress correctly', async () => {
+      // Mock the API call that updateTaskProgress makes internally
+      const { taskApi } = await import('@/api/task')
+      vi.spyOn(taskApi, 'updateTaskStatus').mockResolvedValue({})
+
+      const updatedTask = await taskStore.updateTaskProgress('test-task-1', 50)
 
       expect(updatedTask.progress).toBe(50)
     })
