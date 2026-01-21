@@ -70,7 +70,7 @@
   },
   "lint-staged": {
     "apps/frontend/**/*.{js,vue}": [
-      "eslint --fix"
+      "eslint --fix --config apps/frontend/eslint.config.js"
     ],
     "apps/backend/**/*.py": [
       "apps/backend/.venv/bin/black",

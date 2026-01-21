@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     account_list TEXT,        -- JSON list of account IDs/names
     schedule_data TEXT,       -- JSON: {enableTimer, videosPerDay, dailyTimes, startDays}
     error_msg TEXT,
+    publish_data TEXT,         -- JSON object of the original request data
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )

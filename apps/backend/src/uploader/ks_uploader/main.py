@@ -14,7 +14,7 @@ class KSVideo(object):
     def __init__(self, title, file_path, tags, publish_date: datetime, account_file):
         self.title = title  # 视频标题
         self.file_path = file_path
-        self.tags = tags
+        self.tags = tags if tags else []
         self.publish_date = publish_date
         self.account_file = account_file
         self.date_format = "%Y-%m-%d %H:%M"

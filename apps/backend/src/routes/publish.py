@@ -79,23 +79,126 @@ def update_task(task_id):
         return jsonify({"code": 400, "msg": "Status required"}), 400
 
 
+@bp.route("/tasks/<task_id>/start", methods=["POST"])
+def start_task(task_id):
+    # Fetch task to get original data
+    tasks = task_service.get_all_tasks()
+    task = next((t for t in tasks if t["id"] == task_id), None)
+
+    if not task:
+        return jsonify({"code": 404, "msg": "Task not found"}), 404
+
+    publish_data = task.get("publish_data")
+    if not publish_data:
+        # Fallback to reconstructing from other fields if possible
+        publish_data = {
+            "type": task["platforms"][0] if task["platforms"] else 1,
+            "title": task["title"],
+            "fileList": task["file_list"],
+            "accountList": task["account_list"],
+            "enableTimer": task["schedule_data"].get("enableTimer"),
+            "videosPerDay": task["schedule_data"].get("videosPerDay"),
+            "dailyTimes": task["schedule_data"].get("dailyTimes"),
+            "startDays": task["schedule_data"].get("startDays"),
+        }
+
+    # Filter accounts by platform type
+    import sqlite3
+
+    from src.db.db_manager import db_manager
+
+    # Determine platform type (tasks store strictly one platform in the list)
+    platform_type = task["platforms"][0]
+    account_list = publish_data.get("accountList", [])
+
+    valid_accounts = []
+
+    with sqlite3.connect(db_manager.get_db_path()) as conn:
+        cursor = conn.cursor()
+        for account_file in account_list:
+            cursor.execute("SELECT type FROM user_info WHERE filePath = ?", (account_file,))
+            result = cursor.fetchone()
+            if result and result[0] == platform_type:
+                valid_accounts.append(account_file)
+
+    if not valid_accounts:
+        return (
+            jsonify(
+                {"code": 400, "msg": f"Task has no valid accounts for platform {platform_type}"}
+            ),
+            400,
+        )
+
+    # Update publish_data with only valid accounts
+    publish_data["accountList"] = valid_accounts
+
+    # Start Async Execution
+    start_publish_thread(task_id, publish_data)
+    return jsonify({"code": 200, "msg": "Task started"}), 200
+
+
 @bp.route("/postVideo", methods=["POST"])
 def postVideo():
     # 获取JSON数据
     data = request.get_json()
+    platform_type = data.get("type")
+    account_list = data.get("accountList", [])
+
+    # 防御性校验：过滤不匹配平台的账号
+    import sqlite3
+
+    from src.db.db_manager import db_manager
+
+    valid_accounts = []
+    invalid_accounts = []
+
+    with sqlite3.connect(db_manager.get_db_path()) as conn:
+        cursor = conn.cursor()
+        for account_file in account_list:
+            cursor.execute("SELECT type FROM user_info WHERE filePath = ?", (account_file,))
+            result = cursor.fetchone()
+            if result and result[0] == platform_type:
+                valid_accounts.append(account_file)
+            else:
+                invalid_accounts.append(account_file)
+
+    # 如果有不匹配的账号，记录警告但继续处理有效账号
+    if invalid_accounts:
+        import logging
+
+        logging.warning(
+            f"[PUBLISH] Filtered {len(invalid_accounts)} mismatched accounts for platform {platform_type}: {invalid_accounts}"
+        )
+
+    # 如果没有有效账号，返回错误
+    if not valid_accounts:
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "msg": f"没有匹配平台 {platform_type} 的有效账号",
+                    "data": None,
+                }
+            ),
+            400,
+        )
+
+    # 使用过滤后的账号列表
+    data["accountList"] = valid_accounts
 
     # Create Task Record
     task_id = task_service.create_task(
         title=data.get("title", "Untitled"),
-        platforms=[data.get("type")],
+        platforms=[platform_type],
         file_list=data.get("fileList", []),
-        account_list=data.get("accountList", []),
+        account_list=valid_accounts,
         schedule_data={
             "enableTimer": data.get("enableTimer"),
             "videosPerDay": data.get("videosPerDay"),
             "dailyTimes": data.get("dailyTimes"),
             "startDays": data.get("startDays"),
         },
+        publish_data=data,
         priority=1,
     )
 
@@ -128,6 +231,7 @@ def postVideoBatch():
                 "dailyTimes": data.get("dailyTimes"),
                 "startDays": data.get("startDays"),
             },
+            publish_data=data,
             priority=1,
         )
         if task_id:

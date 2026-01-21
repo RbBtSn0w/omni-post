@@ -10,15 +10,24 @@ class TaskService:
     def _get_conn(self):
         return sqlite3.connect(db_manager.get_db_path())
 
-    def create_task(self, title, platforms, file_list, account_list, schedule_data, priority=1):
+    def create_task(
+        self,
+        title,
+        platforms,
+        file_list,
+        account_list,
+        schedule_data,
+        publish_data=None,
+        priority=1,
+    ):
         task_id = f"task_{int(datetime.now().timestamp())}_{str(uuid.uuid4())[:8]}"
         conn = self._get_conn()
         cursor = conn.cursor()
         try:
             cursor.execute(
                 """
-                INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data, publish_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     task_id,
@@ -30,6 +39,7 @@ class TaskService:
                     json.dumps(file_list),
                     json.dumps(account_list),
                     json.dumps(schedule_data),
+                    json.dumps(publish_data) if publish_data else None,
                 ),
             )
             conn.commit()
@@ -97,7 +107,13 @@ class TaskService:
                         json.loads(task["schedule_data"]) if task["schedule_data"] else {}
                     )
                 except:
-                    pass
+                    task["schedule_data"] = {}
+                try:
+                    task["publish_data"] = (
+                        json.loads(task["publish_data"]) if task["publish_data"] else {}
+                    )
+                except:
+                    task["publish_data"] = {}
                 # Clean up schedule_data if needed
                 tasks.append(task)
             return tasks

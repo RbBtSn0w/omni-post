@@ -323,13 +323,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
 import {
-  List, CircleCheckFilled, CircleCloseFilled, Loading,
-  Delete, InfoFilled, Search,
-  VideoPlay, VideoPause
+  CircleCheckFilled, CircleCloseFilled,
+  Delete, InfoFilled,
+  List,
+  Loading,
+  Search,
+  VideoPause,
+  VideoPlay
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 // 导入任务状态管理
 import { useTaskStore } from '@/stores/task'
@@ -504,26 +508,24 @@ const startTask = (task) => {
       type: 'info',
     }
   )
-    .then(() => {
-      // 使用taskStore更新任务状态
-      taskStore.updateTaskStatus(task.id, 'uploading')
-
-      ElMessage({
-        type: 'success',
-        message: `任务已开始${task.status === 'failed' ? '重试' : ''}`,
-      })
-
-      // 模拟上传进度
-      let progress = 0
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 10
-        if (progress >= 100) {
-          clearInterval(progressInterval)
-          taskStore.updateTaskProgress(task.id, 100, 'completed')
+    .then(async () => {
+      loading.value = true
+      try {
+        const success = await taskStore.startTask(task.id)
+        if (success) {
+          ElMessage({
+            type: 'success',
+            message: `任务已开始${task.status === 'failed' ? '重试' : ''}`,
+          })
         } else {
-          taskStore.updateTaskProgress(task.id, progress, 'uploading')
+          ElMessage.error('启动任务失败')
         }
-      }, 500)
+      } catch (error) {
+        console.error('启动任务出错:', error)
+        ElMessage.error('启动任务出错')
+      } finally {
+        loading.value = false
+      }
     })
     .catch(() => {
       // 取消操作
@@ -609,8 +611,8 @@ const handleClearCompleted = () => {
       type: 'warning',
     }
   )
-    .then(() => {
-      const clearedCount = taskStore.clearCompletedTasks()
+    .then(async () => {
+      const clearedCount = await taskStore.clearCompletedTasks()
       ElMessage.success(`已清空 ${clearedCount} 个已完成任务`)
     })
     .catch(() => {
@@ -623,19 +625,29 @@ const handleClearCompleted = () => {
 const initData = async () => {
   loading.value = true
   try {
-    // 每次进入页面都获取最新数据
     await taskStore.fetchTasks()
   } catch (error) {
     console.error('初始化数据失败:', error)
-    ElMessage.error('初始化数据失败，请稍后重试')
+    ElMessage.error('初始化数据失败')
   } finally {
     loading.value = false
   }
 }
 
 // 组件挂载时初始化数据
-onMounted(() => {
-  initData()
+onMounted(async () => {
+  await initData()
+  if (taskStore.hasActiveTasks()) {
+    taskStore.startPolling()
+  }
+})
+
+// 组件卸载时停止轮询
+onUnmounted(() => {
+  // 注意：全局轮询可以不在这里停止，或者根据业务决定是否保留
+  // 如果希望离开任务管理页面也继续后台更新，可以不调 stopPolling
+  // 但为了节省流量和性能，通常离开页面建议停止，除非有全局通知需求
+  taskStore.stopPolling()
 })
 </script>
 

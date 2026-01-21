@@ -45,7 +45,7 @@ class TencentVideo(object):
     ):
         self.title = title  # 视频标题
         self.file_path = file_path
-        self.tags = tags
+        self.tags = tags if tags else []
         self.publish_date = publish_date
         self.account_file = account_file
         self.category = category

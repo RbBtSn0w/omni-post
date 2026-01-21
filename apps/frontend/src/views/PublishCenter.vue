@@ -809,17 +809,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { Upload, Plus, Close, Folder, Management, Delete, InfoFilled, Search, Grid, VideoPlay } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useAccountStore } from '@/stores/account'
-import { useAppStore } from '@/stores/app'
-import { useTaskStore } from '@/stores/task'
-import { materialApi } from '@/api/material'
 import { accountApi } from '@/api/account'
 import { groupApi } from '@/api/group'
+import { materialApi } from '@/api/material'
+import { API_BASE_URL, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '@/core/config'
+import { useAccountStore } from '@/stores/account'
+import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
-import { MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB, API_BASE_URL } from '@/core/config'
+import { useTaskStore } from '@/stores/task'
+import { Close, Delete, Folder, Grid, InfoFilled, Management, Plus, Search, Upload, VideoPlay } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 // API base URL
 const apiBaseUrl = API_BASE_URL
@@ -897,36 +897,6 @@ const pendingTaskCount = computed(() => {
   return taskStore.tasks.filter(t => ['waiting', 'uploading', 'processing'].includes(t.status)).length
 })
 
-// 轮询定时器
-let pollInterval = null
-
-// 检查是否有活跃任务需要轮询
-const hasActiveTasks = () => {
-  const activeStatuses = ['waiting', 'uploading', 'processing']
-  return taskStore.tasks.some(task => activeStatuses.includes(task.status))
-}
-
-// 开始轮询
-const startPolling = () => {
-  if (pollInterval) return // 已经在轮询
-  pollInterval = setInterval(async () => {
-    await taskStore.fetchTasks()
-    // 如果没有活跃任务了，停止轮询
-    if (!hasActiveTasks()) {
-      stopPolling()
-      console.log('[Polling] 无活跃任务，停止轮询')
-    }
-  }, 5000)
-  console.log('[Polling] 开始轮询任务状态')
-}
-
-// 停止轮询
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-}
 
 // 触发发布成功动画：卡片飞向任务管理按钮
 const triggerPublishAnimation = async (sourceElement) => {
@@ -990,8 +960,8 @@ onMounted(async () => {
 
     // 获取任务列表，仅在有活跃任务时开启轮询
     await taskStore.fetchTasks()
-    if (hasActiveTasks()) {
-      startPolling()
+    if (taskStore.hasActiveTasks()) {
+      taskStore.startPolling()
     }
 
   } catch (error) {
@@ -1001,7 +971,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  stopPolling()
+  taskStore.stopPolling()
 })
 
 // 平台列表 - 对应后端type字段
@@ -1551,10 +1521,17 @@ const confirmPublish = async (tab) => {
         title: tab.title,
         tags: tab.selectedTopics,
         fileList: tab.fileList.map(file => file.path),
-        accountList: tab.selectedAccounts.map(accountId => {
-          const account = accountStore.accounts.find(acc => acc.id === accountId)
-          return account ? account.filePath : accountId
-        }),
+        accountList: tab.selectedAccounts
+          .filter(accountId => {
+            const account = accountStore.accounts.find(acc => acc.id === accountId)
+            // Filter accounts by platform: platform key (1-4) maps to platform name
+            const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手' }
+            return account && account.platform === platformMap[platform]
+          })
+          .map(accountId => {
+            const account = accountStore.accounts.find(acc => acc.id === accountId)
+            return account ? account.filePath : accountId
+          }),
         enableTimer: tab.scheduleEnabled ? 1 : 0,
         videosPerDay: tab.scheduleEnabled ? tab.videosPerDay || 1 : 1,
         dailyTimes: tab.scheduleEnabled ? tab.dailyTimes || ['10:00'] : ['10:00'],
@@ -1589,7 +1566,7 @@ const confirmPublish = async (tab) => {
     // 立即刷新任务列表以获取最新的后端任务状态
     taskStore.fetchTasks()
     // 启动轮询以跟踪新任务状态
-    startPolling()
+    taskStore.startPolling()
 
     // 检查发布结果
     const allSuccess = results.every(data => data.code === 200)
@@ -1672,25 +1649,18 @@ const getTaskStatusText = (status) => {
 }
 
 // 开始任务
-const startTask = (task) => {
-  task.status = 'uploading'
-  task.updatedAt = new Date().toISOString()
-  ElMessage.success(`任务 ${task.title} 已开始`)
-
-  // 模拟上传进度
-  let progress = 0
-  const progressInterval = setInterval(() => {
-    progress += Math.random() * 10
-    if (progress >= 100) {
-      clearInterval(progressInterval)
-      task.progress = 100
-      task.status = 'completed'
-      task.updatedAt = new Date().toISOString()
+const startTask = async (task) => {
+  try {
+    const success = await taskStore.startTask(task.id)
+    if (success) {
+      ElMessage.success(`任务 ${task.title} 已开始`)
     } else {
-      task.progress = progress
-      task.updatedAt = new Date().toISOString()
+      ElMessage.error('启动任务失败')
     }
-  }, 500)
+  } catch (error) {
+    console.error('启动任务出错:', error)
+    ElMessage.error('启动任务出错')
+  }
 }
 
 // 暂停任务

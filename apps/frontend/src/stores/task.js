@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref, reactive, computed } from 'vue'
 import { taskApi } from '@/api'
+import { defineStore } from 'pinia'
+import { computed, reactive, ref } from 'vue'
 
 // 任务状态映射
 const taskStatusMap = {
@@ -30,6 +30,9 @@ const platformMap = {
 export const useTaskStore = defineStore('task', () => {
   // 存储所有任务信息
   const tasks = ref([])
+
+  // 轮询定时器
+  let pollTimer = null
 
   // 最近任务列表（最多10条）
   const recentTasks = computed(() => {
@@ -182,13 +185,63 @@ export const useTaskStore = defineStore('task', () => {
   }
 
   // 更新任务进度
-  const updateTaskProgress = (id, progress, status) => {
-    return updateTask(id, { progress, status })
+  const updateTaskProgress = async (id, progress, status) => {
+    try {
+      await taskApi.updateTaskStatus(id, status, progress)
+      return updateTask(id, { progress, status })
+    } catch (error) {
+      console.error('更新任务进度失败:', error)
+      return null
+    }
   }
 
-  // 更新任务状态
+  // 同步更新任务状态（用于本地更新和单元测试）
   const updateTaskStatus = (id, status) => {
+    // 直接更新本地状态，不进行 API 调用
     return updateTask(id, { status })
+  }
+
+
+  // 开始/重试任务 (同步后端)
+  const startTask = async (id) => {
+    try {
+      await taskApi.startTask(id)
+      // 使用同步更新以确保本地状态立即生效
+      updateTaskStatus(id, 'uploading')
+      startPolling() // 启动任务后自动开启轮询
+      return true
+    } catch (error) {
+      console.error('开始任务失败:', error)
+      return false
+    }
+  }
+
+  // 检查是否有活跃任务需要轮询
+  const hasActiveTasks = () => {
+    const activeStatuses = ['uploading', 'processing', 'waiting']
+    return tasks.value.some(task => activeStatuses.includes(task.status))
+  }
+
+  // 开始全局轮询
+  const startPolling = (interval = 5000) => {
+    if (pollTimer) return
+
+    console.log('[TaskStore] 开启全局状态轮询')
+    pollTimer = setInterval(async () => {
+      await fetchTasks()
+      if (!hasActiveTasks()) {
+        stopPolling()
+      }
+    }, interval)
+  }
+
+  // 停止全局轮询
+  const stopPolling = () => {
+    if (pollTimer) {
+      console.log('[TaskStore] 停止全局状态轮询')
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
   }
 
   // 删除任务（仅本地，用于内部）
@@ -342,6 +395,10 @@ export const useTaskStore = defineStore('task', () => {
     clearCompletedTasks,
     getTaskById,
     getTasksByStatus,
-    fetchTasks
+    fetchTasks,
+    startTask,
+    startPolling,
+    stopPolling,
+    hasActiveTasks
   }
 })

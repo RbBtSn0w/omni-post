@@ -59,7 +59,10 @@ class DefaultCookieService(CookieService):
                 context = await browser.new_context(storage_state=account_file)
                 context = await set_init_script(context)
                 page = await context.new_page()
-                await page.goto("https://creator.douyin.com/creator-micro/content/upload")
+                await page.goto(
+                    "https://creator.douyin.com/creator-micro/content/upload",
+                    wait_until="domcontentloaded",
+                )
                 try:
                     await page.wait_for_url(
                         "https://creator.douyin.com/creator-micro/content/upload", timeout=5000
@@ -90,7 +93,10 @@ class DefaultCookieService(CookieService):
                 context = await browser.new_context(storage_state=account_file)
                 context = await set_init_script(context)
                 page = await context.new_page()
-                await page.goto("https://channels.weixin.qq.com/platform/post/create")
+                await page.goto(
+                    "https://channels.weixin.qq.com/platform/post/create",
+                    wait_until="domcontentloaded",
+                )
                 try:
                     await page.wait_for_selector(
                         'div.title-name:has-text("微信小店")', timeout=5000
@@ -116,7 +122,9 @@ class DefaultCookieService(CookieService):
                 context = await browser.new_context(storage_state=account_file)
                 context = await set_init_script(context)
                 page = await context.new_page()
-                await page.goto("https://cp.kuaishou.com/article/publish/video")
+                await page.goto(
+                    "https://cp.kuaishou.com/article/publish/video", wait_until="domcontentloaded"
+                )
                 try:
                     await page.wait_for_selector(
                         "div.names div.container div.name:text('机构服务')", timeout=5000
@@ -142,7 +150,10 @@ class DefaultCookieService(CookieService):
                 context = await browser.new_context(storage_state=account_file)
                 context = await set_init_script(context)
                 page = await context.new_page()
-                await page.goto("https://creator.xiaohongshu.com/creator-micro/content/upload")
+                await page.goto(
+                    "https://creator.xiaohongshu.com/creator-micro/content/upload",
+                    wait_until="domcontentloaded",
+                )
                 try:
                     await page.wait_for_url(
                         "https://creator.xiaohongshu.com/creator-micro/content/upload", timeout=5000

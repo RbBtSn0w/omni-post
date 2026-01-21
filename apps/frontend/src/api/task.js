@@ -14,5 +14,10 @@ export const taskApi = {
     // 更新任务状态
     updateTaskStatus(taskId, status, progress = null) {
         return http.patch(`/tasks/${taskId}`, { status, progress })
+    },
+
+    // 开始/重试任务
+    startTask(taskId) {
+        return http.post(`/tasks/${taskId}/start`)
     }
 }
