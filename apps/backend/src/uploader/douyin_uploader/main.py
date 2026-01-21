@@ -213,23 +213,47 @@ class DouYinVideo(object):
 
     async def set_thumbnail(self, page: Page, thumbnail_path: str):
         if thumbnail_path:
-            douyin_logger.info("  [-] 正在设置视频封面...")
+            douyin_logger.info("  [-] 正在设置视频封面 (自定义)...")
             await page.click('text="选择封面"')
             await page.wait_for_selector("div.dy-creator-content-modal")
+
+            # 设置竖封面
+            douyin_logger.info("  [-] 点击 '设置竖封面'")
             await page.click('text="设置竖封面"')
             await page.wait_for_timeout(2000)  # 等待2秒
-            # 定位到上传区域并点击
+
+            # 上传
             await page.locator(
                 "div[class^='semi-upload upload'] >> input.semi-upload-hidden-input"
             ).set_input_files(thumbnail_path)
             await page.wait_for_timeout(2000)  # 等待2秒
-            await page.locator("div#tooltip-container button:visible:has-text('完成')").click()
-            # finish_confirm_element = page.locator("div[class^='confirmBtn'] >> div:has-text('完成')")
-            # if await finish_confirm_element.count():
-            #     await finish_confirm_element.click()
-            # await page.locator("div[class^='footer'] button:has-text('完成')").click()
-            douyin_logger.info("  [+] 视频封面设置完成！")
-            # 等待封面设置对话框关闭
+
+            # 设置横封面
+            douyin_logger.info("  [-] 点击 '设置横封面'")
+            await page.click('text="设置横封面"')
+            await page.wait_for_timeout(2000)  # 等待2秒
+
+            await page.locator("div[role='dialog'] button:visible:has-text('完成')").click()
+            douyin_logger.info("  [+] 自定义视频封面设置完成！")
+            await page.wait_for_selector("div.extractFooter", state="detached")
+        else:
+            douyin_logger.info("  [-] 正在设置视频封面 (平台自动)...")
+            await page.click('text="选择封面"')
+            await page.wait_for_selector("div.dy-creator-content-modal")
+
+            # 1. 设置竖封面
+            douyin_logger.info("  [-] 点击 '设置竖封面'")
+            await page.click('text="设置竖封面"')
+            await page.wait_for_timeout(1000)  # 等待2秒
+
+            # 2. 设置横封面
+            douyin_logger.info("  [-] 点击 '设置横封面'")
+            await page.click('text="设置横封面"')
+            await page.wait_for_timeout(1000)  # 等待2秒
+
+            # 3. 点击完成
+            await page.locator("div[role='dialog'] button:visible:has-text('完成')").click()
+            douyin_logger.info("  [+] 自动视频封面设置完成！")
             await page.wait_for_selector("div.extractFooter", state="detached")
 
     async def set_location(self, page: Page, location: str = ""):
