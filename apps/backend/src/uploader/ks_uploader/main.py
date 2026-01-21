@@ -81,8 +81,8 @@ class KSVideo(object):
             await page.keyboard.type(self.title)
             await page.keyboard.press("Enter")
 
-            # 快手只能添加3个话题
-            for index, tag in enumerate(self.tags[:3], start=1):
+            # 快手只能添加4个话题
+            for index, tag in enumerate(self.tags[:4], start=1):
                 kuaishou_logger.info("正在添加第%s个话题" % index)
                 await page.keyboard.type(f"#{tag} ")
                 await asyncio.sleep(2)
