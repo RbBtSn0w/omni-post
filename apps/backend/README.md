@@ -252,6 +252,37 @@ with sqlite3.connect(db_path) as conn:
 5. 实现视频处理和编辑功能
 6. 增强监控和日志系统
 
+## AI Agent 功能 (新增)
+
+本项目现已集成GitHub Copilot SDK，支持使用自然语言指令进行发布操作。
+
+### 快速使用
+
+```bash
+# 使用自然语言指令发布视频
+python -m tools.omni_cli post "发布视频到抖音" --title "我的视频"
+
+# 预览模式（不实际上传）
+python -m tools.omni_cli post "分享到小红书" --title "日常分享" --dry-run
+
+# 列出可用工具
+python -m tools.omni_cli list-tools
+```
+
+### 详细文档
+
+查看 [docs/agent.md](../../docs/agent.md) 了解：
+- AI Agent 架构和API
+- 如何集成真实的上传器
+- 自定义工具开发
+- 配置和故障排除
+
+### 相关文件
+
+- `src/services/agent_service.py` - Agent服务实现
+- `tools/omni_cli.py` - 命令行工具
+- `tests/test_agent_service.py` - Agent测试用例
+
 ## 平台标识说明
 
 | 平台 | 标识值 |
