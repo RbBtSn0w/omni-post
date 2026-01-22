@@ -10,11 +10,13 @@ on:
     paths:
       - 'apps/backend/**'
       - '.github/workflows/lint-backend.yml'
+      - '.github/actions/setup-python-backend/**'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'apps/backend/**'
       - '.github/workflows/lint-backend.yml'
+      - '.github/actions/setup-python-backend/**'
 
 permissions:
   contents: read
@@ -28,89 +30,103 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        cache: 'pip'
+    - name: Setup Python Backend
+      uses: ./.github/actions/setup-python-backend
 
     - name: Install linting tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install black flake8 isort pylint radon
+      run: pip install black flake8 isort pylint radon
 
+    # ============================================
+    # HARD GATES - Must pass to merge
+    # ============================================
     - name: Check code formatting with black
       id: black
       working-directory: apps/backend
-      run: |
-        black --check src/ --line-length=100
-      # Black is a hard gate - code must be properly formatted
+      run: black --check src/ --line-length=100
 
     - name: Check import sorting with isort
       id: isort
       working-directory: apps/backend
-      run: |
-        isort --check-only src/ --profile black
-      # isort is a hard gate - imports must be properly sorted
+      run: isort --check-only src/ --profile black
 
+    # ============================================
+    # SOFT CHECKS - Report but don't block
+    # ============================================
     - name: Lint with flake8
       id: flake8
       working-directory: apps/backend
-      run: |
-        flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
+      run: flake8 src/ --max-line-length=100 --extend-ignore=E203,W503
       continue-on-error: true
 
-    - name: Lint with pylint
+    - name: Lint with pylint (errors only)
       id: pylint
       working-directory: apps/backend
-      run: |
-        pip install -e .
-        pylint src/ --disable=all --enable=E,F --exit-zero
+      run: pylint src/ --disable=all --enable=E,F --exit-zero
       continue-on-error: true
 
     - name: Check code duplication
       id: duplication
       working-directory: apps/backend
-      run: |
-        pylint --disable=all --enable=duplicate-code src/ --exit-zero
+      run: pylint --disable=all --enable=duplicate-code src/ --exit-zero
       continue-on-error: true
 
+    # ============================================
+    # INFO ONLY - Metrics for visibility
+    # ============================================
     - name: Analyze Python complexity
       id: complexity
       working-directory: apps/backend
       run: |
-        echo "=== Cyclomatic Complexity ===" >> $GITHUB_STEP_SUMMARY
-        radon cc src/ -a --total-average >> $GITHUB_STEP_SUMMARY || true
+        echo "## 📊 Code Metrics" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "=== Maintainability Index ===" >> $GITHUB_STEP_SUMMARY
+        echo "### Cyclomatic Complexity" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        radon cc src/ -a --total-average >> $GITHUB_STEP_SUMMARY || true
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Maintainability Index" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
         radon mi src/ >> $GITHUB_STEP_SUMMARY || true
+        echo '```' >> $GITHUB_STEP_SUMMARY
       continue-on-error: true
 
     - name: Count lines of code
       run: |
-        echo "=== Backend ===" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Lines of Code" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
         find apps/backend/src -name "*.py" | xargs wc -l | tail -1 >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
 
+    # ============================================
+    # SUMMARY
+    # ============================================
     - name: Summarize lint results
       if: always()
       run: |
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## 📋 Lint Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Hard Gates (must pass)" >> $GITHUB_STEP_SUMMARY
         if [ "${{ steps.black.outcome }}" == "failure" ]; then
-          echo "❌ **Black**: Formatting issues detected" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Black**: Formatting issues - run \`black src/\` to fix" >> $GITHUB_STEP_SUMMARY
         else
           echo "✅ **Black**: Passed" >> $GITHUB_STEP_SUMMARY
         fi
         if [ "${{ steps.isort.outcome }}" == "failure" ]; then
-          echo "❌ **isort**: Import sorting issues detected" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **isort**: Import sorting issues - run \`isort src/\` to fix" >> $GITHUB_STEP_SUMMARY
         else
           echo "✅ **isort**: Passed" >> $GITHUB_STEP_SUMMARY
         fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Soft Checks (warnings)" >> $GITHUB_STEP_SUMMARY
         if [ "${{ steps.flake8.outcome }}" == "failure" ]; then
-          echo "❌ **flake8**: Linting issues detected" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **flake8**: Issues detected (non-blocking)" >> $GITHUB_STEP_SUMMARY
         else
           echo "✅ **flake8**: Passed" >> $GITHUB_STEP_SUMMARY
         fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Review the step outputs above for details." >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.pylint.outcome }}" == "failure" ]; then
+          echo "⚠️ **pylint**: Issues detected (non-blocking)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **pylint**: Passed" >> $GITHUB_STEP_SUMMARY
+        fi

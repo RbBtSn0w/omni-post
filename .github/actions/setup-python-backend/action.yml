@@ -1,0 +1,38 @@
+name: 'Setup Python Backend'
+description: 'Setup Python environment for OmniPost backend with caching'
+
+inputs:
+  install-dev:
+    description: 'Install dev dependencies (pytest, coverage, etc.)'
+    required: false
+    default: 'false'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.10'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+        cache-dependency-path: apps/backend/pyproject.toml
+
+    - name: Upgrade pip
+      shell: bash
+      run: python -m pip install --upgrade pip
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: apps/backend
+      run: |
+        if [ "${{ inputs.install-dev }}" == "true" ]; then
+          echo "📦 Installing backend with dev dependencies..."
+          pip install -e ".[dev]"
+        else
+          echo "📦 Installing backend dependencies..."
+          pip install -e .
+        fi

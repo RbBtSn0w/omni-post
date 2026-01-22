@@ -1,0 +1,132 @@
+name: Dependabot Auto-Merge
+
+# This workflow automatically merges low-risk Dependabot PRs
+# after all CI checks pass.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-Merge Dependabot PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # Only run for Dependabot PRs
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+    - name: Fetch Dependabot metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v2
+      with:
+        github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Determine if auto-merge is safe
+      id: check
+      run: |
+        echo "## Dependabot PR Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | ${{ steps.metadata.outputs.dependency-names }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Update Type | ${{ steps.metadata.outputs.update-type }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Ecosystem | ${{ steps.metadata.outputs.package-ecosystem }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependency Type | ${{ steps.metadata.outputs.dependency-type }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Determine if this is a safe auto-merge candidate
+        UPDATE_TYPE="${{ steps.metadata.outputs.update-type }}"
+        DEP_TYPE="${{ steps.metadata.outputs.dependency-type }}"
+        ECOSYSTEM="${{ steps.metadata.outputs.package-ecosystem }}"
+
+        SHOULD_AUTO_MERGE="false"
+        REASON=""
+
+        # Rule 1: Patch updates are always safe
+        if [ "$UPDATE_TYPE" == "version-update:semver-patch" ]; then
+          SHOULD_AUTO_MERGE="true"
+          REASON="Patch update (bug fixes only)"
+        fi
+
+        # Rule 2: Minor updates for dev dependencies are safe
+        if [ "$UPDATE_TYPE" == "version-update:semver-minor" ] && [ "$DEP_TYPE" == "direct:development" ]; then
+          SHOULD_AUTO_MERGE="true"
+          REASON="Minor update for dev dependency"
+        fi
+
+        # Rule 3: GitHub Actions updates (usually safe)
+        if [ "$ECOSYSTEM" == "github_actions" ]; then
+          if [ "$UPDATE_TYPE" == "version-update:semver-patch" ] || [ "$UPDATE_TYPE" == "version-update:semver-minor" ]; then
+            SHOULD_AUTO_MERGE="true"
+            REASON="GitHub Actions patch/minor update"
+          fi
+        fi
+
+        # Rule 4: Security updates should always be merged quickly
+        # (But major versions still need review)
+        if [ "${{ steps.metadata.outputs.cvss }}" != "" ]; then
+          if [ "$UPDATE_TYPE" != "version-update:semver-major" ]; then
+            SHOULD_AUTO_MERGE="true"
+            REASON="Security update (non-major)"
+          fi
+        fi
+
+        echo "should_auto_merge=$SHOULD_AUTO_MERGE" >> $GITHUB_OUTPUT
+        echo "reason=$REASON" >> $GITHUB_OUTPUT
+
+        if [ "$SHOULD_AUTO_MERGE" == "true" ]; then
+          echo "### ✅ Auto-merge Approved" >> $GITHUB_STEP_SUMMARY
+          echo "Reason: $REASON" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ⏸️ Manual Review Required" >> $GITHUB_STEP_SUMMARY
+          echo "This update requires manual review (major version or production dependency)." >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Wait for CI checks
+      if: steps.check.outputs.should_auto_merge == 'true'
+      run: |
+        echo "Waiting for CI checks to complete..."
+        # The auto-merge will only happen after all required checks pass
+
+    - name: Enable auto-merge for safe updates
+      if: steps.check.outputs.should_auto_merge == 'true'
+      run: |
+        echo "🤖 Enabling auto-merge for: ${{ steps.metadata.outputs.dependency-names }}"
+        echo "Reason: ${{ steps.check.outputs.reason }}"
+        gh pr merge --auto --squash "$PR_URL"
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Add approval for safe updates
+      if: steps.check.outputs.should_auto_merge == 'true'
+      run: |
+        gh pr review --approve "$PR_URL" -b "🤖 Auto-approved by Dependabot Auto-Merge workflow. Reason: ${{ steps.check.outputs.reason }}"
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Add comment for manual review
+      if: steps.check.outputs.should_auto_merge != 'true'
+      run: |
+        gh pr comment "$PR_URL" --body "👋 This Dependabot PR requires manual review.
+
+        **Update Details:**
+        - Package: ${{ steps.metadata.outputs.dependency-names }}
+        - Update Type: ${{ steps.metadata.outputs.update-type }}
+        - Dependency Type: ${{ steps.metadata.outputs.dependency-type }}
+
+        **Why manual review?**
+        - Major version updates may contain breaking changes
+        - Production dependencies need extra scrutiny
+
+        Please review the changelog and test before merging."
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

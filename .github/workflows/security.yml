@@ -5,12 +5,17 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  schedule:
+    # Weekly on Monday at 9:00 UTC (17:00 Beijing Time)
+    - cron: '0 9 * * 1'
+  # Allow manual trigger
+  workflow_dispatch:
+  # Run on PRs and pushes that modify dependency files
   push:
     branches: [ main, develop ]
     paths:
       - 'apps/backend/pyproject.toml'
       - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
@@ -18,24 +23,158 @@ on:
     paths:
       - 'apps/backend/pyproject.toml'
       - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
       - 'package.json'
       - 'package-lock.json'
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday
 
 permissions:
   contents: read
+  issues: write
   security-events: write
 
 jobs:
   python-security:
-    name: Python Dependencies Security
+    name: Python Security Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python Backend
+      uses: ./.github/actions/setup-python-backend
+
+    - name: Install security tools
+      run: pip install pip-audit bandit
+
+    - name: Check for outdated packages
+      id: outdated
+      working-directory: apps/backend
+      run: |
+        echo "## 📦 Outdated Python Packages" >> $GITHUB_STEP_SUMMARY
+        pip list --outdated >> $GITHUB_STEP_SUMMARY || echo "No outdated packages" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+    - name: Run pip-audit vulnerability check
+      id: pip-audit
+      working-directory: apps/backend
+      run: |
+        echo "## 🔒 Python Vulnerability Audit (pip-audit)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Run pip-audit and save results
+        if pip-audit --format json --output audit_report.json --progress-spinner=off; then
+          echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+        else
+          # Non-zero exit: either vulnerabilities found or error occurred
+          if [ -s audit_report.json ] && jq empty audit_report.json 2>/dev/null; then
+            pip-audit --format markdown >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            vuln_count=$(jq '[.dependencies[] | select(.vulns | length > 0)] | length' audit_report.json 2>/dev/null || echo "0")
+            if [ "$vuln_count" -gt "0" ]; then
+              echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
+              echo "VULN_COUNT=$vuln_count" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+              echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ Error running pip-audit or invalid JSON output" >> $GITHUB_STEP_SUMMARY
+            echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        fi
+
+    - name: Run Bandit security analysis
+      id: bandit
+      working-directory: apps/backend
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 🛡️ Bandit Static Security Analysis" >> $GITHUB_STEP_SUMMARY
+        if bandit -r src/ -f json -o bandit-report.json 2>&1; then
+          echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Security issues detected (see artifacts for details)" >> $GITHUB_STEP_SUMMARY
+        fi
+      continue-on-error: true
+
+    - name: Upload Python security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-security-reports
+        path: |
+          apps/backend/audit_report.json
+          apps/backend/bandit-report.json
+        retention-days: 90
+
+  npm-security:
+    name: NPM Security Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node Frontend
+      uses: ./.github/actions/setup-node-frontend
+
+    - name: Run npm audit
+      id: npm_audit
+      continue-on-error: true
+      run: |
+        echo "## 🔒 NPM Security Audit" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Only check production dependencies for high and critical vulnerabilities
+        set +e
+        npm audit --audit-level=high --omit=dev --json > npm_audit.json
+        audit_exit_code=$?
+        set -e
+
+        if [ $audit_exit_code -eq 0 ]; then
+          echo "✅ No high or critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+        else
+          if [ -s npm_audit.json ] && jq empty npm_audit.json 2>/dev/null; then
+            high=$(jq '.metadata.vulnerabilities.high // 0' npm_audit.json 2>/dev/null || echo "0")
+            critical=$(jq '.metadata.vulnerabilities.critical // 0' npm_audit.json 2>/dev/null || echo "0")
+
+            if [ "$high" -gt "0" ] || [ "$critical" -gt "0" ]; then
+              echo "⚠️ Found $critical critical and $high high severity vulnerabilities" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              npm audit --audit-level=high --omit=dev >> $GITHUB_STEP_SUMMARY 2>&1 || true
+              echo "VULNERABILITIES_FOUND=true" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "✅ No high or critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+              echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ npm audit failed or returned invalid output (exit code: $audit_exit_code)" >> $GITHUB_STEP_SUMMARY
+            echo "VULNERABILITIES_FOUND=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+
+    - name: Check for outdated packages
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📋 Outdated NPM Packages" >> $GITHUB_STEP_SUMMARY
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "All packages are up to date" >> $GITHUB_STEP_SUMMARY
+      continue-on-error: true
+
+  critical-updates:
+    name: Check Critical Dependencies
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -44,69 +183,107 @@ jobs:
         cache: 'pip'
         cache-dependency-path: apps/backend/pyproject.toml
 
-    - name: Install safety tool
-      run: |
-        pip install safety bandit
-
-    - name: Check for known vulnerabilities
-      id: safety
+    - name: Install backend for version check
       working-directory: apps/backend
       run: |
         pip install -e .
-        echo "## 🔒 Python Security Check" >> $GITHUB_STEP_SUMMARY
-        if safety check --json > safety-report.json 2>&1; then
-          echo "✅ No known vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ Potential vulnerabilities detected (see details below)" >> $GITHUB_STEP_SUMMARY
-          cat safety-report.json >> $GITHUB_STEP_SUMMARY
-        fi
-      continue-on-error: true
 
-    - name: Run Bandit security checks
-      id: bandit
-      working-directory: apps/backend
+    - name: Check Playwright version
       run: |
+        echo "## 🎭 Critical Dependencies Status" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 🛡️ Bandit Security Analysis" >> $GITHUB_STEP_SUMMARY
-        if bandit -r src/ -f json -o bandit-report.json 2>&1; then
-          echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ Security issues detected" >> $GITHUB_STEP_SUMMARY
-        fi
-      continue-on-error: true
+        python -c "
+        import pkg_resources
+        try:
+          playwright_version = pkg_resources.get_distribution('playwright').version
+          print(f'📦 **Playwright**: {playwright_version}')
+          print('> ⚠️ Note: Playwright requires regular updates to support browser versions')
+        except:
+          print('⚠️ Playwright not installed')
+        " >> $GITHUB_STEP_SUMMARY
 
-  npm-security:
-    name: npm Dependencies Security
+    - name: Check Flask version
+      run: |
+        python -c "
+        import pkg_resources
+        try:
+          flask_version = pkg_resources.get_distribution('flask').version
+          print(f'📦 **Flask**: {flask_version}')
+        except:
+          print('⚠️ Flask not installed')
+        " >> $GITHUB_STEP_SUMMARY
+
+    - name: Check Vue version
+      run: |
+        if [ -f "apps/frontend/package.json" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          grep -E '"vue"|"vite"|"@vitejs"' apps/frontend/package.json >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
+  create-issue:
+    name: Create Issue if Vulnerabilities Found
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    needs: [python-security, npm-security]
+    if: failure()
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v4
+    - name: Create detailed issue
+      uses: actions/github-script@v7
       with:
-        node-version: 18.x
-        # No npm cache - platform-specific deps cause issues
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-    - name: Install dependencies
-      run: npm install
+          // Check if there's already an open issue with these labels
+          const issues = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: '🔒 security,📦 dependencies,automated'
+          });
 
-    - name: Run npm audit
-      id: npm-audit
+          // If an issue exists, add a comment instead of creating a new one
+          if (issues.data.length > 0) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issues.data[0].number,
+              body: `🔄 **New vulnerabilities detected**\n\nDate: ${new Date().toISOString()}\nWorkflow Run: ${runUrl}\n\nPlease review the latest scan results.`
+            });
+          } else {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Dependency Vulnerabilities Detected - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Security Alert\n\nAutomated dependency check has detected security vulnerabilities.\n\n### Action Required\n1. Review the [workflow run details](${runUrl})\n2. Download and review the security reports\n3. Update affected dependencies\n4. Test thoroughly before deploying\n\n### Recommended Actions\n- For Python: Run \`pip-audit\` locally to identify fixes\n- For NPM: Run \`npm audit fix\` to auto-fix compatible issues\n- Review breaking changes before upgrading major versions\n\n---\n*This issue was automatically created by the security check workflow.*`,
+              labels: ['🔒 security', '📦 dependencies', 'automated'],
+              assignees: ['RbBtSn0w']
+            });
+          }
+
+  summary:
+    name: Generate Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [python-security, npm-security, critical-updates]
+
+    steps:
+    - name: Print Summary
       run: |
-        echo "## 📦 NPM Security Audit" >> $GITHUB_STEP_SUMMARY
-        if npm audit --audit-level=moderate 2>&1 | tee audit-output.txt; then
-          echo "✅ No moderate or higher vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ Vulnerabilities detected" >> $GITHUB_STEP_SUMMARY
-          cat audit-output.txt >> $GITHUB_STEP_SUMMARY
-        fi
-      continue-on-error: true
-
-    - name: Check for deprecated packages
-      run: |
+        echo "## 📋 Security Check Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 📋 Outdated Packages" >> $GITHUB_STEP_SUMMARY
-        npm outdated >> $GITHUB_STEP_SUMMARY || echo "All packages are up to date" >> $GITHUB_STEP_SUMMARY
-      continue-on-error: true
+        echo "### ✅ Checks Performed" >> $GITHUB_STEP_SUMMARY
+        echo "- Python vulnerability audit (pip-audit)" >> $GITHUB_STEP_SUMMARY
+        echo "- Python static security analysis (Bandit)" >> $GITHUB_STEP_SUMMARY
+        echo "- NPM vulnerability audit" >> $GITHUB_STEP_SUMMARY
+        echo "- Critical dependencies version check" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📌 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Review the uploaded security reports" >> $GITHUB_STEP_SUMMARY
+        echo "2. Address any critical or high severity issues" >> $GITHUB_STEP_SUMMARY
+        echo "3. Create PRs for outdated dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "4. Test thoroughly before merging" >> $GITHUB_STEP_SUMMARY

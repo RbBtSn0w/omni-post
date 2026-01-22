@@ -1,0 +1,28 @@
+name: Auto Label
+
+# Automatically adds labels to PRs based on the files changed.
+# Reduces manual labeling work and improves PR categorization.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Add Labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Label PR based on paths
+      uses: actions/labeler@v5
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        sync-labels: true

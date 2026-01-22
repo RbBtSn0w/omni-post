@@ -1,0 +1,72 @@
+# Configuration for actions/labeler
+# Maps file paths to labels that will be automatically applied to PRs
+
+# Frontend changes
+'⚛️ frontend':
+  - changed-files:
+    - any-glob-to-any-file: 'apps/frontend/**'
+
+# Backend changes
+'🐍 backend':
+  - changed-files:
+    - any-glob-to-any-file: 'apps/backend/**'
+
+# Documentation changes
+'📝 documentation':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/*.md'
+
+# CI/CD changes
+'⚙️ ci/cd':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/dependabot.yml'
+
+# Configuration changes
+'🔧 configuration':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.json'
+      - '*.yml'
+      - '*.yaml'
+      - '*.toml'
+      - '.env*'
+      - 'apps/backend/pyproject.toml'
+      - 'apps/frontend/vite.config.js'
+
+# Test changes
+'🧪 tests':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'apps/backend/tests/**'
+      - 'apps/frontend/tests/**'
+      - '**/*.test.js'
+      - '**/*.test.py'
+      - '**/test_*.py'
+
+# Dependencies
+'📦 dependencies':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'apps/backend/requirements.txt'
+      - 'apps/backend/pyproject.toml'
+      - 'apps/frontend/package.json'
+
+# Uploader related changes
+'🚀 uploader':
+  - changed-files:
+    - any-glob-to-any-file: 'apps/backend/src/uploader/**'
+
+# API changes
+'🌐 api':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'apps/backend/src/routes/**'
+      - 'apps/backend/src/services/**'
