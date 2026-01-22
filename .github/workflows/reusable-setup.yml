@@ -1,0 +1,104 @@
+name: Reusable Setup
+
+on:
+  workflow_call:
+    inputs:
+      setup-python:
+        description: 'Whether to setup Python'
+        required: false
+        type: boolean
+        default: false
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.10'
+      python-cache-dependency-path:
+        description: 'Path to Python dependency file for cache key'
+        required: false
+        type: string
+        default: 'apps/backend/pyproject.toml'
+      python-working-directory:
+        description: 'Working directory for Python setup'
+        required: false
+        type: string
+        default: 'apps/backend'
+      install-python-deps:
+        description: 'Whether to install Python dependencies'
+        required: false
+        type: boolean
+        default: false
+      install-python-dev:
+        description: 'Whether to install Python dev dependencies'
+        required: false
+        type: boolean
+        default: false
+      install-playwright:
+        description: 'Whether to install Playwright browsers'
+        required: false
+        type: boolean
+        default: false
+      
+      setup-node:
+        description: 'Whether to setup Node.js'
+        required: false
+        type: boolean
+        default: false
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '18.x'
+      install-node-deps:
+        description: 'Whether to install Node.js dependencies'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Python Setup
+    - name: Set up Python ${{ inputs.python-version }}
+      if: inputs.setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+        cache-dependency-path: ${{ inputs.python-cache-dependency-path }}
+    
+    - name: Upgrade pip
+      if: inputs.setup-python && inputs.install-python-deps
+      run: python -m pip install --upgrade pip
+    
+    - name: Install Python dependencies
+      if: inputs.setup-python && inputs.install-python-deps && !inputs.install-python-dev
+      working-directory: ${{ inputs.python-working-directory }}
+      run: pip install -e .
+    
+    - name: Install Python dev dependencies
+      if: inputs.setup-python && inputs.install-python-deps && inputs.install-python-dev
+      working-directory: ${{ inputs.python-working-directory }}
+      run: pip install -e ".[dev]"
+    
+    - name: Install Playwright browsers
+      if: inputs.setup-python && inputs.install-playwright
+      run: python -m playwright install chromium
+    
+    # Node.js Setup
+    - name: Set up Node.js ${{ inputs.node-version }}
+      if: inputs.setup-node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+    
+    - name: Install Node.js dependencies
+      if: inputs.setup-node && inputs.install-node-deps
+      run: npm ci

@@ -1,0 +1,154 @@
+name: Security Analysis
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/backend/**/*.py'
+      - 'apps/frontend/**/*.{js,vue,ts}'
+      - '.github/workflows/security-analysis.yml'
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Weekly on Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'python' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # Use security-extended queries for comprehensive analysis
+        # queries: security-extended,security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"
+
+  bandit-analysis:
+    name: Bandit Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only run on Python file changes or scheduled runs
+    if: |
+      github.event_name == 'schedule' || 
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.modified, '.py') ||
+      contains(github.event.pull_request.changed_files, '.py')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+        cache-dependency-path: apps/backend/pyproject.toml
+
+    - name: Install Bandit
+      run: pip install bandit[toml]
+
+    - name: Run Bandit security scan
+      id: bandit
+      working-directory: apps/backend
+      run: |
+        echo "## 🛡️ Bandit Security Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Run bandit with JSON output for parsing
+        if bandit -r src/ -f json -o bandit-report.json 2>&1; then
+          echo "✅ No security issues found by Bandit" >> $GITHUB_STEP_SUMMARY
+          exit 0
+        else
+          # Bandit found issues, parse and display
+          if [ -s bandit-report.json ]; then
+            # Count issues by severity
+            high=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || echo "0")
+            medium=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-report.json 2>/dev/null || echo "0")
+            low=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-report.json 2>/dev/null || echo "0")
+            
+            echo "📊 **Issues Found:**" >> $GITHUB_STEP_SUMMARY
+            echo "- High: $high" >> $GITHUB_STEP_SUMMARY
+            echo "- Medium: $medium" >> $GITHUB_STEP_SUMMARY
+            echo "- Low: $low" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Show detailed results
+            bandit -r src/ -f screen >> $GITHUB_STEP_SUMMARY 2>&1 || true
+            
+            # Only fail on high severity issues
+            if [ "$high" -gt "0" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "❌ **Failed:** High severity security issues detected" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ **Warning:** Medium/Low severity issues detected (not blocking)" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+        fi
+      continue-on-error: ${{ github.event_name == 'pull_request' }}
+
+    - name: Upload Bandit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bandit-security-report
+        path: apps/backend/bandit-report.json
+        retention-days: 90
+
+  summary:
+    name: Security Analysis Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [codeql-analysis, bandit-analysis]
+
+    steps:
+    - name: Print Summary
+      run: |
+        echo "## 🔒 Security Analysis Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Analysis Performed:**" >> $GITHUB_STEP_SUMMARY
+        echo "- CodeQL static analysis (JavaScript & Python)" >> $GITHUB_STEP_SUMMARY
+        echo "- Bandit Python security scan" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📌 **Policy:**" >> $GITHUB_STEP_SUMMARY
+        echo "- CodeQL: Reports all findings to Security tab" >> $GITHUB_STEP_SUMMARY
+        echo "- Bandit: Fails on High severity, warns on Medium/Low" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📌 **Next Steps:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Review CodeQL alerts in the Security tab" >> $GITHUB_STEP_SUMMARY
+        echo "2. Review Bandit report in Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "3. Address high-priority security findings" >> $GITHUB_STEP_SUMMARY
+        echo "4. Consider enabling security-extended queries for deeper analysis" >> $GITHUB_STEP_SUMMARY

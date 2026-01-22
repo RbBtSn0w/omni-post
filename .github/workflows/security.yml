@@ -1,4 +1,11 @@
-name: Security Check
+name: Security Check (Deprecated - See security-analysis.yml and dependency-scan.yml)
+
+# ⚠️ DEPRECATION NOTICE ⚠️
+# This workflow is being replaced by:
+# - .github/workflows/security-analysis.yml (for CodeQL and Bandit)
+# - .github/workflows/dependency-scan.yml (for dependency vulnerabilities)
+# This consolidation avoids duplication and provides better reporting.
+# This file is kept for reference but may be removed in a future update.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -1,4 +1,9 @@
-name: "CodeQL"
+name: "CodeQL (Deprecated - See security-analysis.yml)"
+
+# ⚠️ DEPRECATION NOTICE ⚠️
+# This workflow is being replaced by .github/workflows/security-analysis.yml
+# which consolidates CodeQL and Bandit scanning to avoid duplication.
+# This file is kept for reference but may be removed in a future update.
 
 on:
   push:
