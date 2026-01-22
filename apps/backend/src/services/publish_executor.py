@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.core.config import COOKIES_DIR, VIDEOS_DIR
 from src.services.publish_service import (
+    post_video_bilibili,
     post_video_DouYin,
     post_video_ks,
     post_video_tencent,
@@ -48,7 +49,7 @@ def run_publish_task(task_id, publish_data):
         is_draft = publish_data.get("isDraft", False)
 
         # Debug logging
-        platform_names = {1: "小红书", 2: "视频号", 3: "抖音", 4: "快手"}
+        platform_names = {1: "小红书", 2: "视频号", 3: "抖音", 4: "快手", 5: "Bilibili"}
         print(f"[PUBLISH] Platform: {platform_names.get(type, f'Unknown({type})')}")
         print(f"[PUBLISH] Title: {title}")
         print(f"[PUBLISH] Tags: {tags}")
@@ -124,6 +125,18 @@ def run_publish_task(task_id, publish_data):
                 )
             case 4:
                 post_video_ks(
+                    title,
+                    file_list,
+                    tags,
+                    account_list,
+                    category,
+                    enableTimer,
+                    videos_per_day,
+                    daily_times,
+                    start_days,
+                )
+            case 5:
+                post_video_bilibili(
                     title,
                     file_list,
                     tags,

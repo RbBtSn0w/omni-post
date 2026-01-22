@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAccountStore } from '../stores/account'
 
 export function useAccountFilter() {
@@ -37,6 +37,10 @@ export function useAccountFilter() {
         filteredAccounts.value.filter(account => account.platform === '小红书')
     )
 
+    const filteredBilibiliAccounts = computed(() =>
+        filteredAccounts.value.filter(account => account.platform === 'Bilibili')
+    )
+
     return {
         activeTab,
         selectedGroupId,
@@ -45,6 +49,7 @@ export function useAccountFilter() {
         filteredKuaishouAccounts,
         filteredDouyinAccounts,
         filteredChannelsAccounts,
-        filteredXiaohongshuAccounts
+        filteredXiaohongshuAccounts,
+        filteredBilibiliAccounts
     }
 }

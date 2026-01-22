@@ -979,7 +979,8 @@ const platforms = [
   { key: 3, name: '抖音' },
   { key: 4, name: '快手' },
   { key: 2, name: '视频号' },
-  { key: 1, name: '小红书' }
+  { key: 1, name: '小红书' },
+  { key: 5, name: 'Bilibili' }
 ]
 
 // 推荐话题列表
@@ -1043,7 +1044,8 @@ const getPlatformAccountCount = (tab, platformKey) => {
     3: '抖音',
     2: '视频号',
     1: '小红书',
-    4: '快手'
+    4: '快手',
+    5: 'Bilibili'
   }
 
   const platformName = platformMap[platformKey]
@@ -1363,7 +1365,7 @@ const handleGroupChange = async (groupId) => {
 
 // Get platform name from type
 const getPlatformName = (type) => {
-  const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手' }
+  const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'Bilibili' }
   return platformMap[type] || '未知'
 }
 
@@ -1525,7 +1527,7 @@ const confirmPublish = async (tab) => {
           .filter(accountId => {
             const account = accountStore.accounts.find(acc => acc.id === accountId)
             // Filter accounts by platform: platform key (1-4) maps to platform name
-            const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手' }
+            const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'Bilibili' }
             return account && account.platform === platformMap[platform]
           })
           .map(accountId => {

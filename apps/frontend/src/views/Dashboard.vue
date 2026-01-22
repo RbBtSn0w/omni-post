@@ -65,6 +65,9 @@
                 <el-tooltip content="小红书账号" placement="top">
                   <el-tag size="small" type="info">{{ platformStats.xiaohongshu }}</el-tag>
                 </el-tooltip>
+                <el-tooltip content="Bilibili账号" placement="top">
+                  <el-tag size="small" type="primary">{{ platformStats.bilibili }}</el-tag>
+                </el-tooltip>
               </div>
             </div>
           </el-card>
@@ -290,22 +293,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'// 导入图标
 import {
-  User, Platform, List, Document, InfoFilled
+    Document, InfoFilled,
+    List,
+    Platform,
+    User
 } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart } from 'echarts/charts'
 import {
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  GridComponent
+    GridComponent,
+    LegendComponent,
+    TitleComponent,
+    TooltipComponent
 } from 'echarts/components'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import VChart from 'vue-echarts'
+import { useRouter } from 'vue-router'; // 导入图标
 
 // 注册必要的组件
 use([
@@ -356,13 +362,14 @@ const platformStats = computed(() => {
     kuaishou: accounts.filter(acc => acc.platform === '快手').length,
     douyin: accounts.filter(acc => acc.platform === '抖音').length,
     channels: accounts.filter(acc => acc.platform === '视频号').length,
-    xiaohongshu: accounts.filter(acc => acc.platform === '小红书').length
+    xiaohongshu: accounts.filter(acc => acc.platform === '小红书').length,
+    bilibili: accounts.filter(acc => acc.platform === 'Bilibili').length
   }
 })
 
 // 计算平台总数
 const platformTotal = computed(() => {
-  return platformStats.value.kuaishou + platformStats.value.douyin + platformStats.value.channels + platformStats.value.xiaohongshu
+  return platformStats.value.kuaishou + platformStats.value.douyin + platformStats.value.channels + platformStats.value.xiaohongshu + platformStats.value.bilibili
 })
 
 // 任务统计数据 - 从taskStore获取
@@ -534,6 +541,7 @@ const validateStatsData = () => {
   platformStats.value.douyin = Math.max(0, platformStats.value.douyin)
   platformStats.value.channels = Math.max(0, platformStats.value.channels)
   platformStats.value.xiaohongshu = Math.max(0, platformStats.value.xiaohongshu)
+  platformStats.value.bilibili = Math.max(0, platformStats.value.bilibili)
 
   // 验证任务统计数据
   taskStats.value.total = Math.max(0, taskStats.value.total)
@@ -631,6 +639,7 @@ const updateDashboardData = (data) => {
   platformStats.value.douyin = data.platformStats.douyin
   platformStats.value.channels = data.platformStats.channels
   platformStats.value.xiaohongshu = data.platformStats.xiaohongshu
+  platformStats.value.bilibili = data.platformStats.bilibili || 0
 
   // 更新内容统计
   contentStats.value.total = data.contentStats.total
@@ -734,7 +743,8 @@ const getPlatformTagType = (platform) => {
     '快手': 'success',
     '抖音': 'danger',
     '视频号': 'warning',
-    '小红书': 'info'
+    '小红书': 'info',
+    'Bilibili': 'primary'
   }
   return typeMap[platform] || 'info'
 }

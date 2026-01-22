@@ -324,13 +324,13 @@
 
 <script setup>
 import {
-  CircleCheckFilled, CircleCloseFilled,
-  Delete, InfoFilled,
-  List,
-  Loading,
-  Search,
-  VideoPause,
-  VideoPlay
+    CircleCheckFilled, CircleCloseFilled,
+    Delete, InfoFilled,
+    List,
+    Loading,
+    Search,
+    VideoPause,
+    VideoPlay
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -345,7 +345,7 @@ const taskStore = useTaskStore()
 const loading = ref(false)
 
 // 平台列表
-const platforms = ref(['快手', '抖音', '视频号', '小红书'])
+const platforms = ref(['快手', '抖音', '视频号', '小红书', 'Bilibili'])
 
 // 任务筛选条件
 const taskFilter = ref({
@@ -473,7 +473,8 @@ const getPlatformTagType = (platform) => {
     '快手': 'success',
     '抖音': 'danger',
     '视频号': 'warning',
-    '小红书': 'info'
+    '小红书': 'info',
+    'Bilibili': 'primary'
   }
   return typeMap[platform] || 'info'
 }

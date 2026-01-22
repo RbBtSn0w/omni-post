@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from src.core.config import BASE_DIR, COOKIES_DIR, VIDEOS_DIR
 from src.core.constants import TencentZoneTypes
+from src.uploader.bilibili_uploader.main import BiliBiliVideo
 from src.uploader.douyin_uploader.main import DouYinVideo
 from src.uploader.ks_uploader.main import KSVideo
 
@@ -74,6 +75,21 @@ class PublishService(ABC):
 
     @abstractmethod
     def post_video_xhs(
+        self,
+        title: str,
+        files: List[str],
+        tags: str,
+        account_file: List[str],
+        category: str = TencentZoneTypes.LIFESTYLE.value,
+        enable_timer: bool = False,
+        videos_per_day: int = 1,
+        daily_times: Optional[List] = None,
+        start_days: int = 0,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def post_video_bilibili(
         self,
         title: str,
         files: List[str],
@@ -237,6 +253,30 @@ class DefaultPublishService(PublishService):
                 app = XiaoHongShuVideo(title, file, tags, publish_time, cookie)
                 asyncio.run(app.main(), debug=False)
 
+    def post_video_bilibili(
+        self,
+        title: str,
+        files: List[str],
+        tags: str,
+        account_file: List[str],
+        category: str = TencentZoneTypes.LIFESTYLE.value,
+        enable_timer: bool = False,
+        videos_per_day: int = 1,
+        daily_times: Optional[List] = None,
+        start_days: int = 0,
+    ) -> None:
+        full_files, full_accounts = self._get_full_paths(files, account_file)
+        publish_datetimes = self._get_publish_datetimes(
+            len(files), enable_timer, videos_per_day, daily_times, start_days
+        )
+        for index, file in enumerate(full_files):
+            for cookie in full_accounts:
+                print(f"视频文件名：{file}")
+                print(f"标题：{title}")
+                print(f"Hashtag：{tags}")
+                app = BiliBiliVideo(title, str(file), tags, publish_datetimes[index], cookie)
+                asyncio.run(app.main(), debug=False)
+
 
 _default_publish_service: Optional[DefaultPublishService] = None
 
@@ -268,3 +308,8 @@ def post_video_ks(*args, **kwargs):
 def post_video_xhs(*args, **kwargs):
     """发布小红书 - 便捷函数"""
     return get_publish_service().post_video_xhs(*args, **kwargs)
+
+
+def post_video_bilibili(*args, **kwargs):
+    """发布 Bilibili - 便捷函数"""
+    return get_publish_service().post_video_bilibili(*args, **kwargs)
