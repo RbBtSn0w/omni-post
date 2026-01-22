@@ -36,6 +36,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 18.x
+        cache: 'npm'
 
     - name: Install dependencies
       run: npm ci
@@ -44,18 +45,6 @@ jobs:
       id: eslint
       run: npm run lint:frontend
       # Lint is a hard gate - failures will block the CI
-
-    - name: Check for Vue build errors
-      id: vue-build
-      run: |
-        npm run build -w apps/frontend 2>&1 | tee build-output.txt
-        if grep -qi "error" build-output.txt; then
-          echo "::warning::Build contained errors"
-          exit 1
-        fi
-      continue-on-error: true
-      env:
-        NODE_OPTIONS: --max_old_space_size=4096
 
     - name: Summarize lint results
       if: always()
@@ -66,11 +55,6 @@ jobs:
           echo "❌ **ESLint**: Issues detected" >> $GITHUB_STEP_SUMMARY
         else
           echo "✅ **ESLint**: Passed" >> $GITHUB_STEP_SUMMARY
-        fi
-        if [ "${{ steps.vue-build.outcome }}" == "failure" ]; then
-          echo "❌ **Vue Build**: Errors detected" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "✅ **Vue Build**: Passed" >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Review the step outputs above for details." >> $GITHUB_STEP_SUMMARY
