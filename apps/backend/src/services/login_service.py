@@ -58,6 +58,11 @@ def run_async_function(type, id, status_queue, group_name=None):
             asyncio.set_event_loop(loop)
             loop.run_until_complete(login_service.get_ks_cookie(id, status_queue, group_name))
             loop.close()
+        case "5":
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(login_service.bilibili_cookie_gen(id, status_queue, group_name))
+            loop.close()
 
 
 class LoginService(ABC):
@@ -108,6 +113,13 @@ class LoginService(ABC):
         self, id: str, status_queue, group_name: str = None
     ) -> Optional[Dict]:
         """小红书登录"""
+        pass
+
+    @abstractmethod
+    async def bilibili_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
+        """Bilibili登录"""
         pass
 
 
@@ -172,6 +184,21 @@ class MockLoginService(LoginService):
 
         return {}
 
+    async def bilibili_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
+        """模拟Bilibili登录"""
+        # 发送模拟二维码
+        status_queue.put("https://mock-qrcode-url.com/bilibili")
+
+        # 根据配置发送状态码
+        if self.login_status and self.cookie_valid:
+            status_queue.put("200")
+        else:
+            status_queue.put("500")
+
+        return {}
+
 
 class DefaultLoginService(LoginService):
     """默认登录服务实现，调用实际的登录逻辑"""
@@ -205,6 +232,14 @@ class DefaultLoginService(LoginService):
         from src.services.login_impl import xiaohongshu_cookie_gen as original_xhs_login
 
         return await original_xhs_login(id, status_queue, group_name)
+
+    async def bilibili_cookie_gen(
+        self, id: str, status_queue, group_name: str = None
+    ) -> Optional[Dict]:
+        """调用实际的Bilibili登录逻辑"""
+        from src.services.login_impl import bilibili_cookie_gen as original_bilibili_login
+
+        return await original_bilibili_login(id, status_queue, group_name)
 
 
 def get_login_service(config: Optional[Dict] = None) -> LoginService:

@@ -39,6 +39,11 @@ class CookieService(ABC):
         pass
 
     @abstractmethod
+    async def cookie_auth_bilibili(self, account_file: Path) -> bool:
+        """验证 Bilibili Cookie"""
+        pass
+
+    @abstractmethod
     async def check_cookie(self, platform_type: int, file_path: str) -> bool:
         """验证指定平台的 Cookie"""
         pass
@@ -177,6 +182,33 @@ class DefaultCookieService(CookieService):
                     await context.close()
                 await browser.close()
 
+    async def cookie_auth_bilibili(self, account_file: Path) -> bool:
+        async with async_playwright() as playwright:
+            browser = await launch_browser(playwright)
+            context = None
+            page = None
+            try:
+                context = await browser.new_context(storage_state=account_file)
+                context = await set_init_script(context)
+                page = await context.new_page()
+                await page.goto(
+                    "https://member.bilibili.com/platform/home",
+                    wait_until="domcontentloaded",
+                )
+                # 如果重定向到登录页，说明 Cookie 失效
+                if "passport.bilibili.com" in page.url:
+                    print("[+] bilibili cookie 失效")
+                    return False
+                else:
+                    print("[+] bilibili cookie 有效")
+                    return True
+            finally:
+                if page:
+                    await page.close()
+                if context:
+                    await context.close()
+                await browser.close()
+
     async def check_cookie(self, platform_type: int, file_path: str) -> bool:
         cookie_path = self.cookies_dir / file_path
         match platform_type:
@@ -188,6 +220,8 @@ class DefaultCookieService(CookieService):
                 return await self.cookie_auth_douyin(cookie_path)
             case 4:
                 return await self.cookie_auth_ks(cookie_path)
+            case 5:
+                return await self.cookie_auth_bilibili(cookie_path)
             case _:
                 return False
 

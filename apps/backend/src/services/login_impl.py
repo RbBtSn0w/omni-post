@@ -608,3 +608,102 @@ async def xiaohongshu_cookie_gen(id, status_queue, group_name=None):
             conn.commit()
             print("✅ 用户状态已记录")
         status_queue.put("200")
+
+
+async def bilibili_cookie_gen(id, status_queue, group_name=None):
+    """Bilibili login implementation."""
+    url_changed_event = asyncio.Event()
+    screenshot_dir = create_screenshot_dir("bilibili")
+
+    async def on_url_change():
+        if page.url != original_url:
+            debug_print(f"[DEBUG] 原页面URL变化: {original_url} -> {page.url}")
+            await debug_screenshot(
+                page, screenshot_dir, "original_page_url_changed.png", "原页面URL变化后"
+            )
+            # 只要不是在登录页且URL变了，通常意味着登录成功跳转了
+            if "passport.bilibili.com" not in page.url:
+                url_changed_event.set()
+
+    async with async_playwright() as playwright:
+        browser = await launch_browser(playwright)
+        context = await browser.new_context()
+        context = await set_init_script(context)
+        page = await context.new_page()
+
+        await debug_screenshot(page, screenshot_dir, "before_navigation.png", "导航前")
+        # 访问主页，如果没登录会自动跳到登录页
+        await page.goto("https://member.bilibili.com/platform/home")
+        original_url = page.url
+        debug_print(f"[DEBUG] 页面加载完成: {original_url}")
+
+        await debug_screenshot(page, screenshot_dir, "after_navigation.png", "导航后")
+
+        # Bilibili QR code detection
+        try:
+            # 等待二维码出现
+            img_locator = page.locator(
+                'img[alt="Scan me!"], .bcc-qrcode-img img, .qr-code-box img'
+            ).first
+            await img_locator.wait_for(timeout=10000)
+            src = await img_locator.get_attribute("src")
+            print("✅ 图片地址:", src)
+            status_queue.put(src)
+        except Exception as e:
+            print(f"❌ 获取二维码失败: {e}")
+            status_queue.put("500")
+            await browser.close()
+            return
+
+        page.on(
+            "framenavigated",
+            lambda frame: (
+                asyncio.create_task(on_url_change()) if frame == page.main_frame else None
+            ),
+        )
+
+        try:
+            # 等待登录成功跳转
+            await asyncio.wait_for(url_changed_event.wait(), timeout=60)
+            debug_print("[DEBUG] Bilibili登录检测成功")
+        except asyncio.TimeoutError:
+            error_msg = "Bilibili登录页面跳转监听超时"
+            print(error_msg)
+            await browser.close()
+            status_queue.put("500")
+            return {"success": False, "error": "TIMEOUT", "message": error_msg}
+
+        # 保存Cookie
+        uuid_v1 = uuid.uuid1()
+        cookies_dir = COOKIES_DIR
+        cookies_dir.mkdir(exist_ok=True, parents=True)
+        await context.storage_state(path=cookies_dir / f"{uuid_v1}.json")
+
+        # 验证Cookie
+        result = await get_cookie_service().check_cookie(5, f"{uuid_v1}.json")
+        if not result:
+            status_queue.put("500")
+            await browser.close()
+            return None
+
+        await browser.close()
+
+        with sqlite3.connect(db_manager.get_db_path()) as conn:
+            cursor = conn.cursor()
+            group_id = get_or_create_group(cursor, group_name)
+            cursor.execute(
+                """
+                INSERT INTO user_info (type, filePath, userName, status, group_id, created_at, last_validated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(type, userName) DO UPDATE SET
+                    filePath = excluded.filePath,
+                    status = excluded.status,
+                    group_id = COALESCE(excluded.group_id, user_info.group_id),
+                    last_validated_at = CURRENT_TIMESTAMP
+            """,
+                (5, f"{uuid_v1}.json", id, 1, group_id),
+            )
+            conn.commit()
+            print("✅ 用户状态已记录")
+
+        status_queue.put("200")

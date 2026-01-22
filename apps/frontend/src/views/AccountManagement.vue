@@ -406,6 +406,69 @@
             </div>
           </div>
         </el-tab-pane>
+
+        <el-tab-pane label="Bilibili" name="bilibili">
+          <div class="account-list-container">
+            <div class="account-search">
+              <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
+              <div class="action-buttons">
+                <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
+                <el-button type="info" @click="handleForceRefresh" :loading="false">
+                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
+                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                </el-button>
+              </div>
+            </div>
+
+            <div v-if="filteredBilibiliAccounts.length > 0" class="account-list">
+              <el-table :data="filteredBilibiliAccounts" style="width: 100%">
+                <el-table-column label="头像" width="80">
+                  <template #default="scope">
+                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="name" label="名称" width="180" />
+                <el-table-column prop="platform" label="平台">
+                  <template #default="scope">
+                    <el-tag
+                      :type="getPlatformTagType(scope.row.platform)"
+                      effect="plain"
+                    >
+                      {{ scope.row.platform }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="status" label="状态">
+                  <template #default="scope">
+                    <el-tag
+                      :type="getStatusTagType(scope.row.status)"
+                      effect="plain"
+                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      @click="handleStatusClick(scope.row)"
+                    >
+                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                        <Loading />
+                      </el-icon>
+                      {{ scope.row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作">
+                  <template #default="scope">
+                    <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                    <el-button size="small" type="primary" :icon="Download" @click="handleDownloadCookie(scope.row)">下载Cookie</el-button>
+                    <el-button size="small" type="info" :icon="Upload" @click="handleUploadCookie(scope.row)">上传Cookie</el-button>
+                    <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <div v-else class="empty-data">
+              <el-empty description="暂无Bilibili账号数据" />
+            </div>
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -430,6 +493,7 @@
             <el-option label="抖音" value="抖音" />
             <el-option label="视频号" value="视频号" />
             <el-option label="小红书" value="小红书" />
+            <el-option label="Bilibili" value="Bilibili" />
           </el-select>
         </el-form-item>
         <el-form-item label="名称" prop="groupName">
@@ -489,19 +553,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Refresh, CircleCheckFilled, CircleCloseFilled, Download, Upload, Loading, ArrowDown } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox, ElAlert, ElCard } from 'element-plus'
 import { accountApi } from '@/api/account'
+import GroupSelector from '@/components/GroupSelector.vue'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
-import GroupSelector from '@/components/GroupSelector.vue'
+import { ArrowDown, CircleCheckFilled, CircleCloseFilled, Download, Loading, Refresh, Upload } from '@element-plus/icons-vue'
+import { ElAlert, ElCard, ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 // 导入全局数据缓存服务
-import dataCache from '@/utils/dataCache'
-import { useAccountFilter } from '@/composables/useAccountFilter'
 import { useAccountActions } from '@/composables/useAccountActions'
+import { useAccountFilter } from '@/composables/useAccountFilter'
 import { API_BASE_URL } from '@/core/config'
+import dataCache from '@/utils/dataCache'
 
 // 获取账号状态管理
 const accountStore = useAccountStore()
@@ -518,7 +582,8 @@ const {
   filteredKuaishouAccounts,
   filteredDouyinAccounts,
   filteredChannelsAccounts,
-  filteredXiaohongshuAccounts
+  filteredXiaohongshuAccounts,
+  filteredBilibiliAccounts
 } = useAccountFilter()
 
 const {
@@ -736,7 +801,8 @@ const getPlatformTagType = (platform) => {
     '快手': 'success',
     '抖音': 'danger',
     '视频号': 'warning',
-    '小红书': 'info'
+    '小红书': 'info',
+    'Bilibili': 'primary'
   }
   return typeMap[platform] || 'info'
 }
@@ -1009,7 +1075,8 @@ const connectSSE = (platform, name, groupName) => {
     '小红书': '1',
     '视频号': '2',
     '抖音': '3',
-    '快手': '4'
+    '快手': '4',
+    'Bilibili': '5'
   }
 
   const type = platformTypeMap[platform] || '1'
@@ -1114,7 +1181,8 @@ const submitAccountForm = () => {
             '小红书': 1,
             '视频号': 2,
             '抖音': 3,
-            '快手': 4
+            '快手': 4,
+            'Bilibili': 5
           };
           const type = platformTypeMap[accountForm.platform] || 1;
 
