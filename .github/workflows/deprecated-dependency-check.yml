@@ -1,21 +1,22 @@
-name: Dependency Security Check
+name: "[DEPRECATED] Dependency Security Check - Use dependency-scan.yml instead"
+
+# ⚠️ DEPRECATED: This workflow has been replaced by dependency-scan.yml
+# Please use the new consolidated dependency-scan.yml workflow instead.
+# This file is kept for reference but is no longer triggered.
+#
+# Migration notes:
+# - dependency-scan.yml combines Python and NPM dependency scans
+# - Improved error handling and reporting
+# - Configurable severity thresholds
+# - Better artifact management
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  schedule:
-    # Weekly on Monday at 9:00 UTC (17:00 Beijing Time)
-    - cron: '0 9 * * 1'
-  # Allow manual trigger
-  workflow_dispatch:
-  # Run on PRs that modify dependency files
-  pull_request:
-    paths:
-      - 'apps/backend/requirements.txt'
-      - 'package.json'
-      - 'package-lock.json'
+  # DEPRECATED: Workflow disabled - use dependency-scan.yml instead
+  workflow_dispatch:  # Manual trigger only for emergency use
 
 permissions:
   contents: read

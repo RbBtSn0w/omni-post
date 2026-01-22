@@ -1,28 +1,22 @@
-name: Security Check
+name: "[DEPRECATED] Security Check - Use security-analysis.yml and dependency-scan.yml"
+
+# ⚠️ DEPRECATED: This workflow has been split into two focused workflows:
+# - security-analysis.yml: For CodeQL and Bandit static analysis
+# - dependency-scan.yml: For dependency vulnerability scanning
+# This file is kept for reference but is no longer triggered.
+#
+# Migration notes:
+# - security-analysis.yml handles CodeQL + Bandit security scanning
+# - dependency-scan.yml handles pip-audit and npm audit
+# - Better separation of concerns and reporting
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'apps/backend/pyproject.toml'
-      - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
-      - 'package.json'
-      - 'package-lock.json'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'apps/backend/pyproject.toml'
-      - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
-      - 'package.json'
-      - 'package-lock.json'
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday
+  # DEPRECATED: Workflow disabled - use security-analysis.yml and dependency-scan.yml
+  workflow_dispatch:  # Manual trigger only for emergency use
 
 permissions:
   contents: read

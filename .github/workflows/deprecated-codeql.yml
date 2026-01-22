@@ -1,13 +1,17 @@
-name: "CodeQL"
+name: "[DEPRECATED] CodeQL - Use security-analysis.yml instead"
+
+# ⚠️ DEPRECATED: This workflow has been replaced by security-analysis.yml
+# The new workflow includes CodeQL plus additional Python security scanning with Bandit.
+# This file is kept for reference but is no longer triggered.
+#
+# Migration notes:
+# - security-analysis.yml includes CodeQL for both Python and JavaScript
+# - Also includes Bandit for enhanced Python security scanning
+# - Better integration with dependency scanning
 
 on:
-  push:
-    branches: [ "main", "develop" ]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-  schedule:
-    - cron: '30 1 * * 0'
+  # DEPRECATED: Workflow disabled - use security-analysis.yml
+  workflow_dispatch:  # Manual trigger only for emergency use
 
 jobs:
   analyze:
