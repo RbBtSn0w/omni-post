@@ -1,23 +1,39 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ElMessage } from 'element-plus'
-import { http } from '@/utils/request'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Mock外部依赖
+// Use vi.hoisted to ensure the object exists before the mock factory runs
+const requestInterceptors = vi.hoisted(() => ({
+  request: null,
+  requestError: null,
+  response: null,
+  responseError: null
+}))
+
 vi.mock('axios', () => {
-  const mockAxiosInstance = {
+  const mockInstance = {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
     delete: vi.fn(),
     interceptors: {
-      request: { use: vi.fn() },
-      response: { use: vi.fn() }
+      request: {
+        use: vi.fn((success, error) => {
+          requestInterceptors.request = success
+          requestInterceptors.requestError = error
+        })
+      },
+      response: {
+        use: vi.fn((success, error) => {
+          requestInterceptors.response = success
+          requestInterceptors.responseError = error
+        })
+      }
     }
   }
-  
+
   return {
     default: {
-      create: vi.fn(() => mockAxiosInstance)
+      create: vi.fn(() => mockInstance)
     }
   }
 })
@@ -28,392 +44,149 @@ vi.mock('element-plus', () => ({
   }
 }))
 
-// Mock import.meta.env
-vi.stubEnv('VITE_API_BASE_URL', 'http://test-api.example.com')
+vi.mock('@/core/config', () => ({
+  API_BASE_URL: 'http://test-api.example.com'
+}))
+
+// Import after mocks
+import request, { http } from '@/utils/request'
 
 describe('request.js', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // 重置localStorage mock
-    localStorage.getItem.mockClear()
+    localStorage.clear()
   })
 
-  // 测试http工具函数
-  describe('http utility functions', () => {
-    it('should test http methods are defined', () => {
-      expect(http.get).toBeDefined()
-      expect(http.post).toBeDefined()
-      expect(http.put).toBeDefined()
-      expect(http.delete).toBeDefined()
-      expect(http.upload).toBeDefined()
+  describe('Request Interceptor', () => {
+    it('should add Authorization header if token exists', () => {
+      const config = { headers: {} }
+      const token = 'fake-token'
+
+      // Mock directly on the instance, reliable in jsdom
+      const getItemSpy = vi.spyOn(window.localStorage, 'getItem').mockReturnValue(token)
+
+      const result = requestInterceptors.request(config)
+
+      expect(result.headers.Authorization).toBe(`Bearer ${token}`)
+      getItemSpy.mockRestore()
+    })
+
+    it('should not add Authorization header if no token', () => {
+      const config = { headers: {} }
+
+      const result = requestInterceptors.request(config)
+
+      expect(result.headers.Authorization).toBeUndefined()
+    })
+
+    it('should reject on request error', async () => {
+      const error = new Error('Request fail')
+
+      await expect(requestInterceptors.requestError(error)).rejects.toThrow('Request fail')
+      expect(console.error).toHaveBeenCalledWith('请求错误:', error)
     })
   })
 
-  // 直接测试拦截器逻辑，而不是通过axios实例
-  describe('interceptor logic', () => {
-    // 从request.js中提取拦截器逻辑进行测试
-    it('should add Authorization header when token exists', () => {
-      // Mock localStorage.getItem to return a token
-      localStorage.getItem.mockReturnValue('test-token')
-      
-      // 测试请求拦截器逻辑
-      const config = { headers: {} }
-      
-      // 手动执行请求拦截器逻辑（复制自request.js）
-      const token = localStorage.getItem('token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
-      
-      expect(config.headers.Authorization).toBe('Bearer test-token')
+  describe('Response Interceptor', () => {
+    it('should return data directly if code is 200', () => {
+      const response = { data: { code: 200, data: { id: 1 } } }
+      const result = requestInterceptors.response(response)
+      expect(result).toEqual({ code: 200, data: { id: 1 } })
     })
 
-    it('should not add Authorization header when token does not exist', () => {
-      // Mock localStorage.getItem to return null
-      localStorage.getItem.mockReturnValue(null)
-      
-      // 测试请求拦截器逻辑
-      const config = { headers: {} }
-      
-      // 手动执行请求拦截器逻辑（复制自request.js）
-      const token = localStorage.getItem('token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
-      
-      expect(config.headers.Authorization).toBeUndefined()
+    it('should return data directly if success is true', () => {
+      const response = { data: { success: true, payload: 'abc' } }
+      const result = requestInterceptors.response(response)
+      expect(result).toEqual({ success: true, payload: 'abc' })
     })
 
-    it('should handle request error', () => {
-      // 测试请求错误处理逻辑
-      const error = new Error('Request error')
-      
-      // 手动执行请求错误处理逻辑（复制自request.js）
-      console.error('请求错误:', error)
-      const result = Promise.reject(error)
-      
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toThrow('Request error')
+    it('should reject and show error if code is not 200 and success is false', async () => {
+      const response = { data: { code: 500, message: 'Server error' } }
+
+      await expect(requestInterceptors.response(response)).rejects.toThrow('Server error')
+      expect(ElMessage.error).toHaveBeenCalledWith('Server error')
     })
 
-    it('should return data when response code is 200', () => {
-      // 测试响应拦截器逻辑 - 成功情况 (code: 200)
-      const response = {
-        data: { code: 200, data: 'test data', message: 'success' }
-      }
-      
-      // 手动执行响应拦截器逻辑（复制自request.js）
-      const { data } = response
-      let result
-      
-      if (data.code === 200 || data.success) {
-        result = data
-      } else {
-        ElMessage.error(data.message || '请求失败')
-        result = Promise.reject(new Error(data.message || '请求失败'))
-      }
-      
-      expect(result).toEqual(response.data)
-    })
+    it('should use default error message if none provided', async () => {
+      const response = { data: { code: 400 } }
 
-    it('should return data when response success is true', () => {
-      // 测试响应拦截器逻辑 - 成功情况 (success: true)
-      const response = {
-        data: { success: true, data: 'test data', message: 'success' }
-      }
-      
-      // 手动执行响应拦截器逻辑（复制自request.js）
-      const { data } = response
-      let result
-      
-      if (data.code === 200 || data.success) {
-        result = data
-      } else {
-        ElMessage.error(data.message || '请求失败')
-        result = Promise.reject(new Error(data.message || '请求失败'))
-      }
-      
-      expect(result).toEqual(response.data)
-    })
-
-    it('should show error message when response code is not 200', () => {
-      // 测试响应拦截器逻辑 - 失败情况
-      const response = {
-        data: { code: 500, message: 'Internal server error' }
-      }
-      
-      // 手动执行响应拦截器逻辑（复制自request.js）
-      const { data } = response
-      let result
-      
-      if (data.code === 200 || data.success) {
-        result = data
-      } else {
-        ElMessage.error(data.message || '请求失败')
-        result = Promise.reject(new Error(data.message || '请求失败'))
-      }
-      
-      // 检查是否调用了ElMessage.error
-      expect(ElMessage.error).toHaveBeenCalledWith('Internal server error')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toThrow('Internal server error')
-    })
-
-    it('should show default error message when response has no message', () => {
-      // 测试响应拦截器逻辑 - 无错误信息情况
-      const response = {
-        data: { code: 500 }
-      }
-      
-      // 手动执行响应拦截器逻辑（复制自request.js）
-      const { data } = response
-      let result
-      
-      if (data.code === 200 || data.success) {
-        result = data
-      } else {
-        ElMessage.error(data.message || '请求失败')
-        result = Promise.reject(new Error(data.message || '请求失败'))
-      }
-      
-      // 检查是否调用了ElMessage.error
+      await expect(requestInterceptors.response(response)).rejects.toThrow('请求失败')
       expect(ElMessage.error).toHaveBeenCalledWith('请求失败')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toThrow('请求失败')
     })
+  })
 
-    it('should handle 401 unauthorized error', () => {
-      // 测试响应错误处理逻辑 - 401错误
-      const error = {
-        response: { status: 401 }
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+  describe('Response Error Interceptor', () => {
+    it('should handle 401', async () => {
+      const error = { response: { status: 401 } }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('未授权，请重新登录')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
     })
 
-    it('should handle 403 forbidden error', () => {
-      // 测试响应错误处理逻辑 - 403错误
-      const error = {
-        response: { status: 403 }
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+    it('should handle 403', async () => {
+      const error = { response: { status: 403 } }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('拒绝访问')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
     })
 
-    it('should handle 404 not found error', () => {
-      // 测试响应错误处理逻辑 - 404错误
-      const error = {
-        response: { status: 404 }
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+    it('should handle 404', async () => {
+      const error = { response: { status: 404 } }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('请求地址不存在')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
     })
 
-    it('should handle 500 server error', () => {
-      // 测试响应错误处理逻辑 - 500错误
-      const error = {
-        response: { status: 500 }
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+    it('should handle 500', async () => {
+      const error = { response: { status: 500 } }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('服务器内部错误')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
     })
 
-    it('should handle other status code errors', () => {
-      // 测试响应错误处理逻辑 - 其他状态码错误
-      const error = {
-        response: { status: 400 }
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+    it('should handle other status codes', async () => {
+      const error = { response: { status: 502 } }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('网络错误')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
     })
 
-    it('should handle network connection failure', () => {
-      // 测试响应错误处理逻辑 - 网络连接失败
-      const error = {
-        response: null // 没有response表示网络错误
-      }
-      
-      // 手动执行响应错误处理逻辑（复制自request.js）
-      console.error('响应错误:', error)
-      
-      if (error.response) {
-        const { status } = error.response
-        switch (status) {
-          case 401:
-            ElMessage.error('未授权，请重新登录')
-            break
-          case 403:
-            ElMessage.error('拒绝访问')
-            break
-          case 404:
-            ElMessage.error('请求地址不存在')
-            break
-          case 500:
-            ElMessage.error('服务器内部错误')
-            break
-          default:
-            ElMessage.error('网络错误')
-        }
-      } else {
-        ElMessage.error('网络连接失败')
-      }
-      
-      const result = Promise.reject(error)
-      
-      // 检查是否调用了ElMessage.error
+    it('should handle network connection failure (no response)', async () => {
+      const error = { message: 'Network Error' }
+      await expect(requestInterceptors.responseError(error)).rejects.toEqual(error)
       expect(ElMessage.error).toHaveBeenCalledWith('网络连接失败')
-      // 检查是否返回了rejected promise
-      return expect(result).rejects.toEqual(error)
+    })
+  })
+
+  describe('http utility', () => {
+    it('get should call request.get', () => {
+      http.get('/url', { a: 1 })
+      expect(request.get).toHaveBeenCalledWith('/url', { params: { a: 1 } })
+    })
+
+    it('post should call request.post', () => {
+      http.post('/url', { a: 1 }, { headers: {} })
+      expect(request.post).toHaveBeenCalledWith('/url', { a: 1 }, { headers: {} })
+    })
+
+    it('put should call request.put', () => {
+      http.put('/url', { a: 1 })
+      expect(request.put).toHaveBeenCalledWith('/url', { a: 1 }, {})
+    })
+
+    it('delete should call request.delete', () => {
+      http.delete('/url', { a: 1 })
+      expect(request.delete).toHaveBeenCalledWith('/url', { params: { a: 1 } })
+    })
+
+    it('upload should call request.post with multipart/form-data', () => {
+      const formData = new FormData()
+      const onProgress = vi.fn()
+      http.upload('/url', formData, onProgress)
+
+      expect(request.post).toHaveBeenCalledWith(
+        '/url',
+        formData,
+        expect.objectContaining({
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: onProgress
+        })
+      )
     })
   })
 })
