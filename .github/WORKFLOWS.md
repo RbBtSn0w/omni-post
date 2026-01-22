@@ -1,6 +1,14 @@
 # GitHub Automation Workflows Configuration Guide
 
+> **📚 For detailed CI/CD documentation, see [CI.md](./CI.md)**
+
 This project is fully equipped with GitHub Actions automation workflows, covering CI/CD, code quality, security checks, and more.
+
+## Quick Reference
+
+For comprehensive information about all workflows, their triggers, blocking policies, and troubleshooting guides, please refer to **[CI.md](./CI.md)**.
+
+This document provides a high-level overview of the configured workflows.
 
 ## 📋 Configured Workflows
 
