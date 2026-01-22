@@ -3,6 +3,12 @@ name: Auto-Approve Workflows
 # This workflow automatically approves pending workflow runs for PRs from trusted sources
 # Requires: GitHub App token or PAT with 'actions:write' and 'pull_requests:read' permissions
 # Setup instructions: See .github/docs/AUTO_APPROVE_SETUP.md
+#
+# Security Note: This workflow uses pull_request_target which runs in the base repository context.
+# Safety is ensured by:
+# 1. Job-level if condition that validates PR author BEFORE any steps execute
+# 2. Skipping approval if workflow files are modified
+# 3. Validating all run IDs are numeric before API calls
 
 on:
   pull_request_target:
@@ -64,13 +70,15 @@ jobs:
         run: |
           # Get all workflow runs for this PR that are waiting for approval
           PR_NUMBER=${{ github.event.pull_request.number }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           
-          # List workflow runs for this commit
+          # List workflow runs for this commit (using gh cli for safe parameter passing)
           RUNS=$(gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "/repos/${{ github.repository }}/actions/runs?head_sha=$HEAD_SHA&status=action_required" \
+            "/repos/${{ github.repository }}/actions/runs" \
+            -f head_sha="$HEAD_SHA" \
+            -f status=action_required \
             --jq '.workflow_runs[].id')
           
           if [ -z "$RUNS" ]; then
@@ -96,6 +104,12 @@ jobs:
           IFS=',' read -r -a RUN_IDS <<< "${{ steps.get-runs.outputs.run_ids }}"
           
           for RUN_ID in "${RUN_IDS[@]}"; do
+            # Validate RUN_ID is numeric only (security check)
+            if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
+              echo "⚠️ Skipping invalid run ID: $RUN_ID"
+              continue
+            fi
+            
             echo "Approving workflow run: $RUN_ID"
             
             # Attempt to approve the workflow run
