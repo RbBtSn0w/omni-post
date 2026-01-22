@@ -14,6 +14,7 @@ vi.mock('axios', () => {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
     interceptors: {
       request: {
@@ -167,6 +168,11 @@ describe('request.js', () => {
     it('put should call request.put', () => {
       http.put('/url', { a: 1 })
       expect(request.put).toHaveBeenCalledWith('/url', { a: 1 }, {})
+    })
+
+    it('patch should call request.patch', () => {
+      http.patch('/url', { a: 1 })
+      expect(request.patch).toHaveBeenCalledWith('/url', { a: 1 }, {})
     })
 
     it('delete should call request.delete', () => {
