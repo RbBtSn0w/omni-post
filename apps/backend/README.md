@@ -243,6 +243,35 @@ with sqlite3.connect(db_path) as conn:
 
 建立了分层测试架构，采用Mock技术完全隔离外部依赖，实现了测试的快速执行和高覆盖率目标。
 
+## AI Agent 功能 (新功能)
+
+### 概述
+
+集成了 GitHub Copilot SDK，支持自然语言驱动的发布操作。通过 AI Agent，用户可以使用自然语言指令完成视频发布任务。
+
+### 使用方法
+
+```bash
+# 基本用法
+npm run agent -- "发布视频到抖音"
+
+# 指定平台
+npm run agent -- "上传视频" --platform douyin
+
+# 预览模式
+npm run agent -- "规划发布策略" --preview
+
+# 测试模式（使用 Mock 服务）
+npm run agent -- "测试提示" --mock
+
+# 交互模式
+npm run agent -- --interactive --mock
+```
+
+### 详细文档
+
+完整的 AI Agent 使用指南、工具注册模式和配置选项，请参阅 [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)
+
 ## 后续计划
 
 1. 完善CI/CD流程

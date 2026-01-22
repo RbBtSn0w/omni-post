@@ -48,6 +48,16 @@ else:
 # Headless mode setting
 LOCAL_CHROME_HEADLESS = True
 
+# AI Agent configuration
+# Path to GitHub Copilot CLI (if using language-model-service backend)
+# Set to None to use github-copilot-sdk's default client
+import os
+COPILOT_CLI_PATH = os.environ.get("COPILOT_CLI_PATH", None)
+
+# Alternative LLM provider (e.g., "openai", "anthropic", "copilot")
+# Default: "copilot" uses github-copilot-sdk
+AGENT_PROVIDER = os.environ.get("AGENT_PROVIDER", "copilot")
+
 
 # Browser info logging (moved to avoid execution during import)
 # Call log_browser_info() explicitly from app startup if needed

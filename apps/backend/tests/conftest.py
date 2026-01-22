@@ -7,8 +7,11 @@ from unittest.mock import patch
 
 import pytest
 
-# Fix import path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+# Fix import path - support both "from src.X" and "from X" import styles
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+src_dir = os.path.join(backend_dir, "src")
+sys.path.insert(0, backend_dir)  # For "from src.X" imports
+sys.path.insert(0, src_dir)      # For "from X" imports (legacy compatibility)
 
 
 def _create_database_tables(conn):

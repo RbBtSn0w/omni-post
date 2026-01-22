@@ -11,6 +11,7 @@
     "db:init": ".venv/bin/python -m src.db.createTable",
     "clean": "rm -rf .venv test-results htmlcov dist build *.egg-info __pycache__ data",
     "test": ".venv/bin/python -m pytest -xvs tests/",
-    "lint": ".venv/bin/flake8 ."
+    "lint": ".venv/bin/flake8 .",
+    "agent": ".venv/bin/python -m src.cli.agent_cli"
   }
 }
