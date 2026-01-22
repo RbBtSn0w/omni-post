@@ -253,15 +253,7 @@ class TestAgentService:
         agent.start()
 
         try:
-            # Register a tool that raises an error
-            def error_tool():
-                raise ValueError("Intentional error")
-
-            agent.register_tool("error_tool", error_tool)
-
             # Modify agent to call the error tool
-            original_execute = agent._execute_stub
-
             def mock_execute(prompt, context):
                 raise ValueError("Simulated execution error")
 

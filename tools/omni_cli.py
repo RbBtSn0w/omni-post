@@ -19,7 +19,7 @@ from pathlib import Path
 backend_src = Path(__file__).parent.parent / "apps" / "backend" / "src"
 sys.path.insert(0, str(backend_src))
 
-from services.agent_service import get_agent_service
+from services.agent_service import get_agent_service  # noqa: E402
 
 
 def cmd_post(args: argparse.Namespace) -> int:
