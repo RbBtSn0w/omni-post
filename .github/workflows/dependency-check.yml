@@ -1,21 +1,34 @@
-name: Dependency Security Check
+# ⚠️ DEPRECATED WORKFLOW ⚠️
+# This workflow has been replaced by .github/workflows/dependency-scan.yml
+# which consolidates dependency scanning with better reporting and clearer thresholds.
+# This workflow is temporarily disabled and will be removed in a future release.
+#
+# Migration complete: All functionality moved to dependency-scan.yml
+# Removal planned: After validation period (2-4 weeks)
+
+name: Dependency Security Check (DEPRECATED)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# DISABLED - Replaced by dependency-scan.yml
 on:
-  schedule:
-    # Weekly on Monday at 9:00 UTC (17:00 Beijing Time)
-    - cron: '0 9 * * 1'
-  # Allow manual trigger
   workflow_dispatch:
-  # Run on PRs that modify dependency files
-  pull_request:
-    paths:
-      - 'apps/backend/requirements.txt'
-      - 'package.json'
-      - 'package-lock.json'
+    inputs:
+      force_run:
+        description: 'Force run this deprecated workflow (not recommended)'
+        required: false
+        type: boolean
+        default: false
+  # Disabled triggers (now handled by dependency-scan.yml):
+  # schedule:
+  #   - cron: '0 9 * * 1'
+  # pull_request:
+  #   paths:
+  #     - 'apps/backend/requirements.txt'
+  #     - 'package.json'
+  #     - 'package-lock.json'
 
 permissions:
   contents: read
@@ -23,6 +36,28 @@ permissions:
   security-events: write
 
 jobs:
+  deprecation-notice:
+    name: Deprecation Notice
+    runs-on: ubuntu-latest
+    if: github.event.inputs.force_run != 'true'
+    steps:
+      - name: Workflow Deprecated
+        run: |
+          echo "# ⚠️ This Workflow is Deprecated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow has been replaced by **dependency-scan.yml**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## New Workflow Benefits:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Consolidated dependency scanning (Python + NPM)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Clear severity thresholds (high/critical)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Better error handling and reporting" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Improved artifact storage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please use the new **dependency-scan.yml** workflow instead." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow will be removed in a future release." >> $GITHUB_STEP_SUMMARY
+          exit 1
+
   python-dependencies:
     name: Python Dependencies Check
     runs-on: ubuntu-latest

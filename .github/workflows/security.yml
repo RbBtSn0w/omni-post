@@ -1,34 +1,79 @@
-name: Security Check
+# ⚠️ DEPRECATED WORKFLOW ⚠️
+# This workflow has been replaced by:
+# - .github/workflows/security-analysis.yml (CodeQL + Bandit static analysis)
+# - .github/workflows/dependency-scan.yml (dependency vulnerability scanning)
+#
+# This workflow is temporarily disabled and will be removed in a future release.
+#
+# Migration complete: Functionality split between security-analysis.yml and dependency-scan.yml
+# Removal planned: After validation period (2-4 weeks)
+
+name: Security Check (DEPRECATED)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# DISABLED - Replaced by security-analysis.yml and dependency-scan.yml
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'apps/backend/pyproject.toml'
-      - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
-      - 'package.json'
-      - 'package-lock.json'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'apps/backend/pyproject.toml'
-      - 'apps/backend/requirements.txt'
-      - 'apps/frontend/package.json'
-      - 'package.json'
-      - 'package-lock.json'
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run this deprecated workflow (not recommended)'
+        required: false
+        type: boolean
+        default: false
+  # Disabled triggers (now handled by other workflows):
+  # push:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'apps/backend/pyproject.toml'
+  #     - 'apps/backend/requirements.txt'
+  #     - 'apps/frontend/package.json'
+  #     - 'package.json'
+  #     - 'package-lock.json'
+  # pull_request:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'apps/backend/pyproject.toml'
+  #     - 'apps/backend/requirements.txt'
+  #     - 'apps/frontend/package.json'
+  #     - 'package.json'
+  #     - 'package-lock.json'
+  # schedule:
+  #   - cron: '0 0 * * 0'  # Weekly on Sunday
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
+  deprecation-notice:
+    name: Deprecation Notice
+    runs-on: ubuntu-latest
+    if: github.event.inputs.force_run != 'true'
+    steps:
+      - name: Workflow Deprecated
+        run: |
+          echo "# ⚠️ This Workflow is Deprecated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow has been **split and improved** into:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 1. security-analysis.yml" >> $GITHUB_STEP_SUMMARY
+          echo "For static code analysis:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ CodeQL scanning (JavaScript + Python)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Bandit security analysis (Python)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 2. dependency-scan.yml" >> $GITHUB_STEP_SUMMARY
+          echo "For dependency vulnerability scanning:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ pip-audit (Python dependencies)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ npm audit (NPM dependencies)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please refer to the new workflows for security scanning." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow will be removed in a future release." >> $GITHUB_STEP_SUMMARY
+          exit 1
+
   python-security:
     name: Python Dependencies Security
     runs-on: ubuntu-latest

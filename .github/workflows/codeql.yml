@@ -1,3 +1,12 @@
+# ℹ️ NOTICE: This workflow is being superseded by security-analysis.yml
+# The new security-analysis.yml includes:
+# - CodeQL scanning (same as this workflow)
+# - Additional Bandit analysis for Python
+# - Better integration with other security workflows
+#
+# This workflow will continue to run for now to ensure continuity,
+# but may be deprecated in the future once security-analysis.yml is validated.
+
 name: "CodeQL"
 
 on:
