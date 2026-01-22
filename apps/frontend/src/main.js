@@ -7,7 +7,6 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import './styles/index.scss'
 
-// Test workflow validation
 const app = createApp(App)
 
 // 注册 Element Plus 图标
