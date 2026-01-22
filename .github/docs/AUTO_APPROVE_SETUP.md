@@ -7,7 +7,7 @@ This guide explains how to configure automatic approval of GitHub Actions workfl
 By default, GitHub requires manual approval for workflows triggered by:
 - Pull requests from forks
 - Pull requests from first-time contributors
-- **Pull requests from GitHub Copilot** (new security policy as of 2025)
+- **Pull requests from GitHub Copilot** (security policy enforced since 2024-2025)
 
 The `auto-approve-workflows.yml` workflow attempts to automatically approve these workflow runs for trusted bot accounts, reducing manual overhead while maintaining security.
 

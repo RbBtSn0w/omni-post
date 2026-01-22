@@ -7,7 +7,7 @@
 默认情况下，GitHub 对以下情况触发的工作流程需要手动批准：
 - 来自 fork 的 Pull Request
 - 来自首次贡献者的 Pull Request  
-- **来自 GitHub Copilot 的 Pull Request**（2025年新安全策略）
+- **来自 GitHub Copilot 的 Pull Request**（自2024-2025年起实施的安全策略）
 
 `auto-approve-workflows.yml` 工作流程会尝试自动批准这些来自可信机器人账户的工作流程运行，在保持安全性的同时减少人工操作。
 

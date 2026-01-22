@@ -18,10 +18,9 @@ jobs:
     name: Auto-Approve Trusted Workflows
     runs-on: ubuntu-latest
     # Only run for PRs from copilot or dependabot
+    # To add more trusted bots, add them to this list
     if: |
-      github.event.pull_request.user.login == 'copilot-autofix[bot]' ||
-      github.event.pull_request.user.login == 'github-copilot[bot]' ||
-      github.event.pull_request.user.login == 'dependabot[bot]'
+      contains(fromJSON('["copilot-autofix[bot]", "github-copilot[bot]", "dependabot[bot]"]'), github.event.pull_request.user.login)
     
     steps:
       - name: Checkout PR
@@ -52,6 +51,8 @@ jobs:
       - name: Wait for workflow runs to be created
         if: steps.check-workflows.outputs.workflow_modified == 'false'
         run: |
+          # GitHub Actions typically creates workflow runs within a few seconds of PR events
+          # We wait 10 seconds to ensure all workflows have been queued before checking
           echo "Waiting 10 seconds for workflow runs to be created..."
           sleep 10
       
@@ -91,7 +92,8 @@ jobs:
           # See .github/docs/AUTO_APPROVE_SETUP.md for setup instructions
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          IFS=',' read -ra RUN_IDS <<< "${{ steps.get-runs.outputs.run_ids }}"
+          # Split comma-separated run IDs into array
+          IFS=',' read -r -a RUN_IDS <<< "${{ steps.get-runs.outputs.run_ids }}"
           
           for RUN_ID in "${RUN_IDS[@]}"; do
             echo "Approving workflow run: $RUN_ID"
