@@ -58,7 +58,7 @@ Reusable action for Node.js frontend environment setup.
 
 ---
 
-## 📋 Workflows (12 Total)
+## 📋 Workflows (13 Total)
 
 ### Core CI/CD Workflows
 
@@ -185,6 +185,18 @@ Reusable action for Node.js frontend environment setup.
   - `size/M`: 101-300 lines
   - `size/L`: 301-500 lines
   - `size/XL`: 500+ lines (shows warning message)
+
+#### 12. **auto-approve-workflows.yml** - Auto-Approve Bot Workflows 🆕
+- **Triggers**: PR opened/synchronized/reopened from trusted bots
+- **Timeout**: 5min
+- **Trusted Accounts**: `copilot-autofix[bot]`, `github-copilot[bot]`, `dependabot[bot]`
+- **Features**:
+  - Automatically approves pending workflow runs from trusted bots
+  - **Security**: Skips approval if `.github/workflows/` files are modified
+  - Reduces manual overhead for Copilot and Dependabot PRs
+- **Setup Required**: Needs GitHub App token or PAT for full functionality
+  - See `.github/docs/AUTO_APPROVE_SETUP.md` for configuration instructions
+- **Note**: Default `GITHUB_TOKEN` has limited permissions and won't approve workflows
 
 ## 🚦 Error Handling Policy
 

@@ -1,0 +1,142 @@
+name: Auto-Approve Workflows
+
+# This workflow automatically approves pending workflow runs for PRs from trusted sources
+# Requires: GitHub App token or PAT with 'actions:write' and 'pull_requests:read' permissions
+# Setup instructions: See .github/docs/AUTO_APPROVE_SETUP.md
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  actions: write
+  pull-requests: read
+  contents: read
+
+jobs:
+  auto-approve:
+    name: Auto-Approve Trusted Workflows
+    runs-on: ubuntu-latest
+    # Only run for PRs from copilot or dependabot
+    if: |
+      github.event.pull_request.user.login == 'copilot-autofix[bot]' ||
+      github.event.pull_request.user.login == 'github-copilot[bot]' ||
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      
+      - name: Check for workflow file changes
+        id: check-workflows
+        run: |
+          # Get list of changed files
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+          
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Check if any workflow files were modified
+          if echo "$CHANGED_FILES" | grep -q "^\.github/workflows/"; then
+            echo "workflow_modified=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Workflow files modified - skipping auto-approval for security"
+          else
+            echo "workflow_modified=false" >> $GITHUB_OUTPUT
+            echo "✅ No workflow files modified - safe to auto-approve"
+          fi
+      
+      - name: Wait for workflow runs to be created
+        if: steps.check-workflows.outputs.workflow_modified == 'false'
+        run: |
+          echo "Waiting 10 seconds for workflow runs to be created..."
+          sleep 10
+      
+      - name: Get pending workflow runs
+        if: steps.check-workflows.outputs.workflow_modified == 'false'
+        id: get-runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get all workflow runs for this PR that are waiting for approval
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          
+          # List workflow runs for this commit
+          RUNS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${{ github.repository }}/actions/runs?head_sha=$HEAD_SHA&status=action_required" \
+            --jq '.workflow_runs[].id')
+          
+          if [ -z "$RUNS" ]; then
+            echo "No workflow runs pending approval"
+            echo "run_ids=" >> $GITHUB_OUTPUT
+          else
+            echo "Found workflow runs pending approval:"
+            echo "$RUNS"
+            # Convert to comma-separated list
+            RUN_IDS=$(echo "$RUNS" | tr '\n' ',' | sed 's/,$//')
+            echo "run_ids=$RUN_IDS" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Approve pending workflow runs
+        if: steps.check-workflows.outputs.workflow_modified == 'false' && steps.get-runs.outputs.run_ids != ''
+        env:
+          # Note: GITHUB_TOKEN has limited permissions and may not be able to approve workflows
+          # For full functionality, replace with a GitHub App token or PAT
+          # See .github/docs/AUTO_APPROVE_SETUP.md for setup instructions
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IFS=',' read -ra RUN_IDS <<< "${{ steps.get-runs.outputs.run_ids }}"
+          
+          for RUN_ID in "${RUN_IDS[@]}"; do
+            echo "Approving workflow run: $RUN_ID"
+            
+            # Attempt to approve the workflow run
+            RESPONSE=$(gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/actions/runs/$RUN_ID/approve" 2>&1) || {
+              echo "⚠️ Failed to approve run $RUN_ID"
+              echo "Error: $RESPONSE"
+              echo ""
+              echo "This is expected if using GITHUB_TOKEN (default)."
+              echo "To enable auto-approval, configure a GitHub App token or PAT."
+              echo "See .github/docs/AUTO_APPROVE_SETUP.md for instructions."
+            }
+          done
+      
+      - name: Summary
+        if: steps.check-workflows.outputs.workflow_modified == 'false'
+        run: |
+          echo "## Auto-Approval Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Author:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow files modified:** ${{ steps.check-workflows.outputs.workflow_modified }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pending runs found:** ${{ steps.get-runs.outputs.run_ids != '' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.get-runs.outputs.run_ids }}" = "" ]; then
+            echo "ℹ️ No workflow runs were pending approval at the time of check." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Attempted to approve workflow runs for this PR." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note:** Default GITHUB_TOKEN may not have sufficient permissions." >> $GITHUB_STEP_SUMMARY
+            echo "For full functionality, configure a GitHub App token or PAT." >> $GITHUB_STEP_SUMMARY
+            echo "See [setup instructions](.github/docs/AUTO_APPROVE_SETUP.md)." >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Skip - Workflow files modified
+        if: steps.check-workflows.outputs.workflow_modified == 'true'
+        run: |
+          echo "## ⚠️ Auto-Approval Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This PR modifies workflow files (.github/workflows/)." >> $GITHUB_STEP_SUMMARY
+          echo "For security reasons, workflow runs must be manually approved." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action Required:** Please manually review and approve the workflow runs." >> $GITHUB_STEP_SUMMARY
