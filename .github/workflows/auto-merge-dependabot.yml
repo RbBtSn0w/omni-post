@@ -11,6 +11,10 @@ jobs:
       github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
     runs-on: ubuntu-latest
 
+    permissions:
+      contents:  write          # 允许 merge 操作
+      pull-requests: write     # 允许修改 PR（启用 auto-merge）
+
     steps:
       - name: Check if PR is a security update
         id: check
