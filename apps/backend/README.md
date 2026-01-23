@@ -4,6 +4,8 @@
 
 社交媒体自动上传后端服务是一个强大的自动化工具，用于将视频上传到多个社交媒体平台，包括小红书、视频号、抖音和快手等。本项目采用Python 3.10开发，基于Flask框架，支持异步编程和浏览器自动化。
 
+**新功能**：现已集成 GitHub Copilot SDK，支持通过自然语言发布视频！详见下方 [AI Agent 集成](#ai-agent-集成) 部分。
+
 ## 快速启动指南
 
 ### 1. 环境要求
@@ -243,6 +245,63 @@ with sqlite3.connect(db_path) as conn:
 
 建立了分层测试架构，采用Mock技术完全隔离外部依赖，实现了测试的快速执行和高覆盖率目标。
 
+## AI Agent 集成
+
+OmniPost 现已集成 GitHub Copilot SDK，提供自然语言驱动的发布功能。
+
+### 快速开始
+
+```bash
+# 安装依赖（包含 github-copilot-sdk）
+pip install -r requirements.txt
+
+# 测试 Agent 服务
+pytest tests/test_agent_service.py -v
+
+# 使用 CLI 发布内容
+python -m tools.omni_cli post "帮我把这个视频发到抖音，标题要吸引年轻人"
+```
+
+### 功能特点
+
+- 🤖 **自然语言理解**：使用中文或英文描述发布需求
+- 🛠️ **工具系统**：可扩展的工具注册机制，支持集成所有平台上传器
+- 📋 **CLI 工具**：命令行界面快速发布
+- ✅ **离线测试**：stub 模式支持无网络测试
+
+### CLI 命令示例
+
+```bash
+# 列出可用账号
+python -m tools.omni_cli accounts --platform douyin
+
+# 发布到指定平台
+python -m tools.omni_cli post --file video.mp4 --platforms douyin xiaohongshu
+
+# 预览模式（不实际上传）
+python -m tools.omni_cli post "上传视频" --dry-run
+```
+
+### Python API 示例
+
+```python
+from services.agent_service import AgentService
+
+# 获取单例实例
+agent = AgentService.get_instance()
+agent.start()
+
+# 执行自然语言指令
+result = agent.run("帮我发布视频到抖音", {"file_id": "123"})
+print(result)
+
+agent.stop()
+```
+
+### 详细文档
+
+完整的集成指南和 API 文档，请参阅 [docs/agent.md](../../docs/agent.md)。
+
 ## 后续计划
 
 1. 完善CI/CD流程
@@ -251,6 +310,7 @@ with sqlite3.connect(db_path) as conn:
 4. 支持更多社交媒体平台
 5. 实现视频处理和编辑功能
 6. 增强监控和日志系统
+7. **完善 AI Agent 集成**：接入真实 Copilot SDK，实现智能工具选择
 
 ## 平台标识说明
 

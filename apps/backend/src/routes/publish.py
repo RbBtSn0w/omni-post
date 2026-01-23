@@ -14,7 +14,7 @@ bp = Blueprint("publish", __name__)
 # SSE 登录接口
 @bp.route("/login")
 def login():  # pragma: no cover
-    # 1 小红书 2 视频号 3 抖音 4 快手
+    # 1 小红书 2 视频号 3 抖音 4 快手 5 Bilibili
     type = request.args.get("type")
     # 账号名
     id = request.args.get("id")

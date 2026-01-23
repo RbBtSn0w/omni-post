@@ -177,26 +177,75 @@ class PlatformType(enum.IntEnum):
     BILIBILI = 5
 
 
-# Platform display names (Chinese) - ID to name mapping
-PLATFORM_NAMES = {
-    PlatformType.XIAOHONGSHU: "小红书",
-    PlatformType.TENCENT: "视频号",
-    PlatformType.DOUYIN: "抖音",
-    PlatformType.KUAISHOU: "快手",
-    PlatformType.BILIBILI: "Bilibili",
+# ============================================================================
+# PLATFORM_REGISTRY: Single Source of Truth (DRY Principle)
+# ============================================================================
+# To add a new platform:
+# 1. Add enum value to PlatformType
+# 2. Add entry to PLATFORM_REGISTRY below
+# All other mappings are auto-derived!
+
+PLATFORM_REGISTRY = {
+    PlatformType.XIAOHONGSHU: {
+        "name_cn": "小红书",
+        "name_cli": "xiaohongshu",
+        "login_url": "https://creator.xiaohongshu.com/",
+        "aliases": [],
+    },
+    PlatformType.TENCENT: {
+        "name_cn": "视频号",
+        "name_cli": "tencent",
+        "login_url": "https://channels.weixin.qq.com",
+        "aliases": ["wechat"],  # CLI alias
+    },
+    PlatformType.DOUYIN: {
+        "name_cn": "抖音",
+        "name_cli": "douyin",
+        "login_url": "https://creator.douyin.com/",
+        "aliases": [],
+    },
+    PlatformType.KUAISHOU: {
+        "name_cn": "快手",
+        "name_cli": "kuaishou",
+        "login_url": "https://cp.kuaishou.com",
+        "aliases": [],
+    },
+    PlatformType.BILIBILI: {
+        "name_cn": "Bilibili",
+        "name_cli": "bilibili",
+        "login_url": "https://member.bilibili.com/platform/home",
+        "aliases": [],
+    },
 }
 
-# Reverse mapping: name -> type
-PLATFORM_NAME_TO_TYPE = {v: k for k, v in PLATFORM_NAMES.items()}
+
+# ============================================================================
+# Auto-derived mappings (DO NOT EDIT - generated from PLATFORM_REGISTRY)
+# ============================================================================
+
+# Platform display names (Chinese)
+PLATFORM_NAMES = {k: v["name_cn"] for k, v in PLATFORM_REGISTRY.items()}
+
+# Reverse mapping: Chinese name -> type
+PLATFORM_NAME_TO_TYPE = {v["name_cn"]: k for k, v in PLATFORM_REGISTRY.items()}
 
 # Platform login URLs
-PLATFORM_LOGIN_URLS = {
-    PlatformType.XIAOHONGSHU: "https://creator.xiaohongshu.com/",
-    PlatformType.TENCENT: "https://channels.weixin.qq.com",
-    PlatformType.DOUYIN: "https://creator.douyin.com/",
-    PlatformType.KUAISHOU: "https://cp.kuaishou.com",
-    PlatformType.BILIBILI: "https://member.bilibili.com/platform/home",
-}
+PLATFORM_LOGIN_URLS = {k: v["login_url"] for k, v in PLATFORM_REGISTRY.items()}
+
+# CLI name -> type (includes aliases)
+PLATFORM_CLI_NAMES = {}
+for platform_type, info in PLATFORM_REGISTRY.items():
+    PLATFORM_CLI_NAMES[info["name_cli"]] = platform_type
+    for alias in info["aliases"]:
+        PLATFORM_CLI_NAMES[alias] = platform_type
+
+# Type -> CLI name (primary name only, no aliases)
+PLATFORM_TYPE_TO_CLI_NAME = {k: v["name_cli"] for k, v in PLATFORM_REGISTRY.items()}
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
 
 def get_platform_name(platform_type: int) -> str:
@@ -241,3 +290,55 @@ def is_valid_platform(platform_type: int) -> bool:
         return True
     except ValueError:
         return False
+
+
+def get_cli_platform_choices() -> list:
+    """Get list of valid platform choices for CLI argument parsing.
+
+    Returns:
+        List of lowercase platform names for argparse choices
+    """
+    return list(PLATFORM_CLI_NAMES.keys())
+
+
+def cli_name_to_type(cli_name: str) -> int:
+    """Convert CLI platform name to type ID.
+
+    Args:
+        cli_name: Lowercase platform name (e.g., 'douyin', 'wechat')
+
+    Returns:
+        Platform type ID or 0 if not found
+    """
+    platform = PLATFORM_CLI_NAMES.get(cli_name.lower())
+    return int(platform) if platform else 0
+
+
+def type_to_cli_name(platform_type: int) -> str:
+    """Convert platform type ID to CLI-friendly name.
+
+    Args:
+        platform_type: Platform type ID (1-5)
+
+    Returns:
+        CLI-friendly name or 'unknown' if not found
+    """
+    try:
+        return PLATFORM_TYPE_TO_CLI_NAME.get(PlatformType(platform_type), "unknown")
+    except ValueError:
+        return "unknown"
+
+
+def get_platform_login_url(platform_type: int) -> str:
+    """Get platform login URL by type ID.
+
+    Args:
+        platform_type: Platform type ID (1-5)
+
+    Returns:
+        Login URL or empty string if not found
+    """
+    try:
+        return PLATFORM_LOGIN_URLS.get(PlatformType(platform_type), "")
+    except ValueError:
+        return ""
