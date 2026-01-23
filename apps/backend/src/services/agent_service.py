@@ -39,6 +39,11 @@ class AgentService(ABC):
         self._client = None
         self._started = False
 
+    @property
+    def is_started(self) -> bool:
+        """Check if the agent service is started"""
+        return self._started
+
     @abstractmethod
     def start(self) -> None:
         """Start the agent client and initialize resources"""

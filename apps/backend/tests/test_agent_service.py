@@ -23,7 +23,7 @@ class TestMockAgentService:
         service = MockAgentService()
         assert isinstance(service, AgentService)
         assert service.config == {}
-        assert service._started is False
+        assert service.is_started is False
 
     def test_initialization_with_config(self):
         """Test MockAgentService with custom config"""
@@ -39,13 +39,13 @@ class TestMockAgentService:
     def test_start_stop_lifecycle(self):
         """Test start and stop methods"""
         service = MockAgentService()
-        assert service._started is False
+        assert service.is_started is False
 
         service.start()
-        assert service._started is True
+        assert service.is_started is True
 
         service.stop()
-        assert service._started is False
+        assert service.is_started is False
 
     def test_register_tool(self):
         """Test tool registration"""
@@ -126,7 +126,7 @@ class TestDefaultAgentService:
         """Test DefaultAgentService can be instantiated"""
         service = DefaultAgentService()
         assert isinstance(service, AgentService)
-        assert service._started is False
+        assert service.is_started is False
         assert service._client is None
 
     def test_initialization_with_config(self):
@@ -232,7 +232,7 @@ class TestIntegrationScenarios:
 
         # Start service
         service.start()
-        assert service._started is True
+        assert service.is_started is True
 
         # Run agent
         result = service.run("Publish to Douyin", {"title": "My Video"})
@@ -246,7 +246,7 @@ class TestIntegrationScenarios:
 
         # Stop service
         service.stop()
-        assert service._started is False
+        assert service.is_started is False
 
     def test_preview_tool_integration(self):
         """Test preview tool can be called directly"""
