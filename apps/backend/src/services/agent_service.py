@@ -4,6 +4,20 @@ AI Agent Service - GitHub Copilot SDK Integration
 
 This module provides an abstraction for AI agent functionality using GitHub Copilot SDK.
 It enables natural-language publishing through tool registration and agent orchestration.
+
+⚠️  IMPORTANT: SDK API Stub Implementation
+This is a demonstration/stub implementation showing the service pattern.
+The actual github-copilot-sdk API differs from the code here:
+
+1. Import: Use `from copilot import CopilotClient` (not github_copilot_sdk)
+2. Constructor: Use `CopilotClient({'cli_path': ...})` with options dict
+3. Async pattern: Methods should be async (await client.start(), etc.)
+4. Session pattern: Use await client.create_session() + session.send()
+
+The MockAgentService works correctly for testing. When ready to use the real SDK,
+update DefaultAgentService methods based on official SDK documentation.
+
+For reference: https://github.com/copilot/sdk (update with actual SDK docs)
 """
 
 from abc import ABC, abstractmethod
@@ -141,17 +155,30 @@ class DefaultAgentService(AgentService):
         self._client = None
 
     def start(self) -> None:
-        """Start the Copilot client"""
+        """
+        Start the Copilot client.
+
+        NOTE: This is a stub implementation. The actual github-copilot-sdk API
+        differs from this code. When implementing production integration:
+
+        1. Import: Use `from copilot import CopilotClient` (not github_copilot_sdk)
+        2. Constructor: Use `CopilotClient({'cli_path': ...})` (options dict)
+        3. Async methods: start() should be async and use await client.start()
+        4. Session pattern: Use await client.create_session() for interactions
+
+        This stub demonstrates the service pattern. Update based on actual SDK docs.
+        """
         if self._started:
             return
 
         try:
             # Import here to avoid hard dependency at module load time
             # This allows mock service to work without SDK installed
+            # TODO: Update import to match actual SDK: from copilot import CopilotClient
             from github_copilot_sdk import CopilotClient
 
             # Initialize Copilot client
-            # Note: Actual SDK API may differ - adjust when real SDK is available
+            # TODO: Update to actual SDK constructor: CopilotClient({'cli_path': ...})
             copilot_cli_path = self.config.get("copilot_cli_path")
             self._client = CopilotClient(cli_path=copilot_cli_path)
 
@@ -169,15 +196,23 @@ class DefaultAgentService(AgentService):
             raise RuntimeError(f"Failed to start agent client: {e}") from e
 
     def stop(self) -> None:
-        """Stop the Copilot client and cleanup"""
+        """
+        Stop the Copilot client and cleanup.
+
+        NOTE: Actual SDK uses async stop: await client.stop()
+        Update this method to async when implementing real integration.
+        """
         if not self._started:
             return
 
         try:
             if self._client:
                 # Close client connection if SDK provides cleanup method
+                # TODO: Update to actual SDK: await self._client.stop()
                 if hasattr(self._client, "close"):
                     self._client.close()
+                elif hasattr(self._client, "stop"):
+                    self._client.stop()
                 self._client = None
 
             self._tools.clear()
@@ -189,6 +224,12 @@ class DefaultAgentService(AgentService):
     def run(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Run agent with Copilot SDK.
+
+        NOTE: This is a stub. Actual SDK uses async session pattern:
+        - session = await client.create_session()
+        - response = await session.send(prompt, tools=...)
+
+        Update this method to async when implementing real SDK integration.
 
         Args:
             prompt: Natural language prompt
@@ -205,7 +246,9 @@ class DefaultAgentService(AgentService):
             agent_input = {"prompt": prompt, "context": context or {}}
 
             # Run agent via Copilot SDK
-            # Note: Actual SDK API may differ - adjust when real SDK is available
+            # TODO: Update to actual SDK pattern:
+            #   session = await self._client.create_session()
+            #   response = await session.send(prompt, tools=...)
             response = self._client.run(agent_input, tools=list(self._tools.values()))
 
             return {
