@@ -6,7 +6,6 @@ and basic agent functionality works as expected.
 """
 
 import pytest
-import sys
 from unittest.mock import MagicMock, patch, Mock
 
 from src.services.agent_service import AgentService, get_agent_service
