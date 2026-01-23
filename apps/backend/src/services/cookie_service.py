@@ -12,6 +12,7 @@ from playwright.async_api import async_playwright
 
 from src.core.browser import launch_browser, set_init_script
 from src.core.config import COOKIES_DIR
+from src.core.constants import PlatformType
 from src.core.logger import douyin_logger, kuaishou_logger, tencent_logger
 
 
@@ -212,15 +213,15 @@ class DefaultCookieService(CookieService):
     async def check_cookie(self, platform_type: int, file_path: str) -> bool:
         cookie_path = self.cookies_dir / file_path
         match platform_type:
-            case 1:
+            case PlatformType.XIAOHONGSHU:
                 return await self.cookie_auth_xhs(cookie_path)
-            case 2:
+            case PlatformType.TENCENT:
                 return await self.cookie_auth_tencent(cookie_path)
-            case 3:
+            case PlatformType.DOUYIN:
                 return await self.cookie_auth_douyin(cookie_path)
-            case 4:
+            case PlatformType.KUAISHOU:
                 return await self.cookie_auth_ks(cookie_path)
-            case 5:
+            case PlatformType.BILIBILI:
                 return await self.cookie_auth_bilibili(cookie_path)
             case _:
                 return False

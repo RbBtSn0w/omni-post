@@ -324,6 +324,10 @@
 
 <script setup>
 import {
+    ALL_PLATFORM_NAMES,
+    getPlatformTagType as getTagType
+} from '@/core/platformConstants'
+import {
     CircleCheckFilled, CircleCloseFilled,
     Delete, InfoFilled,
     List,
@@ -345,7 +349,8 @@ const taskStore = useTaskStore()
 const loading = ref(false)
 
 // 平台列表
-const platforms = ref(['快手', '抖音', '视频号', '小红书', 'Bilibili'])
+// Platform list - use centralized constant
+const platforms = ref(ALL_PLATFORM_NAMES)
 
 // 任务筛选条件
 const taskFilter = ref({
@@ -467,16 +472,9 @@ const resetFilter = () => {
   taskPagination.value.currentPage = 1
 }
 
-// 根据平台获取标签类型
+// Get platform tag type from centralized utility
 const getPlatformTagType = (platform) => {
-  const typeMap = {
-    '快手': 'success',
-    '抖音': 'danger',
-    '视频号': 'warning',
-    '小红书': 'info',
-    'Bilibili': 'primary'
-  }
-  return typeMap[platform] || 'info'
+  return getTagType(platform)
 }
 
 // 根据状态获取标签类型

@@ -9,6 +9,7 @@ import traceback
 from pathlib import Path
 
 from src.core.config import COOKIES_DIR, VIDEOS_DIR
+from src.core.constants import PlatformType, get_platform_name
 from src.services.publish_service import (
     post_video_bilibili,
     post_video_DouYin,
@@ -48,9 +49,8 @@ def run_publish_task(task_id, publish_data):
         thumbnail_path = publish_data.get("thumbnail", "")
         is_draft = publish_data.get("isDraft", False)
 
-        # Debug logging
-        platform_names = {1: "小红书", 2: "视频号", 3: "抖音", 4: "快手", 5: "Bilibili"}
-        print(f"[PUBLISH] Platform: {platform_names.get(type, f'Unknown({type})')}")
+        # Debug logging - use centralized platform names
+        print(f"[PUBLISH] Platform: {get_platform_name(type)}")
         print(f"[PUBLISH] Title: {title}")
         print(f"[PUBLISH] Tags: {tags}")
         print(f"[PUBLISH] File list: {file_list}")
@@ -81,9 +81,9 @@ def run_publish_task(task_id, publish_data):
 
         print(f"\n[PUBLISH] All validations passed. Starting upload...")
 
-        # Call appropriate uploader
+        # Call appropriate uploader using centralized platform types
         match type:
-            case 1:
+            case PlatformType.XIAOHONGSHU:
                 post_video_xhs(
                     title,
                     file_list,
@@ -95,7 +95,7 @@ def run_publish_task(task_id, publish_data):
                     daily_times,
                     start_days,
                 )
-            case 2:
+            case PlatformType.TENCENT:
                 post_video_tencent(
                     title,
                     file_list,
@@ -108,7 +108,7 @@ def run_publish_task(task_id, publish_data):
                     start_days,
                     is_draft,
                 )
-            case 3:
+            case PlatformType.DOUYIN:
                 post_video_DouYin(
                     title,
                     file_list,
@@ -123,7 +123,7 @@ def run_publish_task(task_id, publish_data):
                     productLink,
                     productTitle,
                 )
-            case 4:
+            case PlatformType.KUAISHOU:
                 post_video_ks(
                     title,
                     file_list,
@@ -135,7 +135,7 @@ def run_publish_task(task_id, publish_data):
                     daily_times,
                     start_days,
                 )
-            case 5:
+            case PlatformType.BILIBILI:
                 post_video_bilibili(
                     title,
                     file_list,

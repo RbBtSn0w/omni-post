@@ -167,17 +167,27 @@ class VideoZoneTypes(enum.Enum):
     VLOG = 19
 
 
-class PlatformType(enum.Enum):
-    """平台类型枚举"""
+class PlatformType(enum.IntEnum):
+    """平台类型枚举 - 所有平台类型的唯一真相来源"""
 
     XIAOHONGSHU = 1
-    TENCENT = 2
+    TENCENT = 2  # 视频号
     DOUYIN = 3
     KUAISHOU = 4
+    BILIBILI = 5
 
 
-# Platform names mapping
-PLATFORM_NAMES = {1: "小红书", 2: "视频号", 3: "抖音", 4: "快手"}
+# Platform display names (Chinese) - ID to name mapping
+PLATFORM_NAMES = {
+    PlatformType.XIAOHONGSHU: "小红书",
+    PlatformType.TENCENT: "视频号",
+    PlatformType.DOUYIN: "抖音",
+    PlatformType.KUAISHOU: "快手",
+    PlatformType.BILIBILI: "Bilibili",
+}
+
+# Reverse mapping: name -> type
+PLATFORM_NAME_TO_TYPE = {v: k for k, v in PLATFORM_NAMES.items()}
 
 # Platform login URLs
 PLATFORM_LOGIN_URLS = {
@@ -185,4 +195,49 @@ PLATFORM_LOGIN_URLS = {
     PlatformType.TENCENT: "https://channels.weixin.qq.com",
     PlatformType.DOUYIN: "https://creator.douyin.com/",
     PlatformType.KUAISHOU: "https://cp.kuaishou.com",
+    PlatformType.BILIBILI: "https://member.bilibili.com/platform/home",
 }
+
+
+def get_platform_name(platform_type: int) -> str:
+    """Get platform display name by type ID.
+
+    Args:
+        platform_type: Platform type ID (1-5)
+
+    Returns:
+        Platform Chinese name or "未知" if not found
+    """
+    try:
+        return PLATFORM_NAMES.get(PlatformType(platform_type), "未知")
+    except ValueError:
+        return "未知"
+
+
+def get_platform_type(platform_name: str) -> int:
+    """Get platform type ID by name.
+
+    Args:
+        platform_name: Platform display name (Chinese)
+
+    Returns:
+        Platform type ID or 0 if not found
+    """
+    platform = PLATFORM_NAME_TO_TYPE.get(platform_name)
+    return int(platform) if platform else 0
+
+
+def is_valid_platform(platform_type: int) -> bool:
+    """Check if a platform type ID is valid.
+
+    Args:
+        platform_type: Platform type ID to check
+
+    Returns:
+        True if valid, False otherwise
+    """
+    try:
+        PlatformType(platform_type)
+        return True
+    except ValueError:
+        return False

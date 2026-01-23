@@ -1,3 +1,4 @@
+import { PLATFORM_NAMES } from '@/core/platformConstants'
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
@@ -39,14 +40,8 @@ export const useAccountStore = defineStore('account', () => {
     validationState.lastValidationTime = Date.now()
   }
 
-  // 平台类型映射
-  const platformTypes = {
-    1: '小红书',
-    2: '视频号',
-    3: '抖音',
-    4: '快手',
-    5: 'Bilibili'
-  }
+  // Platform types mapping - use centralized constants
+  const platformTypes = PLATFORM_NAMES
 
   // 状态机映射
   const statusMap = {
