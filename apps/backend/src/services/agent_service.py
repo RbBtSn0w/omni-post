@@ -100,8 +100,9 @@ class AgentService:
         This method must be called before run() can be used.
 
         Note: In this minimal implementation, we use a local stub mode.
-        To use the full Copilot SDK:
-            from github_copilot import CopilotClient
+        To use the full Copilot SDK, the import path will depend on the
+        actual SDK structure. Example (illustrative only):
+            from github_copilot import CopilotClient  # Verify actual import
             self._client = CopilotClient(...)
         """
         if self._started:
