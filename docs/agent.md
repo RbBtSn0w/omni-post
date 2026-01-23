@@ -55,6 +55,11 @@ python -m tools.omni_cli post --file data/videos/my_video.mp4 --platforms douyin
 
 # Dry run (preview only)
 python -m tools.omni_cli post "上传视频到抖音" --dry-run
+
+# Refresh accounts and show account' status info
+python -m tools.omni_cli accounts --refresh
+
+
 ```
 
 ### 4. Use in Python Code
@@ -144,7 +149,7 @@ def create_douyin_upload_tool():
     def douyin_upload_handler(params: dict) -> dict:
         """
         Upload video to Douyin platform.
-        
+
         Args:
             params: {
                 "title": str,
@@ -153,7 +158,7 @@ def create_douyin_upload_tool():
                 "account_file": str,
                 "publish_date": str (ISO format, optional),
             }
-        
+
         Returns:
             dict: {"status": "success"} or {"status": "error", "error": "..."}
         """
@@ -162,7 +167,7 @@ def create_douyin_upload_tool():
             publish_date = datetime.now()
             if 'publish_date' in params:
                 publish_date = datetime.fromisoformat(params['publish_date'])
-            
+
             # Create uploader instance
             uploader = DouYinVideo(
                 title=params['title'],
@@ -171,26 +176,26 @@ def create_douyin_upload_tool():
                 publish_date=publish_date,
                 account_file=params['account_file']
             )
-            
+
             # Run async upload in sync context
             async def do_upload():
                 async with async_playwright() as playwright:
                     await uploader.upload(playwright)
-            
+
             asyncio.run(do_upload())
-            
+
             return {
                 "status": "success",
                 "platform": "douyin",
                 "title": params['title']
             }
-            
+
         except Exception as e:
             return {
                 "status": "error",
                 "error": str(e)
             }
-    
+
     return {
         "handler": douyin_upload_handler,
         "schema": {
