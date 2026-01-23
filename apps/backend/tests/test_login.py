@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.core.browser import (
-    create_screenshot_dir,
-    debug_screenshot
-)
+import pytest
+
+from src.core.browser import create_screenshot_dir, debug_screenshot
 
 
 class TestLogin:
@@ -21,6 +19,8 @@ class TestLogin:
         """单元测试：抖音登录成功（使用MockLoginService）"""
         from tests.mock_services import MockLoginService
 
+        from src.core.constants import PlatformType
+
         # 创建模拟队列
         mock_queue = MagicMock()
         mock_queue.put = AsyncMock()
@@ -29,7 +29,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test_user', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/douyin")
@@ -41,6 +41,8 @@ class TestLogin:
         """单元测试：抖音登录失败（Mock扫码超时）"""
         from tests.mock_services import MockLoginService
 
+        from src.core.constants import PlatformType
+
         # 创建模拟队列
         mock_queue = MagicMock()
         mock_queue.put = AsyncMock()
@@ -49,7 +51,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=False, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test_user', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/douyin")
@@ -69,7 +71,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.get_tencent_cookie('test_user', mock_queue)
+        await mock_login_service.get_tencent_cookie("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/tencent")
@@ -89,7 +91,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=False, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.get_tencent_cookie('test_user', mock_queue)
+        await mock_login_service.get_tencent_cookie("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/tencent")
@@ -109,7 +111,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.get_ks_cookie('test_user', mock_queue)
+        await mock_login_service.get_ks_cookie("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/ks")
@@ -129,7 +131,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=False, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.get_ks_cookie('test_user', mock_queue)
+        await mock_login_service.get_ks_cookie("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/ks")
@@ -149,7 +151,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.xiaohongshu_cookie_gen('test_user', mock_queue)
+        await mock_login_service.xiaohongshu_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/xiaohongshu")
@@ -169,7 +171,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=False, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.xiaohongshu_cookie_gen('test_user', mock_queue)
+        await mock_login_service.xiaohongshu_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/xiaohongshu")
@@ -189,7 +191,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=False)
 
         # 执行测试
-        await mock_login_service.xiaohongshu_cookie_gen('test_user', mock_queue)
+        await mock_login_service.xiaohongshu_cookie_gen("test_user", mock_queue)
 
         # 断言结果 - 登录流程会成功，但cookie验证会失败
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/xiaohongshu")
@@ -209,7 +211,7 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.core.browser.DEBUG_MODE', True)
+    @patch("src.core.browser.DEBUG_MODE", True)
     async def test_debug_screenshot_unit(self):
         """单元测试：调试截图功能"""
         # 创建模拟对象
@@ -225,7 +227,7 @@ class TestLogin:
 
     @pytest.mark.unit
     @pytest.mark.login
-    @patch('src.core.browser.DEBUG_MODE', False)
+    @patch("src.core.browser.DEBUG_MODE", False)
     async def test_debug_screenshot_disabled_unit(self):
         """单元测试：调试截图功能在DEBUG_MODE=False时不执行"""
         # 创建模拟对象
@@ -256,7 +258,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test_user', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/douyin")
@@ -276,7 +278,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.get_tencent_cookie('test_user', mock_queue)
+        await mock_login_service.get_tencent_cookie("test_user", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/tencent")
@@ -296,10 +298,10 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test_user', mock_queue)
-        await mock_login_service.get_tencent_cookie('test_user', mock_queue)
-        await mock_login_service.get_ks_cookie('test_user', mock_queue)
-        await mock_login_service.xiaohongshu_cookie_gen('test_user', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test_user", mock_queue)
+        await mock_login_service.get_tencent_cookie("test_user", mock_queue)
+        await mock_login_service.get_ks_cookie("test_user", mock_queue)
+        await mock_login_service.xiaohongshu_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         assert mock_queue.put.call_count >= 8  # 4个平台 * 2个消息/平台 = 8个消息
@@ -318,10 +320,10 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=False, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test_user', mock_queue)
-        await mock_login_service.get_tencent_cookie('test_user', mock_queue)
-        await mock_login_service.get_ks_cookie('test_user', mock_queue)
-        await mock_login_service.xiaohongshu_cookie_gen('test_user', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test_user", mock_queue)
+        await mock_login_service.get_tencent_cookie("test_user", mock_queue)
+        await mock_login_service.get_ks_cookie("test_user", mock_queue)
+        await mock_login_service.xiaohongshu_cookie_gen("test_user", mock_queue)
 
         # 断言结果
         assert mock_queue.put.call_count >= 8  # 4个平台 * 2个消息/平台 = 8个消息
@@ -345,7 +347,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('', mock_queue)
+        await mock_login_service.douyin_cookie_gen("", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/douyin")
@@ -365,7 +367,7 @@ class TestLogin:
         mock_login_service = MockLoginService(login_status=True, cookie_valid=True)
 
         # 执行测试
-        await mock_login_service.douyin_cookie_gen('test@user#123', mock_queue)
+        await mock_login_service.douyin_cookie_gen("test@user#123", mock_queue)
 
         # 断言结果
         mock_queue.put.assert_any_call("https://mock-qrcode-url.com/douyin")

@@ -1,4 +1,5 @@
 import { taskApi } from '@/api'
+import { PLATFORM_NAMES } from '@/core/platformConstants'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 
@@ -19,13 +20,8 @@ const priorityMap = {
   2: '高'
 }
 
-// 平台映射
-const platformMap = {
-  1: '小红书',
-  2: '视频号',
-  3: '抖音',
-  4: '快手'
-}
+// Platform mapping - use centralized constants
+const platformMap = PLATFORM_NAMES
 
 export const useTaskStore = defineStore('task', () => {
   // 存储所有任务信息

@@ -813,6 +813,7 @@ import { accountApi } from '@/api/account'
 import { groupApi } from '@/api/group'
 import { materialApi } from '@/api/material'
 import { API_BASE_URL, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '@/core/config'
+import { PLATFORM_LIST, getPlatformName } from '@/core/platformConstants'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
@@ -974,14 +975,8 @@ onUnmounted(() => {
   taskStore.stopPolling()
 })
 
-// 平台列表 - 对应后端type字段
-const platforms = [
-  { key: 3, name: '抖音' },
-  { key: 4, name: '快手' },
-  { key: 2, name: '视频号' },
-  { key: 1, name: '小红书' },
-  { key: 5, name: 'Bilibili' }
-]
+// Platform list - use centralized constant
+const platforms = PLATFORM_LIST
 
 // 推荐话题列表
 const recommendedTopics = [
@@ -1040,15 +1035,8 @@ const getPlatformAccountCount = (tab, platformKey) => {
     return 0
   }
 
-  const platformMap = {
-    3: '抖音',
-    2: '视频号',
-    1: '小红书',
-    4: '快手',
-    5: 'Bilibili'
-  }
-
-  const platformName = platformMap[platformKey]
+  // Get platform name using centralized utility
+  const platformName = getPlatformName(platformKey)
   if (!platformName) return 0
 
   return tab.selectedAccounts.filter(accountId => {
@@ -1363,11 +1351,6 @@ const handleGroupChange = async (groupId) => {
   }
 }
 
-// Get platform name from type
-const getPlatformName = (type) => {
-  const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'Bilibili' }
-  return platformMap[type] || '未知'
-}
 
 // 确认账号选择
 const confirmAccountSelection = () => {
@@ -1526,9 +1509,10 @@ const confirmPublish = async (tab) => {
         accountList: tab.selectedAccounts
           .filter(accountId => {
             const account = accountStore.accounts.find(acc => acc.id === accountId)
-            // Filter accounts by platform: platform key (1-4) maps to platform name
-            const platformMap = { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'Bilibili' }
-            return account && account.platform === platformMap[platform]
+            // Filter accounts by platform: platform is key (1-5)
+            // Account platform is stored as string name (e.g. "小红书")
+            // So we need to match account.platform === PLATFORM_NAMES[platformKey]
+            return account && account.platform === getPlatformName(platform)
           })
           .map(accountId => {
             const account = accountStore.accounts.find(acc => acc.id === accountId)

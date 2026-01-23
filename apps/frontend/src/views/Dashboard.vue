@@ -294,6 +294,11 @@
 
 <script setup>
 import {
+    PLATFORM_NAMES,
+    PlatformType,
+    getPlatformTagType as getTagType
+} from '@/core/platformConstants'
+import {
     Document, InfoFilled,
     List,
     Platform,
@@ -359,17 +364,17 @@ const accountStats = computed(() => {
 const platformStats = computed(() => {
   const accounts = accountStore.accounts
   return {
-    kuaishou: accounts.filter(acc => acc.platform === '快手').length,
-    douyin: accounts.filter(acc => acc.platform === '抖音').length,
-    channels: accounts.filter(acc => acc.platform === '视频号').length,
-    xiaohongshu: accounts.filter(acc => acc.platform === '小红书').length,
-    bilibili: accounts.filter(acc => acc.platform === 'Bilibili').length
+    kuaishou: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.KUAISHOU]).length,
+    douyin: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.DOUYIN]).length,
+    channels: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.TENCENT]).length,
+    xiaohongshu: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.XIAOHONGSHU]).length,
+    bilibili: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.BILIBILI]).length
   }
 })
 
 // 计算平台总数
 const platformTotal = computed(() => {
-  return platformStats.value.kuaishou + platformStats.value.douyin + platformStats.value.channels + platformStats.value.xiaohongshu + platformStats.value.bilibili
+  return Object.values(platformStats.value).reduce((a, b) => a + b, 0)
 })
 
 // 任务统计数据 - 从taskStore获取
@@ -739,14 +744,7 @@ onMounted(() => {
 
 // 根据平台获取标签类型
 const getPlatformTagType = (platform) => {
-  const typeMap = {
-    '快手': 'success',
-    '抖音': 'danger',
-    '视频号': 'warning',
-    '小红书': 'info',
-    'Bilibili': 'primary'
-  }
-  return typeMap[platform] || 'info'
+  return getTagType(platform)
 }
 
 // 根据状态获取标签类型
