@@ -1,8 +1,5 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
-
-from src.core.constants import PlatformType
 from src.services.login_service import run_async_function
 
 

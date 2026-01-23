@@ -1,10 +1,9 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.core.constants import PlatformType
 from src.services.publish_executor import run_publish_task
-from src.services.task_service import task_service
 
 
 @pytest.fixture

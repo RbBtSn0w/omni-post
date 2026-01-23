@@ -1,6 +1,9 @@
-import pytest
-
-from src.core.constants import PlatformType, get_platform_name, get_platform_type, is_valid_platform
+from src.core.constants import (
+    PlatformType,
+    get_platform_name,
+    get_platform_type,
+    is_valid_platform,
+)
 
 
 def test_platform_type_enum():
