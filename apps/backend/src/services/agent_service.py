@@ -35,10 +35,149 @@ Example Usage:
     agent.stop()
 """
 
+import asyncio
 import logging
+from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def create_uploader_tool(
+    platform: str, uploader_class, uploader_module_path: str
+) -> Dict[str, Any]:
+    """
+    Factory function to create an uploader tool wrapper.
+
+    Args:
+        platform: Platform name (e.g., 'douyin', 'xiaohongshu')
+        uploader_class: The uploader class to wrap
+        uploader_module_path: Import path for lazy loading
+
+    Returns:
+        dict: Tool definition with handler and schema
+    """
+
+    def handler(params: dict) -> dict:
+        """
+        Upload video to the specified platform.
+
+        Args:
+            params: {
+                "title": str,
+                "file_path": str,
+                "tags": list[str],
+                "account_file": str,
+                "publish_date": str (ISO format, optional),
+            }
+
+        Returns:
+            dict: {"status": "success"} or {"status": "error", "error": "..."}
+        """
+        try:
+            from playwright.async_api import async_playwright
+
+            # Parse publish date
+            publish_date = datetime.now()
+            if "publish_date" in params and params["publish_date"]:
+                publish_date = datetime.fromisoformat(params["publish_date"])
+
+            # Create uploader instance
+            uploader = uploader_class(
+                title=params["title"],
+                file_path=params["file_path"],
+                tags=params.get("tags", []),
+                publish_date=publish_date,
+                account_file=params["account_file"],
+            )
+
+            # Run async upload in sync context
+            async def do_upload():
+                async with async_playwright() as playwright:
+                    await uploader.upload(playwright)
+
+            asyncio.run(do_upload())
+
+            return {"status": "success", "platform": platform, "title": params["title"]}
+
+        except Exception as e:
+            logger.error(f"Upload to {platform} failed: {e}")
+            return {"status": "error", "platform": platform, "error": str(e)}
+
+    return {
+        "handler": handler,
+        "schema": {
+            "description": f"Upload video to {platform} platform",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Video title"},
+                    "file_path": {"type": "string", "description": "Path to video file"},
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Video tags/hashtags",
+                    },
+                    "account_file": {
+                        "type": "string",
+                        "description": "Path to account cookie file",
+                    },
+                    "publish_date": {
+                        "type": "string",
+                        "description": "ISO format publish date (optional)",
+                    },
+                },
+                "required": ["title", "file_path", "account_file"],
+            },
+        },
+    }
+
+
+def get_uploader_tools() -> Dict[str, Dict[str, Any]]:
+    """
+    Get all available uploader tools using a data-driven approach.
+
+    Returns:
+        dict: Mapping of tool names to tool definitions (handler + schema)
+    """
+    from src.core.constants import PLATFORM_REGISTRY, PlatformType
+
+    # Mapping of platform types to their uploader module paths and class names
+    # Note: Defined here to keep constants.py free of service/uploader dependencies
+    UPLOADER_CONFIG = {
+        PlatformType.XIAOHONGSHU: ("src.uploader.xiaohongshu_uploader.main", "XiaoHongShuVideo"),
+        PlatformType.TENCENT: ("src.uploader.tencent_uploader.main", "TencentVideo"),
+        PlatformType.DOUYIN: ("src.uploader.douyin_uploader.main", "DouYinVideo"),
+        PlatformType.KUAISHOU: ("src.uploader.ks_uploader.main", "KSVideo"),
+        PlatformType.BILIBILI: ("src.uploader.bilibili_uploader.main", "BiliBiliVideo"),
+    }
+
+    tools = {}
+    import importlib
+
+    for p_type, (mod_path, class_name) in UPLOADER_CONFIG.items():
+        try:
+            # Get platform info from centralized registry
+            info = PLATFORM_REGISTRY.get(p_type)
+            if not info:
+                continue
+
+            cli_name = info["name_cli"]
+
+            # Dynamic import
+            module = importlib.import_module(mod_path)
+            uploader_class = getattr(module, class_name)
+
+            # Create tool with consistent naming: upload_to_<cli_name>
+            tool_name = f"upload_to_{cli_name}"
+            tools[tool_name] = create_uploader_tool(cli_name, uploader_class, mod_path)
+
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not load uploader for {p_type.name}: {e}")
+        except Exception as e:
+            logger.error(f"Error registering tool for {p_type.name}: {e}")
+
+    return tools
 
 
 class AgentService:
@@ -60,7 +199,7 @@ class AgentService:
         _agent: The underlying Copilot agent instance (if available)
     """
 
-    _instance: Optional['AgentService'] = None
+    _instance: Optional["AgentService"] = None
 
     def __init__(self):
         """Initialize the AgentService. Use get_instance() instead."""
@@ -76,7 +215,7 @@ class AgentService:
         self._register_preview_tool()
 
     @classmethod
-    def get_instance(cls) -> 'AgentService':
+    def get_instance(cls) -> "AgentService":
         """
         Get the singleton instance of AgentService.
 
@@ -108,6 +247,7 @@ class AgentService:
 
         TODO: Replace with real uploader tool registrations in production.
         """
+
         def preview_tool(params: dict) -> dict:
             """
             Preview tool that analyzes content and returns recommendations.
@@ -118,8 +258,8 @@ class AgentService:
             Returns:
                 dict: Result with status and recommendations
             """
-            prompt = params.get('prompt', '')
-            context = params.get('context', {})
+            prompt = params.get("prompt", "")
+            context = params.get("context", {})
 
             # Deterministic response for testing
             result = {
@@ -127,10 +267,7 @@ class AgentService:
                 "recommended_title": "精彩视频分享",
                 "recommended_tags": ["热门", "推荐", "精选"],
                 "suggested_platforms": ["douyin", "xiaohongshu"],
-                "analysis": {
-                    "prompt_received": prompt,
-                    "context_keys": list(context.keys())
-                }
+                "analysis": {"prompt_received": prompt, "context_keys": list(context.keys())},
             }
 
             logger.info(f"Preview tool executed with prompt: {prompt}")
@@ -146,17 +283,37 @@ class AgentService:
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "Natural language publishing request"
+                            "description": "Natural language publishing request",
                         },
                         "context": {
                             "type": "object",
-                            "description": "Additional context (file_id, account_id, etc.)"
-                        }
+                            "description": "Additional context (file_id, account_id, etc.)",
+                        },
                     },
-                    "required": ["prompt"]
-                }
-            }
+                    "required": ["prompt"],
+                },
+            },
         )
+
+    def register_uploader_tools(self):
+        """
+        Register all available uploader tools.
+
+        This method loads uploader tools for all supported platforms
+        (douyin, xiaohongshu, tencent, kuaishou, bilibili) and registers
+        them with the agent service.
+
+        Note:
+            This should be called after start() if you want the agent
+            to have access to real uploaders. Tools are imported lazily
+            to avoid ImportErrors when uploaders are not available.
+        """
+        uploader_tools = get_uploader_tools()
+        for name, tool in uploader_tools.items():
+            self.register_tool(name, tool["handler"], tool["schema"])
+            logger.info(f"Registered uploader tool: {name}")
+
+        logger.info(f"Registered {len(uploader_tools)} uploader tools")
 
     def start(self, config: Optional[Dict[str, Any]] = None):
         """
@@ -226,10 +383,7 @@ class AgentService:
             raise
 
     def register_tool(
-        self,
-        name: str,
-        handler: Callable[[dict], dict],
-        schema: Optional[Dict[str, Any]] = None
+        self, name: str, handler: Callable[[dict], dict], schema: Optional[Dict[str, Any]] = None
     ):
         """
         Register a tool that the agent can invoke.
@@ -279,10 +433,7 @@ class AgentService:
         if not callable(handler):
             raise ValueError("Tool handler must be callable")
 
-        self._tools[name] = {
-            "handler": handler,
-            "schema": schema or {}
-        }
+        self._tools[name] = {"handler": handler, "schema": schema or {}}
 
         logger.info(f"Registered tool: {name}")
 
@@ -338,27 +489,14 @@ class AgentService:
             # This allows tests to work without network access
             preview_tool = self._tools.get("preview_publish")
             if preview_tool:
-                result = preview_tool["handler"]({
-                    "prompt": prompt,
-                    "context": context or {}
-                })
-                return {
-                    "status": "ok",
-                    "result": result,
-                    "tool_used": "preview_publish"
-                }
+                result = preview_tool["handler"]({"prompt": prompt, "context": context or {}})
+                return {"status": "ok", "result": result, "tool_used": "preview_publish"}
             else:
-                return {
-                    "status": "error",
-                    "error": "No tools available"
-                }
+                return {"status": "error", "error": "No tools available"}
 
         except Exception as e:
             logger.error(f"Agent execution failed: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
     def list_tools(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -368,10 +506,7 @@ class AgentService:
             dict: Dictionary mapping tool names to their schemas
                  (handler is excluded from output)
         """
-        return {
-            name: {"schema": tool["schema"]}
-            for name, tool in self._tools.items()
-        }
+        return {name: {"schema": tool["schema"]} for name, tool in self._tools.items()}
 
 
 # Convenience function to get the singleton instance

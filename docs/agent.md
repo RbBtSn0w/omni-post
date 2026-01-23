@@ -266,6 +266,11 @@ Once GitHub Copilot SDK is fully integrated, it will automatically:
 4. Invoke the tool(s)
 5. Return results
 
+### Setp 4:  Understand the copilot sdk
+
+read the docs in current folder `copilot_cookbook/python`
+
+
 ## Configuration
 
 ### Environment Variables

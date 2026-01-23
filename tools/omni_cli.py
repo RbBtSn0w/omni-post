@@ -43,6 +43,11 @@ sys.path.insert(0, str(BACKEND_SRC))
 try:
     from services.agent_service import AgentService
     from db.db_manager import db_manager
+    from core.constants import (
+        cli_name_to_type,
+        type_to_cli_name,
+        get_cli_platform_choices,
+    )
     import sqlite3
 except ImportError as e:
     print(f"Error: Failed to import backend modules: {e}", file=sys.stderr)
@@ -77,26 +82,18 @@ class OmniCLI:
         List available accounts from the database.
 
         Args:
-            platform: Optional platform filter (douyin, xiaohongshu, tencent, kuaishou)
+            platform: Optional platform filter (douyin, xiaohongshu, tencent, kuaishou, bilibili)
 
         Returns:
             List of account dictionaries
         """
-        platform_map = {
-            'douyin': 3,
-            'xiaohongshu': 1,
-            'tencent': 2,
-            'wechat': 2,
-            'kuaishou': 4
-        }
-
         conn = self._get_db_connection()
         cursor = conn.cursor()
 
         try:
             if platform:
-                platform_id = platform_map.get(platform.lower())
-                if platform_id is None:
+                platform_id = cli_name_to_type(platform)
+                if platform_id == 0:
                     print(f"Warning: Unknown platform '{platform}', showing all accounts")
                     cursor.execute("SELECT id, type, userName, filePath, status FROM user_info")
                 else:
@@ -110,13 +107,7 @@ class OmniCLI:
             accounts = []
             for row in cursor.fetchall():
                 account_id, acc_type, username, filepath, status = row
-                platform_map_reverse = {
-                    1: 'xiaohongshu',
-                    2: 'wechat',
-                    3: 'douyin',
-                    4: 'kuaishou'
-                }
-                platform_name = platform_map_reverse.get(acc_type, 'unknown')
+                platform_name = type_to_cli_name(acc_type)
                 accounts.append({
                     'id': account_id,
                     'platform': platform_name,
@@ -143,6 +134,33 @@ class OmniCLI:
             print("No accounts found in the database.")
             print("\nTo add accounts, use the web interface at http://localhost:5173")
             return 0
+
+        # Handle --refresh flag: validate cookies for each account
+        if getattr(args, 'refresh', False):
+            print("🔄 Refreshing account status...\n")
+            try:
+                import asyncio
+                from services.cookie_service import get_cookie_service
+                cookie_service = get_cookie_service()
+            except ImportError as e:
+                print(f"Warning: Could not import cookie_service: {e}, skipping validation")
+                args.refresh = False
+
+            if args.refresh:
+                for acc in accounts:
+                    try:
+                        # acc['file_path'] is relative to COOKIES_DIR
+                        # acc['id'] and acc['platform'] are already in acc
+                        # We need the platform type ID for check_cookie
+                        platform_id = cli_name_to_type(acc['platform'])
+
+                        is_valid = asyncio.run(cookie_service.check_cookie(platform_id, acc['file_path']))
+                        acc['status'] = 'active' if is_valid else 'inactive'
+                        status_icon = "✓" if is_valid else "✗"
+                        print(f"  {status_icon} [{acc['platform']}] {acc['username']} - {'valid' if is_valid else 'expired'}")
+                    except Exception as e:
+                        print(f"  ⚠ [{acc['platform']}] {acc['username']} - error: {e}")
+                print()
 
         print(f"Found {len(accounts)} account(s):\n")
         for acc in accounts:
@@ -261,7 +279,7 @@ Examples:
         post_parser.add_argument(
             '--platforms',
             nargs='+',
-            choices=['douyin', 'xiaohongshu', 'wechat', 'tencent', 'kuaishou'],
+            choices=get_cli_platform_choices(),
             help='Target platforms (can specify multiple)'
         )
         post_parser.add_argument(
@@ -282,8 +300,13 @@ Examples:
         )
         accounts_parser.add_argument(
             '--platform',
-            choices=['douyin', 'xiaohongshu', 'wechat', 'tencent', 'kuaishou'],
+            choices=get_cli_platform_choices(),
             help='Filter by platform'
+        )
+        accounts_parser.add_argument(
+            '--refresh',
+            action='store_true',
+            help='Refresh and validate account cookies'
         )
 
         # Parse arguments
