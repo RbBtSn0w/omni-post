@@ -19,8 +19,6 @@ class TestLogin:
         """单元测试：抖音登录成功（使用MockLoginService）"""
         from tests.mock_services import MockLoginService
 
-        from src.core.constants import PlatformType
-
         # 创建模拟队列
         mock_queue = MagicMock()
         mock_queue.put = AsyncMock()
@@ -40,8 +38,6 @@ class TestLogin:
     async def test_douyin_login_failure_unit(self):
         """单元测试：抖音登录失败（Mock扫码超时）"""
         from tests.mock_services import MockLoginService
-
-        from src.core.constants import PlatformType
 
         # 创建模拟队列
         mock_queue = MagicMock()
