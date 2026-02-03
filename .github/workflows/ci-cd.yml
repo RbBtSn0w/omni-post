@@ -1,4 +1,4 @@
-name: Release
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,8 +11,29 @@ permissions:
   pull-requests: write
 
 jobs:
+  lint-backend:
+    name: Backend Lint
+    uses: ./.github/workflows/lint-backend.yml
+    secrets: inherit
+
+  lint-frontend:
+    name: Frontend Lint
+    uses: ./.github/workflows/lint-frontend.yml
+    secrets: inherit
+
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
   release:
     name: Release
+    needs: [lint-backend, lint-frontend, build, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
