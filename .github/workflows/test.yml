@@ -5,8 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_call:
   push:
-    branches: [ main, develop ]
+    branches: [ develop ]
     paths:
       - 'apps/backend/**'
       - 'apps/frontend/**'
