@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-ci:
+    name: Backend (Lint, Test & Security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: ./.github/actions/setup-python-backend
+        with:
+          install-dev: 'true'
+
+      - name: Install Playwright
+        working-directory: apps/backend
+        run: python -m playwright install chromium
+
+      - name: Lint (Black)
+        working-directory: apps/backend
+        run: black --check src/ --line-length=100
+
+      - name: Lint (Isort)
+        working-directory: apps/backend
+        run: isort --check-only src/ --profile black
+
+      - name: Lint (Pylint - Critical Only)
+        working-directory: apps/backend
+        # Allow failures, but good to see output
+        run: pylint src/ --disable=all --enable=E,F --exit-zero
+
+      - name: Security (Bandit)
+        working-directory: apps/backend
+        run: bandit -r src/ -c pyproject.toml 2>&1 || true
+
+      - name: Security (Pip Audit)
+        working-directory: apps/backend
+        run: pip-audit --progress-spinner=off || echo "Pip Audit met warnings but continuing..."
+
+      - name: Run Tests
+        working-directory: apps/backend
+        run: pytest tests/ -v --cov=src --cov-report=xml:test-results/coverage/coverage.xml
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./apps/backend/test-results/coverage/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  frontend-ci:
+    name: Frontend (Lint, Test & Build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node-frontend
+
+      - name: Security (NPM Audit)
+        run: npm audit --audit-level=high --omit=dev || echo "NPM Audit met warnings but continuing..."
+
+      - name: Lint
+        working-directory: apps/frontend
+        run: npm run lint
+
+      - name: Run Tests
+        # Usage of test:frontend:coverage from root package.json logic or direct
+        # package.json in apps/frontend has "test:coverage": "vitest run --coverage"
+        working-directory: apps/frontend
+        run: npm run test:coverage
+
+      - name: Build
+        working-directory: apps/frontend
+        run: npm run build
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./apps/frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
