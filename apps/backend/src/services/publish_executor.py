@@ -81,74 +81,46 @@ def run_publish_task(task_id, publish_data):
 
         print(f"\n[PUBLISH] All validations passed. Starting upload...")
 
-        # Call appropriate uploader using centralized platform types
-        match type:
-            case PlatformType.XIAOHONGSHU:
-                post_video_xhs(
-                    title,
-                    file_list,
-                    tags,
-                    account_list,
-                    category,
-                    enableTimer,
-                    videos_per_day,
-                    daily_times,
-                    start_days,
-                )
-            case PlatformType.TENCENT:
-                post_video_tencent(
-                    title,
-                    file_list,
-                    tags,
-                    account_list,
-                    category,
-                    enableTimer,
-                    videos_per_day,
-                    daily_times,
-                    start_days,
-                    is_draft,
-                )
-            case PlatformType.DOUYIN:
-                post_video_DouYin(
-                    title,
-                    file_list,
-                    tags,
-                    account_list,
-                    category,
-                    enableTimer,
-                    videos_per_day,
-                    daily_times,
-                    start_days,
-                    thumbnail_path,
-                    productLink,
-                    productTitle,
-                )
-            case PlatformType.KUAISHOU:
-                post_video_ks(
-                    title,
-                    file_list,
-                    tags,
-                    account_list,
-                    category,
-                    enableTimer,
-                    videos_per_day,
-                    daily_times,
-                    start_days,
-                )
-            case PlatformType.BILIBILI:
-                post_video_bilibili(
-                    title,
-                    file_list,
-                    tags,
-                    account_list,
-                    category,
-                    enableTimer,
-                    videos_per_day,
-                    daily_times,
-                    start_days,
-                )
-            case _:
-                raise ValueError(f"Unknown platform type: {type}")
+        # Dispatch to appropriate uploader based on platform type
+        publish_dispatch = {
+            PlatformType.XIAOHONGSHU: post_video_xhs,
+            PlatformType.TENCENT: post_video_tencent,
+            PlatformType.DOUYIN: post_video_DouYin,
+            PlatformType.KUAISHOU: post_video_ks,
+            PlatformType.BILIBILI: post_video_bilibili,
+        }
+
+        publish_func = publish_dispatch.get(type)
+        if not publish_func:
+            raise ValueError(f"Unknown platform type: {type} ({get_platform_name(type)})")
+
+        # Base arguments common to most platforms
+        kwargs = {
+            "title": title,
+            "files": file_list,
+            "tags": tags,
+            "account_file": account_list,
+            "category": category,
+            "enable_timer": enableTimer,
+            "videos_per_day": videos_per_day,
+            "daily_times": daily_times,
+            "start_days": start_days,
+        }
+
+        # Handle platform-specific parameters
+        if type == PlatformType.TENCENT:
+            kwargs["is_draft"] = is_draft
+        elif type == PlatformType.DOUYIN:
+            kwargs.update(
+                {
+                    "thumbnail_path": thumbnail_path,
+                    "product_link": productLink,
+                    "product_title": productTitle,
+                }
+            )
+
+        # Execute publish function
+        publish_func(**kwargs)
 
         # If successful
         print(f"\n[PUBLISH] Task {task_id} completed successfully!")
