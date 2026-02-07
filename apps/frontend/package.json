@@ -33,7 +33,7 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/test-utils": "^2.4.6",
     "c8": "^10.1.2",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^14.0.0",
     "jsdom": "^25.0.1",
