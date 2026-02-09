@@ -37,22 +37,20 @@ Example Usage:
 
 import asyncio
 import logging
+import threading
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def create_uploader_tool(
-    platform: str, uploader_class, uploader_module_path: str
-) -> Dict[str, Any]:
+def create_uploader_tool(platform: str, uploader_class) -> Dict[str, Any]:
     """
     Factory function to create an uploader tool wrapper.
 
     Args:
         platform: Platform name (e.g., 'douyin', 'xiaohongshu')
         uploader_class: The uploader class to wrap
-        uploader_module_path: Import path for lazy loading
 
     Returns:
         dict: Tool definition with handler and schema
@@ -96,7 +94,33 @@ def create_uploader_tool(
                 async with async_playwright() as playwright:
                     await uploader.upload(playwright)
 
-            asyncio.run(do_upload())
+            # Robust execution of async code from sync context
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                # If loop is running, run in a separate thread to avoid blocking it
+                # or raising RuntimeError for nested asyncio.run()
+                thread_result = None
+                thread_error = None
+
+                def run_in_thread():
+                    nonlocal thread_result, thread_error
+                    try:
+                        thread_result = asyncio.run(do_upload())
+                    except Exception as e:
+                        thread_error = e
+
+                t = threading.Thread(target=run_in_thread)
+                t.start()
+                t.join()
+
+                if thread_error:
+                    raise thread_error
+            else:
+                asyncio.run(do_upload())
 
             return {"status": "success", "platform": platform, "title": params["title"]}
 
@@ -170,7 +194,7 @@ def get_uploader_tools() -> Dict[str, Dict[str, Any]]:
 
             # Create tool with consistent naming: upload_to_<cli_name>
             tool_name = f"upload_to_{cli_name}"
-            tools[tool_name] = create_uploader_tool(cli_name, uploader_class, mod_path)
+            tools[tool_name] = create_uploader_tool(cli_name, uploader_class)
 
         except (ImportError, AttributeError) as e:
             logger.warning(f"Could not load uploader for {p_type.name}: {e}")
@@ -341,10 +365,7 @@ class AgentService:
             return
 
         try:
-            # TODO: Import and initialize actual Copilot SDK
-            # from github_copilot_sdk import CopilotClient
-            # self._client = CopilotClient(config or {})
-            # self._agent = self._client.create_agent()
+            # TODO: Import and initialize actual Copilot SDK when ready
 
             # For now, use a mock implementation for testing
             logger.info("Starting agent service (stub mode)")
@@ -368,9 +389,7 @@ class AgentService:
             return
 
         try:
-            # TODO: Clean up actual Copilot SDK resources
-            # if self._client:
-            #     self._client.close()
+            # TODO: Clean up actual Copilot SDK resources when ready
 
             logger.info("Stopping agent service")
             self._started = False
@@ -437,9 +456,7 @@ class AgentService:
 
         logger.info(f"Registered tool: {name}")
 
-        # TODO: Register with actual Copilot agent
-        # if self._agent:
-        #     self._agent.register_tool(name, handler, schema)
+        # TODO: Register with actual Copilot agent when implemented
 
     def run(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """

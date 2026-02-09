@@ -21,6 +21,7 @@ First, ensure you have the GitHub Copilot SDK installed:
 ```bash
 cd apps/backend
 pip install -r requirements.txt
+cd ../..
 ```
 
 The requirements.txt now includes `github-copilot-sdk>=0.1.0`.
@@ -56,7 +57,7 @@ python -m tools.omni_cli post --file data/videos/my_video.mp4 --platforms douyin
 # Dry run (preview only)
 python -m tools.omni_cli post "上传视频到抖音" --dry-run
 
-# Refresh accounts and show account' status info
+# Refresh accounts and show account's status info
 python -m tools.omni_cli accounts --refresh
 
 
@@ -266,7 +267,7 @@ Once GitHub Copilot SDK is fully integrated, it will automatically:
 4. Invoke the tool(s)
 5. Return results
 
-### Setp 4:  Understand the copilot sdk
+### Step 4:  Understand the copilot sdk
 
 read the docs in current folder `copilot_cookbook/python`
 
@@ -302,7 +303,7 @@ cd apps/backend
 pytest tests/test_agent_service.py -v
 
 # Run with coverage
-pytest tests/test_agent_service.py --cov=src/services/agent_service --cov-report=term
+pytest tests/test_agent_service.py --cov=src.services.agent_service --cov-report=term
 
 # Run specific test
 pytest tests/test_agent_service.py::TestAgentExecution::test_run_with_preview_tool -v
@@ -350,6 +351,7 @@ result = agent.run("prompt")
 ```bash
 cd apps/backend
 pip install -r requirements.txt
+cd ../..
 ```
 
 ### Issue: No Accounts Found

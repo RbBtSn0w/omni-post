@@ -20,20 +20,20 @@ You want to understand how long PRs have been open in a repository. This tool de
 ## Prerequisites
 
 ```bash
-pip install copilot-sdk
+pip install github-copilot-sdk
 ```
 
 ## Usage
 
 ```bash
 # Auto-detect from current git repo
-python pr_breakdown.py
+python pr_visualization.py
 
 # Specify a repo explicitly
-python pr_breakdown.py --repo github/copilot-sdk
+python pr_visualization.py --repo github/copilot-sdk
 ```
 
-## Full example: pr_breakdown.py
+## Full example: pr_visualization.py
 
 (See upstream cookbook for full example usage and code.)
 

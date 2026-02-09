@@ -128,7 +128,7 @@ class TestOmniCLIArgParser:
         with patch.object(cli, "_ensure_agent_started"):
             with patch.object(cli, "agent") as mock_agent:
                 mock_agent.run.return_value = {"status": "ok", "result": {}}
-                result = cli.run(["post", "test", "--platforms", "bilibili", "--dry-run"])
+                cli.run(["post", "test", "--platforms", "bilibili", "--dry-run"])
                 # Should parse without error (exit code doesn't matter for this test)
 
 

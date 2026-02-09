@@ -68,8 +68,7 @@ class OmniCLI:
         """Ensure the agent service is started."""
         if self.agent is None:
             self.agent = AgentService.get_instance()
-            if not self.agent._started:
-                self.agent.start()
+        self.agent.start()
 
     def _get_db_connection(self):
         """Get a database connection."""
