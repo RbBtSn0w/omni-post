@@ -7,7 +7,7 @@ description: Core architecture, stack, and patterns for OmniPost
 
 ## Project Overview
 
-OmniPost is a multi-platform video publishing automation tool using a monorepo architecture. The system enables content creators to publish videos to multiple Chinese social media platforms (Douyin, WeChat Channels, Xiaohongshu, Kuaishou) through a unified Vue 3 frontend and Python Flask backend.
+OmniPost is a multi-platform video publishing automation tool using a monorepo architecture. The system enables content creators to publish videos to multiple Chinese social media platforms (Douyin, WeChat Channels, Xiaohongshu, Kuaishou, Bilibili) through a unified Vue 3 frontend and Python Flask backend.
 
 **Key Stack:**
 - **Frontend:** Vue 3 + Vite, Pinia (state management), Element Plus UI, Axios
@@ -50,8 +50,8 @@ Stores are located in `src/stores/` using Composition API pattern. Components di
 ## Critical Conventions
 
 1. **Service methods** are stateless; instantiate services per request or use singletons
-2. **Platform types** use integer constants (1-4) in database
+2. **Platform types** use integer constants (1-5) in database
 3. **Datetime scheduling** uses `utils/files_times.py` helpers
 4. **File paths** stored as relative paths in DB; resolve via `BASE_DIR` at runtime
-5. **JSON serialization** in database for list/dict fields
+5. **JSON serialization** in database for list/dict fields (platforms, file_list, account_list, schedule_data, publish_data)
 6. **Logging** includes platform-specific loggers
