@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Data integrity rules for multi-entity relationships (platforms, accounts, tasks)
+---
+
 # Data Integrity Rules
 
 Apply these rules when implementing features involving multi-entity relationships (e.g., accounts ↔ platforms, files ↔ tasks).
