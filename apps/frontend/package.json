@@ -25,6 +25,7 @@
     "vue-router": "^5.0.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@pinia/testing": "^1.0.3",
     "@rushstack/eslint-patch": "^1.15.0",
     "@vitejs/plugin-vue": "^6.0.4",
