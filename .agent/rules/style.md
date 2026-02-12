@@ -8,7 +8,7 @@ globs: {py,js,vue,md}
 
 > **Scope**: Applies to all Python (`.py`) and Vue (`.vue`) files in the project.
 
-> 📖 **Complete Guide**: [../../.agent/rules/code-style-guide.md](../../.agent/rules/code-style-guide.md)
+
 
 ## Core Architecture
 
