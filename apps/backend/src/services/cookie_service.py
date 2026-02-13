@@ -7,6 +7,7 @@ This module provides cookie authentication services for all platforms.
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from playwright.async_api import async_playwright
 
@@ -197,7 +198,8 @@ class DefaultCookieService(CookieService):
                     wait_until="domcontentloaded",
                 )
                 # 如果重定向到登录页，说明 Cookie 失效
-                if "passport.bilibili.com" in page.url:
+                parsed_url = urlparse(page.url)
+                if parsed_url.hostname and "passport.bilibili.com" == parsed_url.hostname:
                     print("[+] bilibili cookie 失效")
                     return False
                 else:

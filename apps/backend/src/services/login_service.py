@@ -32,37 +32,30 @@ def sse_stream(status_queue):
 
 # 包装函数：在线程中运行异步函数
 def run_async_function(type, id, status_queue, group_name=None):
+    from src.core.constants import PlatformType
+
     # 创建登录服务实例
     login_service = DefaultLoginService()
 
-    match type:
-        case "1":
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(
-                login_service.xiaohongshu_cookie_gen(id, status_queue, group_name)
-            )
+    # Mapping of platform type strings to service methods
+    login_dispatch = {
+        str(int(PlatformType.XIAOHONGSHU)): login_service.xiaohongshu_cookie_gen,
+        str(int(PlatformType.TENCENT)): login_service.get_tencent_cookie,
+        str(int(PlatformType.DOUYIN)): login_service.douyin_cookie_gen,
+        str(int(PlatformType.KUAISHOU)): login_service.get_ks_cookie,
+        str(int(PlatformType.BILIBILI)): login_service.bilibili_cookie_gen,
+    }
+
+    func = login_dispatch.get(str(type))
+    if func:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(func(id, status_queue, group_name))
+        finally:
             loop.close()
-        case "2":
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(login_service.get_tencent_cookie(id, status_queue, group_name))
-            loop.close()
-        case "3":
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(login_service.douyin_cookie_gen(id, status_queue, group_name))
-            loop.close()
-        case "4":
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(login_service.get_ks_cookie(id, status_queue, group_name))
-            loop.close()
-        case "5":
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(login_service.bilibili_cookie_gen(id, status_queue, group_name))
-            loop.close()
+    else:
+        status_queue.put(f"Error: Unknown platform type {type}")
 
 
 class LoginService(ABC):

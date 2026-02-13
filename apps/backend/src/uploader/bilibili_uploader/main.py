@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import os
 from datetime import datetime
 
 from playwright.async_api import Playwright, async_playwright
 
 from src.core.browser import launch_browser, set_init_script
-from src.core.config import DEBUG_MODE, LOCAL_CHROME_HEADLESS
+from src.core.config import LOCAL_CHROME_HEADLESS
 from src.core.logger import bilibili_logger
 
 
@@ -25,6 +24,7 @@ class BiliBiliVideo(object):
         """
         browser = None
         context = None
+        page = None
 
         try:
             browser = await launch_browser(playwright, headless=self.headless)
@@ -94,12 +94,11 @@ class BiliBiliVideo(object):
                 # Bilibili 的定时发布逻辑通常涉及点击“定时发布”单选框，然后选择日期时间
                 bilibili_logger.info(f"计划发布时间: {self.publish_date}")
                 # TODO: 实现 Bilibili 特有的时间选择逻辑
-                pass
 
             # 点击发布按钮
             # selector: .submit-container .cc-btn, .submit-btn, button:has-text("立即投稿")
             submit_btn = page.locator(
-                '.submit-container .cc-btn, .submit-btn, button:text("立即投稿"), button:text("发布")'
+                '.submit-container .cc-btn, .submit-btn, button:has-text("立即投稿"), button:has-text("发布")'
             ).first
             await submit_btn.click()
 
@@ -120,8 +119,10 @@ class BiliBiliVideo(object):
                     await page.screenshot(
                         path=f"bilibili_error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
                     )
-                except:
-                    pass
+                except Exception as screenshot_error:
+                    bilibili_logger.warning(
+                        f"Failed to capture Bilibili error screenshot: {screenshot_error}"
+                    )
             raise
         finally:
             if context:

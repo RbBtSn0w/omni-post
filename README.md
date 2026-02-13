@@ -36,6 +36,7 @@
 - ✅ **Cookie Management**: Multi-account cookie storage and management
 - ✅ **Comprehensive Testing**: Extensive test suite for reliability
 - ✅ **Automated CI/CD**: GitHub Actions workflows for continuous integration
+- 🆕 **AI Agent Integration**: Natural language publishing with GitHub Copilot SDK
 
 ### Platform Support Status
 
@@ -130,11 +131,30 @@ npm run dev:frontend   # Frontend service http://localhost:5173
 
 ## 🏁 Quick Start
 
+### Web Interface
+
 1. After starting the services, navigate to `http://localhost:5173`
 2. Add account credentials and log in within the web interface
 3. Upload video files and fill in metadata (title, tags, etc.)
 4. Select target platforms and publishing time
 5. Click publish, and the system will automatically execute the publishing task
+
+### CLI Agent (New!)
+
+Use natural language to publish content from the command line:
+
+```bash
+# List available accounts
+python -m tools.omni_cli accounts
+
+# Publish with natural language
+python -m tools.omni_cli post "帮我把这个视频发到抖音，标题要吸引年轻人"
+
+# Publish specific file to multiple platforms
+python -m tools.omni_cli post --file data/videos/my_video.mp4 --platforms douyin xiaohongshu
+```
+
+See [docs/agent.md](docs/agent.md) for detailed CLI usage and agent integration guide.
 
 ## 📁 Project Structure
 
