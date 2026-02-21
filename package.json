@@ -65,7 +65,7 @@
     "Please follow the setup instructions in the README.md file."
   ],
   "devDependencies": {
-    "@commitlint/cli": "^20.4.1",
+    "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7"
