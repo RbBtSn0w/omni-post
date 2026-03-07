@@ -20,9 +20,10 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Backend**: `apps/backend/src/`, `apps/backend/tests/`
+- **Backend (Python)**: `apps/backend/src/`, `apps/backend/tests/`
+- **Backend (Node.js)**: `apps/backend-node/src/`, `apps/backend-node/tests/`
 - **Frontend**: `apps/frontend/src/`, `apps/frontend/tests/`
-- **Uploaders**: `apps/backend/src/uploader/<platform>_uploader/main.py`
+- **Uploaders**: `apps/[backend-name]/src/uploader/[platform]/main.[py|ts]`
 
 <!-- 
   ============================================================================

@@ -1,13 +1,17 @@
 <!--
 Sync Impact Report:
-- Version change: N/A → v1.0.0
-- List of modified principles: Initial set defined for OmniPost.
-- Added sections: Core Principles, Security & Data Integrity, Development Workflow, Governance.
+- Version change: v1.0.0 → v1.1.0
+- List of modified principles:
+    - I. Three-Layer Backend Architecture (Expanded to include Node.js)
+    - II. Platform Uploader Isolation (Expanded to cover backend-node)
+    - III. Comprehensive Automated Testing (Unified for Python and TypeScript)
+    - IV. Async/Sync Concurrency (Unified for Threads and Worker Threads)
+    - V. Monorepo Dependency Discipline (Updated to include backend-node)
+- Added sections: None.
 - Removed sections: None.
 - Templates requiring updates:
-    - .specify/templates/plan-template.md: ✅ updated (Added OmniPost structure and Constitution Gates)
-    - .specify/templates/spec-template.md: ✅ verified (Generic structure remains valid)
-    - .specify/templates/tasks-template.md: ✅ updated (Updated Path Conventions for Monorepo)
+    - .specify/templates/plan-template.md: ✅ updated (Added backend-node structure and Dual-Stack Gates)
+    - .specify/templates/tasks-template.md: ✅ updated (Added backend-node Path Conventions)
 - Follow-up TODOs: None.
 -->
 
@@ -15,24 +19,27 @@ Sync Impact Report:
 
 ## Core Principles
 
-### I. Three-Layer Backend Architecture
-The backend MUST follow the Routes → Services → Uploaders pattern. Routes handle HTTP requests and response formatting; Services orchestrate business logic and state; Uploaders manage platform-specific Playwright automation. This separation ensures that business logic is independent of both the delivery mechanism (API) and the automation target (Platform).
+### I. Dual-Backend Architecture Parity
+OmniPost maintains a dual-stack architecture (Python Flask and Node.js/TypeScript). Both backends MUST maintain 1:1 functional and API parity. The Node.js rewrite (`apps/backend-node`) MUST be a drop-in replacement for the original Python backend (`apps/backend`), ensuring that the frontend and data storage remain compatible across both implementations.
 
-### II. Platform Uploader Isolation
-Each social platform MUST have its own isolated uploader implementation in `apps/backend/src/uploader/<platform>_uploader/main.py`. Uploaders MUST be stateless and handle their own Playwright context cleanup. Shared automation logic MUST be abstracted into `utils` or base classes, never directly between uploaders.
+### II. Unified Three-Layer Backend Pattern
+All backend services MUST follow the Routes → Services → Uploaders pattern. Routes handle HTTP requests and response formatting; Services orchestrate business logic and state; Uploaders manage platform-specific Playwright automation. This separation ensures that core business logic (e.g., scheduling algorithms) is identical regardless of the underlying programming language.
 
-### III. Comprehensive Automated Testing (NON-NEGOTIABLE)
-Every new feature, bug fix, or platform uploader update MUST include automated tests. Backend changes require `pytest` suites (unit and integration); Frontend changes require `Vitest` coverage. CI/CD pipelines MUST pass all tests before any code is merged into the main branch.
+### III. Platform Uploader Isolation
+Each social platform MUST have its own isolated uploader implementation. For Python, this is in `apps/backend/src/uploader/`; for Node.js, this is in `apps/backend-node/src/uploader/`. Uploaders MUST be stateless and handle their own Playwright context cleanup. Shared automation logic MUST be abstracted into `utils` or base classes, never directly between uploaders.
 
-### IV. Async/Sync Thread Safety
-Long-running publishing tasks MUST run in background threads to avoid blocking the Flask request-response cycle. Communication between sync Flask handlers and async workers MUST use thread-safe Queues. Status updates MUST be delivered via Server-Sent Events (SSE) to ensure real-time frontend feedback without polling overhead.
+### IV. Comprehensive Multi-Stack Testing (NON-NEGOTIABLE)
+Every new feature, bug fix, or platform uploader update MUST include automated tests for BOTH backends if both are maintained. Python changes require `pytest` suites; Node.js changes require `Vitest` suites. Functional parity MUST be verified by running equivalent test cases across both stacks. CI/CD pipelines MUST pass all tests for all active backends before merging.
 
-### V. Monorepo Dependency Discipline
-Dependencies MUST be managed strictly within their respective workspace. `apps/frontend` uses npm/package.json for web-related assets; `apps/backend` uses pip/requirements.txt for Python services. Cross-app automation scripts in the root `package.json` MUST be the primary entry point for development and CI tasks.
+### V. Concurrency & Real-Time Feedback
+Long-running publishing tasks MUST run asynchronously to avoid blocking the API request-response cycle. Python uses `threading.Thread` (daemon threads), while Node.js uses `worker_threads`. Communication between API handlers and background workers MUST use thread-safe queues. Real-time status updates MUST be delivered via Server-Sent Events (SSE).
+
+### VI. Monorepo Consistency & Dependency Discipline
+Dependencies MUST be managed strictly within their respective workspace. `apps/frontend` and `apps/backend-node` use npm; `apps/backend` uses pip. All backends MUST use consistent directory structures and share common assets like `stealth.min.js`. Root-level scripts in `package.json` MUST be the primary interface for multi-stack development and testing.
 
 ## Security & Data Integrity
 
-Cookies and sensitive account credentials MUST be stored securely in the `apps/backend/data/cookies` directory and MUST be excluded from version control via `.gitignore`. No hardcoded secrets or personal access tokens are permitted in the codebase. All environment-specific configuration MUST reside in `.env` files.
+Cookies and sensitive account credentials MUST be stored securely in the `data/cookies` directory of the respective backend and MUST be excluded from version control via `.gitignore`. No hardcoded secrets or personal access tokens are permitted in the codebase. All environment-specific configuration MUST reside in `.env` files.
 
 ## Development Workflow
 
@@ -40,6 +47,6 @@ All development MUST follow the "Research -> Strategy -> Execution" lifecycle. E
 
 ## Governance
 
-This Constitution is the foundational document for OmniPost development and supersedes all other project-specific practices. Amendments to this document require a MINOR or MAJOR version bump. All architectural decisions and code reviews MUST be validated against these principles.
+This Constitution is the foundational document for OmniPost development and supersedes all other project-specific practices. Amendments to this document require a MINOR or MAJOR version bump. All architectural decisions, especially those involving cross-backend parity, MUST be validated against these principles.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
+**Version**: 1.1.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-07
