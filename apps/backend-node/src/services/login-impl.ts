@@ -11,6 +11,7 @@ import path from 'path';
 import { v1 as uuidv1 } from 'uuid';
 import { createScreenshotDir, debugPrint, debugScreenshot, launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
+import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { getCookieService } from './cookie-service.js';
 
@@ -49,7 +50,7 @@ function saveUserInfo(
       group_id = COALESCE(excluded.group_id, user_info.group_id),
       last_validated_at = CURRENT_TIMESTAMP
   `).run(platformType, cookieFile, userName, groupId);
-    console.log('✅ 用户状态已记录');
+    logger.info('✅ 用户状态已记录');
 }
 
 /**
@@ -77,7 +78,7 @@ export async function douyinCookieGen(
         const imgLocator = page.getByRole('img', { name: '二维码' });
         await debugScreenshot(page, screenshotDir, 'qrcode_displayed.png', '二维码显示后');
         const src = await imgLocator.getAttribute('src');
-        console.log('✅ 图片地址:', src);
+        logger.info(`✅ 抖音 图片地址: ${src}`);
         emitter.emit('message', src);
 
         // Wait for URL change (login success)
@@ -85,7 +86,7 @@ export async function douyinCookieGen(
             await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
             debugPrint('[DEBUG] 抖音登录检测成功');
         } catch {
-            console.log('抖音登录页面跳转监听超时');
+            logger.warn('抖音登录页面跳转监听超时');
             emitter.emit('message', '500');
             return { success: false, error: 'TIMEOUT' };
         }
@@ -138,7 +139,7 @@ export async function getTencentCookie(
         const imgLocator = iframeLocator.getByRole('img').first();
         await debugScreenshot(page, screenshotDir, 'qrcode_displayed.png', '二维码显示后');
         const src = await imgLocator.getAttribute('src');
-        console.log('✅ 图片地址:', src);
+        logger.info(`✅ 视频号 图片地址: ${src}`);
         emitter.emit('message', src);
 
         // Wait for URL change or new page (login success)
@@ -147,7 +148,7 @@ export async function getTencentCookie(
             debugPrint('[DEBUG] 监听页面跳转或登录检测成功');
         } catch {
             emitter.emit('message', '500');
-            console.log('监听页面跳转超时，登录失败');
+            logger.warn('视频号 监听页面跳转超时，登录失败');
             return { success: false, error: 'TIMEOUT' };
         }
 
@@ -159,7 +160,7 @@ export async function getTencentCookie(
         const result = await getCookieService().checkCookie(2, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
-            console.log('Cookie验证失败，登录状态无效');
+            logger.warn('视频号 Cookie验证失败，登录状态无效');
             return {};
         }
 
@@ -196,7 +197,7 @@ export async function getKsCookie(
 
         const imgLocator = page.getByRole('img', { name: 'qrcode' });
         const src = await imgLocator.getAttribute('src');
-        console.log('✅ 图片地址:', src);
+        logger.info(`✅ 快手 图片地址: ${src}`);
         emitter.emit('message', src);
 
         // Wait for login redirect
@@ -205,7 +206,7 @@ export async function getKsCookie(
             debugPrint('[DEBUG] 快手登录检测成功');
         } catch {
             emitter.emit('message', '500');
-            console.log('监听页面跳转超时，登录失败');
+            logger.warn('快手 监听页面跳转超时，登录失败');
             return { success: false, error: 'URL_CHANGE_TIMEOUT' };
         }
 
@@ -216,7 +217,7 @@ export async function getKsCookie(
         const result = await getCookieService().checkCookie(4, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
-            console.log('Cookie验证失败，登录状态无效');
+            logger.warn('快手 Cookie验证失败，登录状态无效');
             return { success: false, error: 'COOKIE_VALIDATION_FAILED' };
         }
 
@@ -257,15 +258,15 @@ export async function xiaohongshuCookieGen(
         const imgLocator = page.getByRole('img').nth(2);
         await debugScreenshot(page, screenshotDir, 'qrcode_displayed.png', '二维码显示后');
         const src = await imgLocator.getAttribute('src');
-        console.log('✅ 图片地址:', src);
+        logger.info(`✅ 小红书 图片地址: ${src}`);
         emitter.emit('message', src);
 
         try {
             await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
-            console.log('监听页面跳转成功');
+            logger.info('小红书 监听页面跳转成功');
         } catch {
             emitter.emit('message', '500');
-            console.log('小红书登录页面跳转监听超时');
+            logger.warn('小红书登录页面跳转监听超时');
             return { success: false, error: 'TIMEOUT' };
         }
 
@@ -317,10 +318,10 @@ export async function bilibiliCookieGen(
             ).first();
             await imgLocator.waitFor({ timeout: 10000 });
             const src = await imgLocator.getAttribute('src');
-            console.log('✅ 图片地址:', src);
+            logger.info(`✅ Bilibili 图片地址: ${src}`);
             emitter.emit('message', src);
         } catch (e) {
-            console.log(`❌ 获取二维码失败: ${e}`);
+            logger.error(`❌ 获取二维码失败: ${e}`);
             emitter.emit('message', '500');
             return;
         }
@@ -336,7 +337,7 @@ export async function bilibiliCookieGen(
             );
             debugPrint('[DEBUG] Bilibili登录检测成功');
         } catch {
-            console.log('Bilibili登录页面跳转监听超时');
+            logger.warn('Bilibili登录页面跳转监听超时');
             emitter.emit('message', '500');
             return { success: false, error: 'TIMEOUT' };
         }

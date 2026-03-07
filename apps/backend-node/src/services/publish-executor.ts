@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
+import { logger } from '../core/logger.js';
 import {
     postVideoBilibili,
     postVideoDouyin,
@@ -23,9 +24,9 @@ import { taskService } from './task-service.js';
  * Execute publish task. Updates task status in DB.
  */
 export async function runPublishTask(taskId: string, publishData: any): Promise<void> {
-    console.log(`\n${'='.repeat(50)}`);
-    console.log(`[PUBLISH] Starting task ${taskId}`);
-    console.log(`${'='.repeat(50)}`);
+    logger.info(`\n${'='.repeat(50)}`);
+    logger.info(`[PUBLISH] Starting task ${taskId}`);
+    logger.info(`${'='.repeat(50)}`);
     taskService.updateTaskStatus(taskId, 'uploading', 0);
 
     try {
@@ -47,37 +48,37 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         const isDraft = publishData.isDraft || false;
 
         // Debug logging
-        console.log(`[PUBLISH] Platform: ${getPlatformName(type)}`);
-        console.log(`[PUBLISH] Title: ${title}`);
-        console.log(`[PUBLISH] Tags: ${tags}`);
-        console.log(`[PUBLISH] File list: ${fileList}`);
-        console.log(`[PUBLISH] Account list: ${accountList}`);
-        console.log(`[PUBLISH] Enable timer: ${enableTimer}`);
+        logger.info(`[PUBLISH] Platform: ${getPlatformName(type)}`);
+        logger.info(`[PUBLISH] Title: ${title}`);
+        logger.info(`[PUBLISH] Tags: ${tags}`);
+        logger.info(`[PUBLISH] File list: ${fileList}`);
+        logger.info(`[PUBLISH] Account list: ${accountList}`);
+        logger.info(`[PUBLISH] Enable timer: ${enableTimer}`);
 
         // Validate files exist
-        console.log(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
+        logger.info(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
         for (const f of fileList) {
             const filePath = path.join(VIDEOS_DIR, f);
             if (fs.existsSync(filePath)) {
-                console.log(`  ✓ Video exists: ${f}`);
+                logger.info(`  ✓ Video exists: ${f}`);
             } else {
-                console.log(`  ✗ Video MISSING: ${f}`);
+                logger.error(`  ✗ Video MISSING: ${f}`);
                 throw new Error(`Video file not found: ${filePath}`);
             }
         }
 
-        console.log(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
+        logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
         for (const acc of accountList) {
             const accPath = path.join(COOKIES_DIR, acc);
             if (fs.existsSync(accPath)) {
-                console.log(`  ✓ Cookie exists: ${acc}`);
+                logger.info(`  ✓ Cookie exists: ${acc}`);
             } else {
-                console.log(`  ✗ Cookie MISSING: ${acc}`);
+                logger.error(`  ✗ Cookie MISSING: ${acc}`);
                 throw new Error(`Cookie file not found: ${accPath}`);
             }
         }
 
-        console.log('\n[PUBLISH] All validations passed. Starting upload...');
+        logger.info('\n[PUBLISH] All validations passed. Starting upload...');
 
         const opts: UploadOptions = {
             title,
@@ -105,11 +106,11 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             default: throw new Error(`Unknown platform type: ${type}`);
         }
 
-        console.log(`\n[PUBLISH] Task ${taskId} completed successfully!`);
+        logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
         taskService.updateTaskStatus(taskId, 'completed', 100);
     } catch (error: any) {
-        console.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
-        console.error(error.stack);
+        logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
+        logger.error(error.stack);
         taskService.updateTaskStatus(taskId, 'failed', undefined, error.message);
     }
 }
@@ -121,7 +122,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
 export function startPublishThread(taskId: string, publishData: any): void {
     setImmediate(() => {
         runPublishTask(taskId, publishData).catch(err => {
-            console.error(`[PUBLISH] Unhandled error in task ${taskId}: ${err.message}`);
+            logger.error(`[PUBLISH] Unhandled error in task ${taskId}: ${err.message}`);
         });
     });
 }

@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { BASE_DIR, DEBUG_MODE, LOCAL_CHROME_HEADLESS, LOCAL_CHROME_PATH, LOGS_DIR } from './config.js';
+import { logger } from './logger.js';
 
 // Social media platform identifiers
 export const SOCIAL_MEDIA_DOUYIN = 'douyin';
@@ -19,7 +20,7 @@ export const SOCIAL_MEDIA_XIAOHONGSHU = 'xiaohongshu';
  */
 export function debugPrint(...args: any[]): void {
     if (DEBUG_MODE) {
-        console.log(...args);
+        logger.info(args.join(' '));
     }
 }
 

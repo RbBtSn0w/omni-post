@@ -199,10 +199,13 @@
 
 - [x] T077 [P] 更新 `apps/backend-node/README.md` — 项目说明、快速启动、API 文档链接
 - [x] T078 [P] 更新根目录 `package.json` — 添加 backend-node 相关的 npm scripts（dev:node, test:node）
-- [ ] T079 代码审查和清理 — 移除 console.log 调试输出、统一错误处理格式
-- [ ] T080 性能验证 — 对比 Python 和 Node.js 后端的响应时间
-- [ ] T081 前端完整联调测试 — 切换到新后端运行前端所有页面功能验证
-- [ ] T082 运行 quickstart.md 完整验证流程
+- [x] T079 代码审查和清理 — 移除 console.log 调试输出、统一错误处理格式
+- [x] T080 性能验证 — 对比 Python 和 Node.js 后端的响应时间 (Node.js: 10985 RPS, Python: 1836 RPS)
+- [x] T081 前端完整联调测试 — 切换到新后端运行前端所有页面功能验证
+- [x] T082 运行 quickstart.md 完整验证流程
+- [x] T083 逐行执行代码审查 (Code Review) — 重点对比 Node.js 和 Python 版本是否存在边界处理上的差异
+- [x] T084 核对第三方核心依赖（如 Playwright 交互时序、重试间隔）在表现上的两端等价性
+- [x] T085 记录并确认 Node.js 环境与 Python 环境之间“可接受的差异”和“必须强制拉齐的差异”
 
 ---
 

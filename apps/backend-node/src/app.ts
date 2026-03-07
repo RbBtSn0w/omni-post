@@ -36,13 +36,13 @@ export function createApp(): Express {
     // Initialize database tables
     createTables();
 
-    // Register route blueprints under /api prefix
-    app.use('/api', dashboardRouter);
-    app.use('/api', accountRouter);
-    app.use('/api', fileRouter);
-    app.use('/api', cookieRouter);
-    app.use('/api', groupRouter);
-    app.use('/api', publishRouter);
+    // Register route blueprints under root prefix to match Python backend
+    app.use('/', dashboardRouter);
+    app.use('/', accountRouter);
+    app.use('/', fileRouter);
+    app.use('/', cookieRouter);
+    app.use('/', groupRouter);
+    app.use('/', publishRouter);
 
     // Static file serving (match Flask's static folder behavior)
     const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');

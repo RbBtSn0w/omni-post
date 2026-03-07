@@ -5,12 +5,13 @@
 
 import { createApp } from './app.js';
 import { logBrowserInfo, SERVER_HOST, SERVER_PORT } from './core/config.js';
+import { logger } from './core/logger.js';
 
 const app = createApp();
 
 app.listen(SERVER_PORT, SERVER_HOST, () => {
-    console.log(`\n${'='.repeat(50)}`);
-    console.log(`🚀 OmniPost Backend (Node.js) running at http://${SERVER_HOST}:${SERVER_PORT}`);
-    console.log(`${'='.repeat(50)}\n`);
+    logger.info(`\n${'='.repeat(50)}`);
+    logger.info(`🚀 OmniPost Backend (Node.js) running at http://${SERVER_HOST}:${SERVER_PORT}`);
+    logger.info(`${'='.repeat(50)}\n`);
     logBrowserInfo();
 });

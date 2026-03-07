@@ -5,15 +5,16 @@
  * SQL statements are identical to the Python version.
  */
 
+import { logger } from '../core/logger.js';
 import { dbManager } from './database.js';
 
 /**
  * Create all required tables if they don't exist.
  */
 export function createTables(): void {
-    const db = dbManager.getDb();
+  const db = dbManager.getDb();
 
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS account_groups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
@@ -23,7 +24,7 @@ export function createTables(): void {
     )
   `);
 
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS user_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type INTEGER NOT NULL,
@@ -38,7 +39,7 @@ export function createTables(): void {
     )
   `);
 
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS file_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       filename TEXT NOT NULL,
@@ -48,7 +49,7 @@ export function createTables(): void {
     )
   `);
 
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
       id TEXT PRIMARY KEY,
       title TEXT,
@@ -69,7 +70,7 @@ export function createTables(): void {
 
 // If run directly, create tables
 if (process.argv[1]?.includes('migrations')) {
-    createTables();
-    console.log('✅ Database tables created successfully.');
-    dbManager.close();
+  createTables();
+  logger.info('✅ Database tables created successfully.');
+  dbManager.close();
 }

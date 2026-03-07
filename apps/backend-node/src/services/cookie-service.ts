@@ -7,7 +7,7 @@ import path from 'path';
 import { launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
 import { PlatformType } from '../core/constants.js';
-import { douyinLogger, kuaishouLogger, tencentLogger } from '../core/logger.js';
+import { bilibiliLogger, douyinLogger, kuaishouLogger, tencentLogger, xhsLogger } from '../core/logger.js';
 
 /**
  * CookieService interface
@@ -142,17 +142,17 @@ export class DefaultCookieService implements CookieService {
                     { timeout: 5000 }
                 );
             } catch {
-                console.log('[+] 等待5秒 cookie 失效');
+                xhsLogger.error('[+] 等待5秒 cookie 失效');
                 return false;
             }
             if (
                 (await page.getByText('手机号登录').count()) > 0 ||
                 (await page.getByText('扫码登录').count()) > 0
             ) {
-                console.log('[+] 等待5秒 cookie 失效');
+                xhsLogger.error('[+] 等待5秒 cookie 失效');
                 return false;
             } else {
-                console.log('[+] cookie 有效');
+                xhsLogger.info('[+] cookie 有效');
                 return true;
             }
         } finally {
@@ -175,10 +175,10 @@ export class DefaultCookieService implements CookieService {
                 { waitUntil: 'domcontentloaded' }
             );
             if (page.url().includes('passport.bilibili.com')) {
-                console.log('[+] bilibili cookie 失效');
+                bilibiliLogger.error('[+] bilibili cookie 失效');
                 return false;
             } else {
-                console.log('[+] bilibili cookie 有效');
+                bilibiliLogger.info('[+] bilibili cookie 有效');
                 return true;
             }
         } finally {

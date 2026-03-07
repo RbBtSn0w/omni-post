@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { logger } from '../core/logger.js';
 
 // Global active queues (thread-safe status communication)
 export const activeQueues: Map<string, EventEmitter> = new Map();
@@ -152,7 +153,7 @@ export function runAsyncFunction(
                 default: emitter.emit('message', '500');
             }
         } catch (error) {
-            console.error(`[Login] Error: ${error}`);
+            logger.error(`[Login] Error: ${error}`);
             emitter.emit('message', '500');
         } finally {
             emitter.emit('end');

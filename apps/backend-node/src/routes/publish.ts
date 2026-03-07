@@ -7,6 +7,7 @@
 
 import { EventEmitter } from 'events';
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { activeQueues, runAsyncFunction } from '../services/login-service.js';
 import { startPublishThread } from '../services/publish-executor.js';
@@ -48,14 +49,14 @@ router.get('/login', (req: Request, res: Response) => {
     });
 
     emitter.on('end', () => {
-        console.log(`清理队列: ${id}`);
+        logger.info(`清理队列: ${id}`);
         activeQueues.delete(id);
         res.end();
     });
 
     // Handle client disconnect
     req.on('close', () => {
-        console.log(`客户端断开连接: ${id}`);
+        logger.info(`客户端断开连接: ${id}`);
         activeQueues.delete(id);
         emitter.removeAllListeners();
     });
@@ -194,7 +195,7 @@ router.post('/postVideo', async (req: Request, res: Response) => {
         }
 
         if (invalidAccounts.length > 0) {
-            console.warn(
+            logger.warn(
                 `[PUBLISH] Filtered ${invalidAccounts.length} mismatched accounts for platform ${platformType}`
             );
         }

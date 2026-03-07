@@ -3,6 +3,8 @@
  * Mirrors: apps/backend/src/utils/network.py
  */
 
+import { logger } from '../core/logger.js';
+
 /**
  * Retry an async function with timeout and max retries.
  *
@@ -25,17 +27,17 @@ export async function asyncRetry<T>(
             attempts++;
 
             if (maxRetries !== undefined && attempts >= maxRetries) {
-                console.log(`Reached maximum retries of ${maxRetries}.`);
+                logger.error(`Reached maximum retries of ${maxRetries}.`);
                 throw new Error(`Failed after ${maxRetries} retries.`);
             }
 
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > timeout) {
-                console.log(`Function timeout after ${timeout} seconds.`);
+                logger.error(`Function timeout after ${timeout} seconds.`);
                 throw new Error(`Function execution exceeded ${timeout} seconds timeout.`);
             }
 
-            console.log(`Attempt ${attempts} failed: ${error}. Retrying...`);
+            logger.warn(`Attempt ${attempts} failed: ${error}. Retrying...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
