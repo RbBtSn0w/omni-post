@@ -1,0 +1,69 @@
+/**
+ * Express application factory for omni-post backend (Node.js).
+ * Mirrors: apps/backend/src/app.py
+ */
+
+import cors from 'cors';
+import express, { type Express } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createTables } from './db/migrations.js';
+
+// Route imports
+import { router as accountRouter } from './routes/account.js';
+import { router as cookieRouter } from './routes/cookie.js';
+import { router as dashboardRouter } from './routes/dashboard.js';
+import { router as fileRouter } from './routes/file.js';
+import { router as groupRouter } from './routes/group.js';
+import { router as publishRouter } from './routes/publish.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * Create and configure the Express application.
+ */
+export function createApp(): Express {
+    const app = express();
+
+    // CORS (match Flask-CORS behavior: allow all origins)
+    app.use(cors());
+
+    // JSON body parsing
+    app.use(express.json({ limit: '50mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+    // Initialize database tables
+    createTables();
+
+    // Register route blueprints under /api prefix
+    app.use('/api', dashboardRouter);
+    app.use('/api', accountRouter);
+    app.use('/api', fileRouter);
+    app.use('/api', cookieRouter);
+    app.use('/api', groupRouter);
+    app.use('/api', publishRouter);
+
+    // Static file serving (match Flask's static folder behavior)
+    const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+    app.use('/assets', express.static(path.join(frontendDistPath, 'assets')));
+    app.get('/favicon.ico', (_req, res) => {
+        res.sendFile(path.join(frontendDistPath, 'favicon.ico'), (err) => {
+            if (err) res.status(204).end();
+        });
+    });
+    app.get('/vite.svg', (_req, res) => {
+        res.sendFile(path.join(frontendDistPath, 'vite.svg'), (err) => {
+            if (err) res.status(204).end();
+        });
+    });
+
+    // Serve index.html for root path
+    app.get('/', (_req, res) => {
+        res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+            if (err) res.status(404).json({ code: 404, msg: 'Frontend not built' });
+        });
+    });
+
+    return app;
+}

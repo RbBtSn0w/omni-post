@@ -1,0 +1,143 @@
+/**
+ * Task service for omni-post backend (Node.js).
+ * Mirrors: apps/backend/src/services/task_service.py
+ */
+
+import { v4 as uuidv4 } from 'uuid';
+import { dbManager } from '../db/database.js';
+
+export interface Task {
+    id: string;
+    title: string | null;
+    status: string;
+    progress: number;
+    priority: number;
+    platforms: number[];
+    file_list: string[];
+    account_list: string[];
+    schedule_data: any;
+    error_msg: string | null;
+    publish_data: any;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Task service class for managing task lifecycle.
+ */
+class TaskService {
+    /**
+     * Create a new publishing task.
+     */
+    createTask(publishData: any): string {
+        const db = dbManager.getDb();
+        const taskId = `task_${Date.now()}_${uuidv4().slice(0, 8)}`;
+
+        const stmt = db.prepare(`
+      INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data, publish_data)
+      VALUES (?, ?, 'waiting', 0, 1, ?, ?, ?, ?, ?)
+    `);
+
+        stmt.run(
+            taskId,
+            publishData.title || null,
+            JSON.stringify(publishData.platforms || [publishData.type]),
+            JSON.stringify(publishData.fileList || []),
+            JSON.stringify(publishData.accountList || []),
+            JSON.stringify(publishData.scheduleData || null),
+            JSON.stringify(publishData)
+        );
+
+        return taskId;
+    }
+
+    /**
+     * Update task status and progress.
+     */
+    updateTaskStatus(
+        taskId: string,
+        status: string,
+        progress?: number,
+        errorMsg?: string
+    ): void {
+        const db = dbManager.getDb();
+
+        if (progress !== undefined && errorMsg !== undefined) {
+            db.prepare(
+                `UPDATE tasks SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+            ).run(status, progress, errorMsg, taskId);
+        } else if (progress !== undefined) {
+            db.prepare(
+                `UPDATE tasks SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+            ).run(status, progress, taskId);
+        } else if (errorMsg !== undefined) {
+            db.prepare(
+                `UPDATE tasks SET status = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+            ).run(status, errorMsg, taskId);
+        } else {
+            db.prepare(
+                `UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+            ).run(status, taskId);
+        }
+    }
+
+    /**
+     * Get all tasks, sorted by creation time (newest first).
+     */
+    getAllTasks(): Task[] {
+        const db = dbManager.getDb();
+        const rows = db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all() as any[];
+
+        return rows.map(row => ({
+            ...row,
+            platforms: this._parseJson(row.platforms, []),
+            file_list: this._parseJson(row.file_list, []),
+            account_list: this._parseJson(row.account_list, []),
+            schedule_data: this._parseJson(row.schedule_data, null),
+            publish_data: this._parseJson(row.publish_data, null),
+        }));
+    }
+
+    /**
+     * Get a task by ID.
+     */
+    getTask(taskId: string): Task | null {
+        const db = dbManager.getDb();
+        const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
+
+        if (!row) return null;
+
+        return {
+            ...row,
+            platforms: this._parseJson(row.platforms, []),
+            file_list: this._parseJson(row.file_list, []),
+            account_list: this._parseJson(row.account_list, []),
+            schedule_data: this._parseJson(row.schedule_data, null),
+            publish_data: this._parseJson(row.publish_data, null),
+        };
+    }
+
+    /**
+     * Delete a task by ID.
+     */
+    deleteTask(taskId: string): boolean {
+        const db = dbManager.getDb();
+        const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
+        return result.changes > 0;
+    }
+
+    /**
+     * Safe JSON parsing with fallback.
+     */
+    private _parseJson(value: string | null, fallback: any): any {
+        if (!value) return fallback;
+        try {
+            return JSON.parse(value);
+        } catch {
+            return fallback;
+        }
+    }
+}
+
+// Global singleton instance
+export const taskService = new TaskService();

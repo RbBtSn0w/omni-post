@@ -25,11 +25,11 @@
 
 **Purpose**: 创建 `apps/backend-node/` 项目基础结构
 
-- [ ] T001 初始化 `apps/backend-node/package.json`（name, scripts: dev/build/test/db:init, dependencies: express, better-sqlite3, playwright, multer, cors, winston, uuid; devDependencies: typescript, tsx, vitest, @types/*）
-- [ ] T002 创建 `apps/backend-node/tsconfig.json`（target: ES2022, module: ESNext, moduleResolution: bundler, strict: true, outDir: dist, rootDir: src）
-- [ ] T003 [P] 创建 `apps/backend-node/vitest.config.ts`（根据 quickstart.md 配置 test root、coverage）
-- [ ] T004 [P] 创建 `apps/backend-node/.gitignore`（node_modules, dist, data/, *.db）
-- [ ] T005 运行 `npm install` 安装依赖并运行 `npx playwright install chromium`
+- [x] T001 初始化 `apps/backend-node/package.json`（name, scripts: dev/build/test/db:init, dependencies: express, better-sqlite3, playwright, multer, cors, winston, uuid; devDependencies: typescript, tsx, vitest, @types/*）
+- [x] T002 创建 `apps/backend-node/tsconfig.json`（target: ES2022, module: ESNext, moduleResolution: bundler, strict: true, outDir: dist, rootDir: src）
+- [x] T003 [P] 创建 `apps/backend-node/vitest.config.ts`（根据 quickstart.md 配置 test root、coverage）
+- [x] T004 [P] 创建 `apps/backend-node/.gitignore`（node_modules, dist, data/, *.db）
+- [x] T005 运行 `npm install` 安装依赖并运行 `npx playwright install chromium`
 
 ---
 
@@ -39,18 +39,18 @@
 
 **⚠️ CRITICAL**: 用户故事实施前必须完成本阶段
 
-- [ ] T006 [P] 实现 `apps/backend-node/src/core/config.ts` — 目录路径（BASE_DIR, ROOT_DIR, DATA_DIR, COOKIES_DIR, VIDEOS_DIR, LOGS_DIR）、服务器配置（HOST, PORT=5409）、上传限制（500MB）、Chrome 路径、调试模式。对标 `apps/backend/src/core/config.py`
-- [ ] T007 [P] 实现 `apps/backend-node/src/core/constants.ts` — PlatformType 枚举（1-5）、TencentZoneTypes、VideoZoneTypes、PLATFORM_NAMES、PLATFORM_LOGIN_URLS、getPlatformName()、getPlatformType()、isValidPlatform()。对标 `apps/backend/src/core/constants.py`
-- [ ] T008 [P] 实现 `apps/backend-node/src/core/logger.ts` — 使用 winston 创建业务日志器（douyin, tencent, xhs, bilibili, kuaishou, xiaohongshu），支持控制台彩色输出和文件轮转（10MB/10天）。对标 `apps/backend/src/core/logger.py`
-- [ ] T009 [P] 实现 `apps/backend-node/src/utils/files-times.ts` — generateScheduleTimeNextDay() 函数，与 Python 版 generate_schedule_time_next_day() 逻辑完全一致。对标 `apps/backend/src/utils/files_times.py`
-- [ ] T010 [P] 实现 `apps/backend-node/src/utils/network.ts` — asyncRetry() 高阶函数（timeout + maxRetries 参数），替代 Python 的 async_retry 装饰器。对标 `apps/backend/src/utils/network.py`
-- [ ] T011 [P] 复制 `apps/backend/src/utils/stealth.min.js` 到 `apps/backend-node/src/utils/stealth.min.js`
-- [ ] T012 实现 `apps/backend-node/src/core/browser.ts` — launchBrowser()、setInitScript()（加载 stealth.min.js）、createScreenshotDir()、debugScreenshot()、debugPrint()。对标 `apps/backend/src/core/browser.py`
-- [ ] T013 实现 `apps/backend-node/src/db/database.ts` — DatabaseManager 类（getDbPath(), getDataDir()），使用 better-sqlite3。对标 `apps/backend/src/db/db_manager.py`
-- [ ] T014 实现 `apps/backend-node/src/db/migrations.ts` — 创建4张表（account_groups, user_info, file_records, tasks），SQL 语句与 Python 版完全一致。对标 `apps/backend/src/db/createTable.py`
-- [ ] T015 实现 `apps/backend-node/src/services/task-service.ts` — TaskService 类（createTask, updateTaskStatus, getAllTasks, deleteTask），JSON 序列化/反序列化逻辑与 Python 版一致。对标 `apps/backend/src/services/task_service.py`
-- [ ] T016 实现 `apps/backend-node/src/app.ts` — Express 应用工厂（CORS 配置、上传大小限制、路由注册、静态文件服务 /assets, /favicon.ico, /vite.svg, /）。对标 `apps/backend/src/app.py`
-- [ ] T017 实现 `apps/backend-node/src/index.ts` — 服务器入口（启动 Express，监听 0.0.0.0:5409）
+- [x] T006 [P] 实现 `apps/backend-node/src/core/config.ts` — 目录路径（BASE_DIR, ROOT_DIR, DATA_DIR, COOKIES_DIR, VIDEOS_DIR, LOGS_DIR）、服务器配置（HOST, PORT=5409）、上传限制（500MB）、Chrome 路径、调试模式。对标 `apps/backend/src/core/config.py`
+- [x] T007 [P] 实现 `apps/backend-node/src/core/constants.ts` — PlatformType 枚举（1-5）、TencentZoneTypes、VideoZoneTypes、PLATFORM_NAMES、PLATFORM_LOGIN_URLS、getPlatformName()、getPlatformType()、isValidPlatform()。对标 `apps/backend/src/core/constants.py`
+- [x] T008 [P] 实现 `apps/backend-node/src/core/logger.ts` — 使用 winston 创建业务日志器（douyin, tencent, xhs, bilibili, kuaishou, xiaohongshu），支持控制台彩色输出和文件轮转（10MB/10天）。对标 `apps/backend/src/core/logger.py`
+- [x] T009 [P] 实现 `apps/backend-node/src/utils/files-times.ts` — generateScheduleTimeNextDay() 函数，与 Python 版 generate_schedule_time_next_day() 逻辑完全一致。对标 `apps/backend/src/utils/files_times.py`
+- [x] T010 [P] 实现 `apps/backend-node/src/utils/network.ts` — asyncRetry() 高阶函数（timeout + maxRetries 参数），替代 Python 的 async_retry 装饰器。对标 `apps/backend/src/utils/network.py`
+- [x] T011 [P] 复制 `apps/backend/src/utils/stealth.min.js` 到 `apps/backend-node/src/utils/stealth.min.js`
+- [x] T012 实现 `apps/backend-node/src/core/browser.ts` — launchBrowser()、setInitScript()（加载 stealth.min.js）、createScreenshotDir()、debugScreenshot()、debugPrint()。对标 `apps/backend/src/core/browser.py`
+- [x] T013 实现 `apps/backend-node/src/db/database.ts` — DatabaseManager 类（getDbPath(), getDataDir()），使用 better-sqlite3。对标 `apps/backend/src/db/db_manager.py`
+- [x] T014 实现 `apps/backend-node/src/db/migrations.ts` — 创建4张表（account_groups, user_info, file_records, tasks），SQL 语句与 Python 版完全一致。对标 `apps/backend/src/db/createTable.py`
+- [x] T015 实现 `apps/backend-node/src/services/task-service.ts` — TaskService 类（createTask, updateTaskStatus, getAllTasks, deleteTask），JSON 序列化/反序列化逻辑与 Python 版一致。对标 `apps/backend/src/services/task_service.py`
+- [x] T016 实现 `apps/backend-node/src/app.ts` — Express 应用工厂（CORS 配置、上传大小限制、路由注册、静态文件服务 /assets, /favicon.ico, /vite.svg, /）。对标 `apps/backend/src/app.py`
+- [x] T017 实现 `apps/backend-node/src/index.ts` — 服务器入口（启动 Express，监听 0.0.0.0:5409）
 
 **Checkpoint**: 基础设施就绪 — 可以开始用户故事实施
 
@@ -64,12 +64,12 @@
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] 实现 `apps/backend-node/src/routes/dashboard.ts` — GET /getDashboardStats 端点，查询4张表统计数据（accountStats, platformStats, taskStats, contentStats, taskTrend, recentTasks）。对标 `apps/backend/src/routes/dashboard.py`
-- [ ] T019 [P] [US1] 实现 `apps/backend-node/src/routes/file.ts` — 5个端点：POST /upload, GET /getFile, POST /uploadSave, GET /getFiles, GET /deleteFile。使用 multer 处理文件上传。对标 `apps/backend/src/routes/file.py`
-- [ ] T020 [P] [US1] 实现 `apps/backend-node/src/routes/account.ts` — 5个端点：GET /getAccounts, GET /getValidAccounts, GET /getAccountStatus, GET /deleteAccount, POST /updateUserinfo。对标 `apps/backend/src/routes/account.py`
-- [ ] T021 [P] [US1] 实现 `apps/backend-node/src/routes/cookie.ts` — 2个端点：POST /uploadCookie, GET /downloadCookie。对标 `apps/backend/src/routes/cookie.py`
-- [ ] T022 [P] [US1] 实现 `apps/backend-node/src/routes/group.ts` — 5个端点：GET /getGroups, POST /createGroup, PUT /updateGroup/:groupId, DELETE /deleteGroup/:groupId, GET /getGroupAccounts/:groupId。对标 `apps/backend/src/routes/group.py`
-- [ ] T023 [US1] 在 `apps/backend-node/src/app.ts` 中注册 US1 所有路由（dashboard, file, account, cookie, group），添加 /api 前缀
+- [x] T018 [P] [US1] 实现 `apps/backend-node/src/routes/dashboard.ts` — GET /getDashboardStats 端点，查询4张表统计数据（accountStats, platformStats, taskStats, contentStats, taskTrend, recentTasks）。对标 `apps/backend/src/routes/dashboard.py`
+- [x] T019 [P] [US1] 实现 `apps/backend-node/src/routes/file.ts` — 5个端点：POST /upload, GET /getFile, POST /uploadSave, GET /getFiles, GET /deleteFile。使用 multer 处理文件上传。对标 `apps/backend/src/routes/file.py`
+- [x] T020 [P] [US1] 实现 `apps/backend-node/src/routes/account.ts` — 5个端点：GET /getAccounts, GET /getValidAccounts, GET /getAccountStatus, GET /deleteAccount, POST /updateUserinfo。对标 `apps/backend/src/routes/account.py`
+- [x] T021 [P] [US1] 实现 `apps/backend-node/src/routes/cookie.ts` — 2个端点：POST /uploadCookie, GET /downloadCookie。对标 `apps/backend/src/routes/cookie.py`
+- [x] T022 [P] [US1] 实现 `apps/backend-node/src/routes/group.ts` — 5个端点：GET /getGroups, POST /createGroup, PUT /updateGroup/:groupId, DELETE /deleteGroup/:groupId, GET /getGroupAccounts/:groupId。对标 `apps/backend/src/routes/group.py`
+- [x] T023 [US1] 在 `apps/backend-node/src/app.ts` 中注册 US1 所有路由（dashboard, file, account, cookie, group），添加 /api 前缀
 - [ ] T024 [US1] 端到端验证：启动新后端，使用前端访问仪表盘页面、素材管理页面、账号管理页面，确认数据正确
 
 **Checkpoint**: 前端可连接新后端使用仪表盘、文件、账号和组管理功能
@@ -84,12 +84,12 @@
 
 ### Implementation for User Story 2
 
-- [ ] T025 [P] [US2] 实现 `apps/backend-node/src/services/auth-service.ts` — AuthService 接口 + DefaultAuthService（5个平台的 cookie 认证方法委托到 CookieService）。对标 `apps/backend/src/services/auth_service.py`
-- [ ] T026 [P] [US2] 实现 `apps/backend-node/src/services/cookie-service.ts` — CookieService 接口 + DefaultCookieService（cookieAuthDouyin, cookieAuthTencent, cookieAuthKs, cookieAuthXhs, cookieAuthBilibili, checkCookie），使用 Playwright 验证 cookie 有效性。对标 `apps/backend/src/services/cookie_service.py`
-- [ ] T027 [US2] 实现 `apps/backend-node/src/services/login-service.ts` — LoginService 抽象类 + MockLoginService + DefaultLoginService + sseStream() + runAsyncFunction() + activeQueues 全局变量。对标 `apps/backend/src/services/login_service.py`
-- [ ] T028 [US2] 实现 `apps/backend-node/src/services/login-impl.ts` — 5个平台的具体登录逻辑（douyinCookieGen, getTencentCookie, getKsCookie, xiaohongshuCookieGen, bilibiliCookieGen）。对标 `apps/backend/src/services/login_impl.py`
-- [ ] T029 [US2] 实现 `apps/backend-node/src/routes/publish.ts` 中的 SSE 登录端点 — GET /login?type=&id=&group=，返回 text/event-stream，启动登录线程。对标 `apps/backend/src/routes/publish.py` login()
-- [ ] T030 [US2] 在 account 路由中集成 CookieService 验证逻辑（getValidAccounts 和 getAccountStatus 端点需要调用 cookie 验证）
+- [x] T025 [P] [US2] 实现 `apps/backend-node/src/services/auth-service.ts` — AuthService 接口 + DefaultAuthService（5个平台的 cookie 认证方法委托到 CookieService）。对标 `apps/backend/src/services/auth_service.py`
+- [x] T026 [P] [US2] 实现 `apps/backend-node/src/services/cookie-service.ts` — CookieService 接口 + DefaultCookieService（cookieAuthDouyin, cookieAuthTencent, cookieAuthKs, cookieAuthXhs, cookieAuthBilibili, checkCookie），使用 Playwright 验证 cookie 有效性。对标 `apps/backend/src/services/cookie_service.py`
+- [x] T027 [US2] 实现 `apps/backend-node/src/services/login-service.ts` — LoginService 抽象类 + MockLoginService + DefaultLoginService + sseStream() + runAsyncFunction() + activeQueues 全局变量。对标 `apps/backend/src/services/login_service.py`
+- [x] T028 [US2] 实现 `apps/backend-node/src/services/login-impl.ts` — 5个平台的具体登录逻辑（douyinCookieGen, getTencentCookie, getKsCookie, xiaohongshuCookieGen, bilibiliCookieGen）。对标 `apps/backend/src/services/login_impl.py`
+- [x] T029 [US2] 实现 `apps/backend-node/src/routes/publish.ts` 中的 SSE 登录端点 — GET /login?type=&id=&group=，返回 text/event-stream，启动登录线程。对标 `apps/backend/src/routes/publish.py` login()
+- [x] T030 [US2] 在 account 路由中集成 CookieService 验证逻辑（getValidAccounts 和 getAccountStatus 端点需要调用 cookie 验证）
 
 **Checkpoint**: 登录 SSE 流正常工作，Cookie 文件可正确保存和验证
 
@@ -103,14 +103,14 @@
 
 ### Implementation for User Story 3
 
-- [ ] T031 [P] [US3] 实现 `apps/backend-node/src/uploader/douyin/main.ts` — DouyinVideo 类（upload 方法），使用 Playwright 自动化抖音视频上传。对标 `apps/backend/src/uploader/douyin_uploader/main.py`
-- [ ] T032 [P] [US3] 实现 `apps/backend-node/src/uploader/tencent/main.ts` — TencentVideo 类（upload 方法），使用 Playwright 自动化视频号上传。对标 `apps/backend/src/uploader/tencent_uploader/main.py`
-- [ ] T033 [P] [US3] 实现 `apps/backend-node/src/uploader/xiaohongshu/main.ts` — XiaoHongShuVideo 类（upload 方法）。对标 `apps/backend/src/uploader/xiaohongshu_uploader/main.py`
-- [ ] T034 [P] [US3] 实现 `apps/backend-node/src/uploader/kuaishou/main.ts` — KuaishouVideo 类（upload 方法）。对标 `apps/backend/src/uploader/ks_uploader/main.py`
-- [ ] T035 [P] [US3] 实现 `apps/backend-node/src/uploader/bilibili/main.ts` — BilibiliVideo 类（upload 方法）。对标 `apps/backend/src/uploader/bilibili_uploader/main.py`
-- [ ] T036 [US3] 实现 `apps/backend-node/src/services/publish-service.ts` — PublishService 接口 + DefaultPublishService（5个 postVideo* 方法），整合上传器和调度时间计算。对标 `apps/backend/src/services/publish_service.py`
-- [ ] T037 [US3] 实现 `apps/backend-node/src/services/publish-executor.ts` — runPublishTask()（提取数据、验证文件、分发到对应上传器）+ startPublishThread()（Worker Thread 启动）。对标 `apps/backend/src/services/publish_executor.py`
-- [ ] T038 [US3] 实现 `apps/backend-node/src/routes/publish.ts` 中的发布端点 — GET /tasks, DELETE /tasks/:taskId, PATCH /tasks/:taskId, POST /tasks/:taskId/start, POST /postVideo, POST /postVideoBatch。对标 `apps/backend/src/routes/publish.py`
+- [x] T031 [P] [US3] 实现 `apps/backend-node/src/uploader/douyin/main.ts` — DouyinVideo 类（upload 方法），使用 Playwright 自动化抖音视频上传。对标 `apps/backend/src/uploader/douyin_uploader/main.py`
+- [x] T032 [P] [US3] 实现 `apps/backend-node/src/uploader/tencent/main.ts` — TencentVideo 类（upload 方法），使用 Playwright 自动化视频号上传。对标 `apps/backend/src/uploader/tencent_uploader/main.py`
+- [x] T033 [P] [US3] 实现 `apps/backend-node/src/uploader/xiaohongshu/main.ts` — XiaoHongShuVideo 类（upload 方法）。对标 `apps/backend/src/uploader/xiaohongshu_uploader/main.py`
+- [x] T034 [P] [US3] 实现 `apps/backend-node/src/uploader/kuaishou/main.ts` — KuaishouVideo 类（upload 方法）。对标 `apps/backend/src/uploader/ks_uploader/main.py`
+- [x] T035 [P] [US3] 实现 `apps/backend-node/src/uploader/bilibili/main.ts` — BilibiliVideo 类（upload 方法）。对标 `apps/backend/src/uploader/bilibili_uploader/main.py`
+- [x] T036 [US3] 实现 `apps/backend-node/src/services/publish-service.ts` — PublishService 接口 + DefaultPublishService（5个 postVideo* 方法），整合上传器和调度时间计算。对标 `apps/backend/src/services/publish_service.py`
+- [x] T037 [US3] 实现 `apps/backend-node/src/services/publish-executor.ts` — runPublishTask()（提取数据、验证文件、分发到对应上传器）+ startPublishThread()（Worker Thread 启动）。对标 `apps/backend/src/services/publish_executor.py`
+- [x] T038 [US3] 实现 `apps/backend-node/src/routes/publish.ts` 中的发布端点 — GET /tasks, DELETE /tasks/:taskId, PATCH /tasks/:taskId, POST /tasks/:taskId/start, POST /postVideo, POST /postVideoBatch。对标 `apps/backend/src/routes/publish.py`
 - [ ] T039 [US3] 集成验证：创建一个发布任务，验证任务从 waiting → uploading → completed 的完整流程
 
 **Checkpoint**: 视频发布流程完整可用，5个平台上传器均可正常工作
