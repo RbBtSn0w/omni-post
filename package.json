@@ -13,6 +13,7 @@
     "install:frontend": "npm install -w apps/frontend",
     "dev:backend": "npm run dev -w apps/backend",
     "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:node": "npm run dev -w apps/backend-node",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint:backend": "npm run lint -w apps/backend",
@@ -20,6 +21,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:backend": "npm run test -w apps/backend",
     "test:frontend": "npm run test -w apps/frontend",
+    "test:node": "npm run test -w apps/backend-node",
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
     "clean": "npm run clean --workspaces --if-present",
     "prepare": "husky"

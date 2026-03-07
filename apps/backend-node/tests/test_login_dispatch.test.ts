@@ -59,14 +59,18 @@ describe('runAsyncFunction dispatch', () => {
         expect(service.bilibiliCookieGen).toHaveBeenCalled();
     });
 
-    it('runAsyncFunction should emit 500 for unknown type', (done) => {
+    it('runAsyncFunction should emit 500 for unknown type', async () => {
         const emitter = new EventEmitter();
         const messages: string[] = [];
         emitter.on('message', (msg: string) => messages.push(msg));
-        emitter.on('end', () => {
-            expect(messages).toContain('500');
-            done();
+
+        await new Promise<void>((resolve) => {
+            emitter.on('end', () => {
+                resolve();
+            });
+            runAsyncFunction('99', 'test_id', emitter);
         });
-        runAsyncFunction('99', 'test_id', emitter);
+
+        expect(messages).toContain('500');
     });
 });
