@@ -55,7 +55,7 @@ describe('Cookie Route', () => {
 
     afterEach(() => {
         cleanupTempDb(dbPath, db);
-        try { fs.rmSync(tmpCookieDir, { recursive: true }); } catch { }
+        try { fs.rmSync(tmpCookieDir, { recursive: true }); } catch { /* ignore */ }
     });
 
     it('POST /api/uploadCookie should fail without file', async () => {

@@ -31,7 +31,7 @@ describe('Login Utils', () => {
         expect(dirPath).toContain('test_platform');
 
         // Cleanup
-        try { fs.rmSync(dirPath, { recursive: true }); } catch { }
+        try { fs.rmSync(dirPath, { recursive: true }); } catch { /* ignore */ }
     });
 
     it('debugScreenshot should be callable', async () => {

@@ -6,8 +6,14 @@
 import { createApp } from './app.js';
 import { logBrowserInfo, SERVER_HOST, SERVER_PORT } from './core/config.js';
 import { logger } from './core/logger.js';
+import { StartupService } from './services/startup-service.js';
 
 const app = createApp();
+
+/**
+ * 启动前自检和清理
+ */
+await StartupService.runPostBootHousekeeping();
 
 app.listen(SERVER_PORT, SERVER_HOST, () => {
     logger.info(`\n${'='.repeat(50)}`);

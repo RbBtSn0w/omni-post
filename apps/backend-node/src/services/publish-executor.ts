@@ -21,9 +21,44 @@ import {
 import { taskService } from './task-service.js';
 
 /**
+ * Concurrency Limit (资源并发限制)
+ * 限制同时运行的浏览器实例数量，防止内存溢出。
+ * 对标 CHK012 要求。
+ */
+let activeTasks = 0;
+const MAX_CONCURRENT_TASKS = 5; // 常规桌面环境下推荐设置为 5
+const taskQueue: (() => void)[] = [];
+
+async function acquireSlot(taskId: string): Promise<void> {
+    if (activeTasks < MAX_CONCURRENT_TASKS) {
+        activeTasks++;
+        logger.info(`[PUBLISH] Slot acquired for ${taskId}. Active jobs: ${activeTasks}`);
+        return;
+    }
+    logger.info(`[PUBLISH] Max concurrency (${MAX_CONCURRENT_TASKS}) reached. Task ${taskId} queuing...`);
+    return new Promise((resolve) => {
+        taskQueue.push(resolve);
+    });
+}
+
+function releaseSlot(taskId: string): void {
+    activeTasks--;
+    if (taskQueue.length > 0) {
+        const next = taskQueue.shift();
+        if (next) {
+            activeTasks++;
+            next();
+        }
+    }
+}
+
+/**
  * Execute publish task. Updates task status in DB.
  */
 export async function runPublishTask(taskId: string, publishData: any): Promise<void> {
+    // 等待并发槽位分配
+    await acquireSlot(taskId);
+
     logger.info(`\n${'='.repeat(50)}`);
     logger.info(`[PUBLISH] Starting task ${taskId}`);
     logger.info(`${'='.repeat(50)}`);
@@ -112,6 +147,8 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
         logger.error(error.stack);
         taskService.updateTaskStatus(taskId, 'failed', undefined, error.message);
+    } finally {
+        releaseSlot(taskId);
     }
 }
 

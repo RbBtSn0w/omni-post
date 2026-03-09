@@ -2,7 +2,7 @@
 
 **Feature Branch**: `024-node-backend-rewrite`
 **Created**: 2026-03-07
-**Status**: Draft
+**Status**: Completed
 **Input**: User description: "将后端 Python 代码全部用 Node.js TypeScript 重写，保留原 Python 后端，新增文件夹完成全部后端需求，使用 Python 测试用例逻辑编写新后端测试代码，保持功能一致性"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -15,6 +15,14 @@
 ### Session 2026-03-08
 - Q: 如何验证 `stealth.min.js` 的防封禁机制是否有效？
   → A: **默认信任**：只要 `stealth.min.js` 成功注入 Playwright 上下文且常规端到端登录不报错即可，不需要专门的前端反指纹测试用例。（已更新至 FR-013）
+
+### Session 2026-03-09
+- Q: 如何处理 Node (v4) 与 Python (v1) UUID 的潜在冲突？
+  → A: **混合模式 (Option B)**：保持现状，允许 v1 和 v4 在同一目录下共存，依靠 UUID 原生唯一性。
+- Q: 进程崩溃重启后如何处理还在 `uploading` 的任务？
+  → A: **手动重试 (Option A)**：重启后自动将 `uploading` 任务标记为 `failed`，并记录原因为“系统重启及非预见崩溃”，由用户手动确认重放。
+- Q: 多个任务同时触发相同账号时如何处理？
+  → A: **账号级互斥锁 (Option A)**：内存维护账号占用状态，同一账号在同一时刻 MUST 仅能运行一个物理发布 Session。
 
 **Why this priority**: 这是整个重写的核心价值——如果 API 不兼容，前端将无法正常工作，用户将无法使用任何功能。
 
@@ -101,6 +109,8 @@
   - **假设**: Playwright 的 Node.js 和 Python 版本 API 高度一致，差异可通过适配层解决
 - 文件上传的大小限制和路径格式在跨平台（Windows/macOS/Linux）环境下的差异处理
   - **假设**: 使用 Node.js 内置的 `path` 模块和跨平台文件操作保持一致
+- Node (uuid v4) 与 Python (uuid v1) 在同一素材目录下产生的命名冲突
+  - **决策**: 混合存放，依靠 UUID 极低的碰撞概率确保唯一性
 
 ## Requirements *(mandatory)*
 
@@ -124,6 +134,8 @@
 - **FR-016**: 系统 MUST 使用抽象接口 + 默认实现的服务设计模式（如 `CookieService` → `DefaultCookieService`）
 - **FR-017**: 系统 MUST 支持 CORS 跨域配置，允许前端开发服务器访问
 - **FR-018**: 系统 MUST 保持与 Python 后端相同的平台类型常量定义（1=小红书, 2=视频号, 3=抖音, 4=快手, 5=Bilibili）
+- **FR-019**: 系统 MUST 在应用启动阶段扫描数据库，将所有处于 `uploading` 状态的任务更新为 `failed`，并记录崩溃重启相关错误信息
+- **FR-020**: 系统 MUST 支持账号级互斥锁，防止多任务并发操作同一个物理 Cookie 的 Playwright 上下文
 
 ### Key Entities
 

@@ -5,26 +5,12 @@
  * Orchestrates video publishing to each platform by calling uploaders.
  */
 
+import type { UploadOptions } from '../db/models.js';
 import { generateScheduleTimeNextDay } from '../utils/files-times.js';
+export type { UploadOptions };
 
 // ─── Upload Interface ────────────────────────────────────────────────
-
-export interface UploadOptions {
-    title: string;
-    fileList: string[];
-    tags: string[];
-    accountList: string[];
-    category?: number | null;
-    enableTimer?: boolean;
-    videosPerDay?: number;
-    dailyTimes?: number[];
-    startDays?: number;
-    thumbnailPath?: string;
-    productLink?: string;
-    productTitle?: string;
-    isDraft?: boolean;
-    publishDatetimes?: (Date | number | 0)[];
-}
+// Interface moved to src/db/models.ts
 
 /**
  * Compute publish datetimes for scheduled publishing.

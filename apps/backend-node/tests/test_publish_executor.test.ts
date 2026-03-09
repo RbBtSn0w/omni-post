@@ -48,8 +48,8 @@ describe('Publish Executor', () => {
 
     afterEach(() => {
         cleanupTempDb(dbPath, db);
-        try { fs.rmSync(tmpVideoDir, { recursive: true }); } catch { }
-        try { fs.rmSync(tmpCookieDir, { recursive: true }); } catch { }
+        try { fs.rmSync(tmpVideoDir, { recursive: true }); } catch { /* ignore */ }
+        try { fs.rmSync(tmpCookieDir, { recursive: true }); } catch { /* ignore */ }
     });
 
     it('should validate that video files exist', async () => {

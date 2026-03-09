@@ -19,16 +19,16 @@
 
 ## 测试深度和逻辑同等性覆盖 (Test Parity Coverage)
 
-- [ ] CHK010 - 是否在规范中要求了对于现有的 33 个 Python 测试，不仅要“通过”，而且要断言同样的报错文案和验证同样的错误分支（Sad paths）？[Clarity, Spec §SC-003]
-- [ ] CHK011 - 上传器的 Mock 测试需求中，是否明确指出了如何模拟各大平台的拦截行为，而不仅是模拟 HTTP 200？[Coverage, Exception Flow]
+- [x] CHK010 - 是否在规范中要求了对于现有的 33 个 Python 测试，不仅要“通过”，而且要断言同样的报错文案和验证同样的错误分支（Sad paths）？[Clarity, Spec §SC-003]
+- [x] CHK011 - 上传器的 Mock 测试需求中，是否明确指出了如何模拟各大平台的拦截行为，而不仅是模拟 HTTP 200？[Coverage, Exception Flow]
 
 ## 兼容回退与切换 (Rollback & Transition)
 
-- [ ] CHK012 - 前端切换到新后端的过程中，如果发生兼容性故障（如特定平台发布全挂），规范中是否定义了如何回滚至 Python 服务的机制或预案？[Gap, Exception Flow]
-- [ ] CHK013 - 旧有数据库文件（sqlite）在被 Node.js 版本读取和写入后，如果是向前不兼容的（由于库的细微区别），该风险点是否有相应的数据备份要求？[Coverage, Data Integrity]
+- [x] CHK012 - 前端切换到新后端的过程中，如果发生兼容性故障（如特定平台发布全挂），规范中是否定义了如何回滚至 Python 服务的机制或预案？[Gap, Exception Flow]
+- [x] CHK013 - 旧有数据库文件（sqlite）在被 Node.js 版本读取和写入后，如果是向前不兼容的（由于库的细微区别），该风险点是否有相应的数据备份要求？[Coverage, Data Integrity]
 
 ## 最终代码审查与逻辑对齐 (Code Review & Logic Parity)
 
-- [ ] CHK014 - 是否在需求或任务列表中明确规定了“重写代码逐行审查(Code Review)”环节，以对比 Node.js 和 Python 版本是否存在边界处理上的差异？[Completeness, Quality Gate]
-- [ ] CHK015 - 对于第三方库依赖所实现的核心逻辑（如 Playwright 交互时序、重试间隔），是否要求代码 Review 时重点人工核对两端的等价性？[Clarity, Logic Parity]
-- [ ] CHK016 - 规范中是否定义了何种差异是“可接受的”（如因底层运行时抛出不同形态的错误对象），以及何种差异是“必须强制拉齐的”？[Consistency, Ambiguity]
+- [x] CHK014 - 是否在需求或任务列表中明确规定了“重写代码逐行审查(Code Review)”环节，以对比 Node.js 和 Python 版本是否存在边界处理上的差异？[Completeness, Quality Gate]
+- [x] CHK015 - 对于第三方库依赖所实现的核心逻辑（如 Playwright 交互时序、重试间隔），是否要求代码 Review 时重点人工核对两端的等价性？[Clarity, Logic Parity]
+- [x] CHK016 - 规范中是否定义了何种差异是“可接受的”（如因底层运行时抛出不同形态的错误对象），以及何种差异是“必须强制拉齐的”？[Consistency, Ambiguity]

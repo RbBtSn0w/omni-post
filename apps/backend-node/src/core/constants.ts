@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 /**
  * Core constants module for omni-post backend (Node.js).
  * Mirrors: apps/backend/src/core/constants.py

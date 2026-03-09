@@ -62,7 +62,7 @@ export async function douyinCookieGen(
     groupName?: string | null
 ): Promise<any> {
     const screenshotDir = createScreenshotDir('douyin');
-    let urlChanged = false;
+    const urlChanged = false;
 
     const browser = await launchBrowser();
     const context = await setInitScript(await browser.newContext());

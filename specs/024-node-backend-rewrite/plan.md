@@ -1,49 +1,47 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Node.js Backend Rewrite (024-node-backend-rewrite)
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Branch**: `024-node-backend-rewrite` | **Date**: 2026-03-09 | **Spec**: [spec.md](file:///Users/snow/Documents/GitHub/omni-post/specs/024-node-backend-rewrite/spec.md)
+**Input**: Feature specification from `/specs/024-node-backend-rewrite/spec.md`
 
 ## Summary
 
-The objective is to rewrite the Python Flask backend into a Node.js TypeScript Express backend, maintaining 1:1 functional and API parity with the Python version. The Node.js version will replicate SQLite interactions, SSE login streams, scheduled publishing, and multi-platform Playwright uploading, utilizing the existing Vue 3 frontend without modifications.
+The objective is to rewrite the Python Flask backend into a Node.js TypeScript Express backend, maintaining 1:1 functional and API parity. The Node.js version will replicate SQLite interactions, SSE login streams, scheduled publishing, and multi-platform Playwright uploading. A key architectural shift is adopting Node's asynchronous event loop (setImmediate) for publishing tasks instead of Python's threading model.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x, Node.js 18+ LTS
-**Primary Dependencies**: Express.js, Playwright, better-sqlite3
-**Storage**: SQLite (shared database with Python)
-**Testing**: Vitest
-**Target Platform**: Node.js server
-**Project Type**: web-service (backend API)
-**Performance Goals**: N/A
-**Constraints**: 100% API parity with existing Python backend; strict ESM module system
-**Scale/Scope**: 25+ API endpoints, 5 platform uploaders, complex SSE state streams
+**Primary Dependencies**: Express.js, Playwright, better-sqlite3, uuid, winston
+**Storage**: SQLite (Shared database with Python `apps/backend/data/db.sqlite3`)
+**Testing**: Vitest (aligned with frontend testing ecosystem)
+**Target Platform**: Node.js Server (macOS/Linux)
+**Project Type**: web-service (Backend REST API)
+**Performance Goals**: Support 10+ concurrent platform uploaders without blocking API response.
+**Constraints**: 100% API parity; strict ESM module system; single-threaded async concurrency for IO-bound tasks.
+**Scale/Scope**: 25+ API endpoints, 5 platforms (Bilibili, Douyin, Kuaishou, Tencent, XHS).
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Principle I (Architecture Parity)**: Yes. Complete Drop-in replacement with 1:1 REST API parity.
-- **Principle II (Pattern)**: Yes. Adhering to Routes → Services → Uploaders folder structure.
-- **Principle III (Isolation)**: Yes. Each platform uploader (Bilibili, Douyin, etc.) is an isolated class managing its own Playwright context.
-- **Principle IV (Testing)**: Yes. Porting 33 Python pytest files to Vitest.
-- **Principle V (Concurrency)**: Yes. Replacing Python backend threads/queues with Node Event Loop Promises and EventEmitters for SSE.
-- **Principle VI (Monorepo)**: Yes. Dependencies strictly confined to `apps/backend-node/package.json`.
+- **Principle I (Architecture Parity)**: Yes. Drop-in replacement with 1:1 REST API parity using same DB.
+- **Principle II (Pattern)**: Yes. Adhering to `Routes → Services → Uploaders` pattern.
+- **Principle III (Isolation)**: Yes. Platform uploaders are isolated in `src/uploader/` with distinct contexts.
+- **Principle IV (Testing)**: Yes. Porting 33 pytest files to Vitest.
+- **Principle V (Concurrency)**: Yes. Redefined to use **Asynchronous Event Loop** (setImmediate) instead of worker threads for IO-bound Playwright tasks.
+- **Principle VI (Monorepo)**: Yes. Located in `apps/backend-node/`.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+specs/024-node-backend-rewrite/
+├── plan.md              # This file
+├── research.md          # Phase 0 output
+├── data-model.md        # Phase 1 output
+├── quickstart.md        # Phase 1 output
+├── contracts/           # Phase 1 output
+└── tasks.md             # Phase 2 output
 ```
 
 ### Source Code (OmniPost Monorepo)
@@ -51,30 +49,18 @@ specs/[###-feature]/
 ```text
 apps/
 ├── backend/             # Python Flask Backend
-│   ├── src/
-│   │   ├── routes/      # HTTP Endpoints
-│   │   ├── services/    # Business Logic
-│   │   └── uploader/    # Platform Automations
-│   └── tests/           # Pytest suite
 ├── backend-node/        # Node.js TypeScript Backend
 │   ├── src/
-│   │   ├── routes/      # Express Routes
-│   │   ├── services/    # Business Logic
-│   │   └── uploader/    # Platform Automations
+│   │   ├── core/        # Config, Logger, Browser utils
+│   │   ├── db/          # SQLite manager
+│   │   ├── routes/      # Express Routes (Blueprints)
+│   │   ├── services/    # Business Logic (Task, Login, Publish)
+│   │   └── uploader/    # Platform Automations (Playwright)
 │   └── tests/           # Vitest suite
 └── frontend/            # Vue 3 Frontend
-    ├── src/
-    │   ├── views/       # Vue Pages
-    │   ├── stores/      # Pinia State
-    │   └── api/         # API Clients
-    └── tests/           # Vitest suite
 ```
 
-**Structure Decision**: Standard OmniPost Monorepo layout with dual-backend support.
-
 ## Complexity Tracking
-
-> **Fill ONLY if Constitution Check has violations that must be justified**
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|

@@ -55,7 +55,7 @@ describe('File Route', () => {
 
     afterEach(() => {
         cleanupTempDb(dbPath, db);
-        try { fs.rmSync(tmpVideoDir, { recursive: true }); } catch { }
+        try { fs.rmSync(tmpVideoDir, { recursive: true }); } catch { /* ignore */ }
     });
 
     it('POST /api/file/upload should fail without file', async () => {

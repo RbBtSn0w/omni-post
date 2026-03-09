@@ -4,14 +4,35 @@
  */
 
 import path from 'path';
+import { BrowserContext } from 'playwright';
 import { createScreenshotDir, debugScreenshot, launchBrowser, setInitScript } from '../../core/browser.js';
 import { COOKIES_DIR, VIDEOS_DIR } from '../../core/config.js';
 import { bilibiliLogger } from '../../core/logger.js';
-import type { UploadOptions } from '../../services/publish-service.js';
+import { UploadOptions } from '../../db/models.js';
+import { BaseUploader } from '../base-uploader.js';
 
-export class BilibiliUploader {
+export class BilibiliUploader extends BaseUploader {
+    protected platformName = 'Bilibili';
+
+    /**
+     * Legacy entry point (matching existing calls in publish-service)
+     */
     async upload(opts: UploadOptions): Promise<void> {
-        const { title, fileList, tags, accountList, category, enableTimer, videosPerDay, dailyTimes, startDays } = opts;
+        const browser = await launchBrowser();
+        const context = await browser.newContext(); // Note: Simplified for the demo as the actual logic below manages context
+        await this.postVideo(context, opts, (p) => bilibiliLogger.info(`Progress: ${p}%`));
+        await browser.close();
+    }
+
+    /**
+     * Unified entry point (Implementation of BaseUploader)
+     */
+    public async postVideo(
+        context: BrowserContext,
+        options: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void> {
+        const { title, fileList, tags, accountList, category } = options;
 
         bilibiliLogger.info(`[Bilibili] 开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
 
