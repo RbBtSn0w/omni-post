@@ -23,6 +23,12 @@
   → A: **手动重试 (Option A)**：重启后自动将 `uploading` 任务标记为 `failed`，并记录原因为“系统重启及非预见崩溃”，由用户手动确认重放。
 - Q: 多个任务同时触发相同账号时如何处理？
   → A: **账号级互斥锁 (Option A)**：内存维护账号占用状态，同一账号在同一时刻 MUST 仅能运行一个物理发布 Session。
+- Q: Node.js 后端 CI 任务的核心范围是什么？
+  → A: **全流程验证 (Option A)**：包含 lint, typecheck 和 test（同步原 Python 版 CI 强度）。
+- Q: CI 中的 Playwright 依赖处理策略？
+  → A: **标准缓存 + 安装 (Option A)**：每次运行使用 `npx playwright install chromium` 并配合 npm 缓存，行为与 Python 版本的机制一致。
+- Q: 代码格式化 (ESLint) 在 CI 上的阻断策略？
+  → A: **标准放行 (Option A)**：遇到 Error 打回，大量遗留 `any` 导致的 Warning 允许放行通过。
 
 **Why this priority**: 这是整个重写的核心价值——如果 API 不兼容，前端将无法正常工作，用户将无法使用任何功能。
 

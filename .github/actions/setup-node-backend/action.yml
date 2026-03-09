@@ -1,0 +1,32 @@
+name: "Setup Node.js Backend Engine"
+description: "Sets up Node, caches npm dependencies"
+inputs:
+  node-version:
+    description: "Version of Node to use"
+    required: false
+    default: "20.19.0"
+outputs:
+  cache-hit:
+    description: "Whether the cache hit occurred"
+    value: ${{ steps.cache-npm.outputs.cache-hit }}
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Cache npm modules
+      id: cache-npm
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install Dependencies
+      shell: bash
+      run: npm ci -w apps/backend-node || npm install -w apps/backend-node
