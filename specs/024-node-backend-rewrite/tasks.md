@@ -110,7 +110,7 @@
 - [x] T035 [P] [US3] 实现 `apps/backend-node/src/uploader/kuaishou/main.ts`
 - [x] T036 [P] [US3] 实现 `apps/backend-node/src/uploader/bilibili/main.ts`
 - [x] T037 [US3] 实现 `apps/backend-node/src/services/publish-service.ts` — 发布结构体打点（UploadOptions）与编排。
-- [x] T038 [US3] 实现 `apps/backend-node/src/services/publish-executor.ts` — 线程池模型到 Promise 的并发模型适配器。
+- [x] T038 [US3] 实现 `apps/backend-node/src/services/publish-executor.ts` — 基于 Node.js 事件循环（setImmediate/Promises）的异步执行引擎，支持非阻塞并发上传。对标 Python 线程模型。
 - [x] T039 [US3] 补全 `apps/backend-node/src/routes/publish.ts` （/tasks, /postVideo 等核心路由）。
 - [x] T040 [US3] 使用专门真实视频发布测试流程。
 

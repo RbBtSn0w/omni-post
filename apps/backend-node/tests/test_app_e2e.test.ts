@@ -61,31 +61,31 @@ describe('App E2E', () => {
 
     it('GET /api/getDashboardStats should be accessible', async () => {
         const app = createApp();
-        const res = await request(app).get('/api/getDashboardStats');
+        const res = await request(app).get('/getDashboardStats');
         expect(res.status).toBe(200);
     });
 
     it('GET /api/getAccounts should be accessible', async () => {
         const app = createApp();
-        const res = await request(app).get('/api/getAccounts');
+        const res = await request(app).get('/getAccounts');
         expect(res.status).toBe(200);
     });
 
     it('GET /api/getFiles should be accessible', async () => {
         const app = createApp();
-        const res = await request(app).get('/api/getFiles');
+        const res = await request(app).get('/getFiles');
         expect(res.status).toBe(200);
     });
 
     it('GET /api/tasks should be accessible', async () => {
         const app = createApp();
-        const res = await request(app).get('/api/tasks');
+        const res = await request(app).get('/tasks');
         expect(res.status).toBe(200);
     });
 
     it('GET /api/getGroups should be accessible', async () => {
         const app = createApp();
-        const res = await request(app).get('/api/getGroups');
+        const res = await request(app).get('/getGroups');
         expect(res.status).toBe(200);
     });
 
@@ -99,13 +99,13 @@ describe('App E2E', () => {
         const app = createApp();
 
         // Step 1: Get accounts (empty)
-        const acRes = await request(app).get('/api/getAccounts');
+        const acRes = await request(app).get('/getAccounts');
         expect(acRes.status).toBe(200);
         expect(acRes.body.data).toEqual([]);
 
         // Step 2: Create a group
         const grpRes = await request(app)
-            .post('/api/createGroup')
+            .post('/createGroup')
             .send({ name: 'TestGroup' });
         expect(grpRes.status).toBe(200);
     });

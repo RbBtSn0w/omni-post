@@ -1,17 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: v1.0.0 → v1.1.0
+- Version change: v1.1.0 → v1.2.0
 - List of modified principles:
-    - I. Three-Layer Backend Architecture (Expanded to include Node.js)
-    - II. Platform Uploader Isolation (Expanded to cover backend-node)
-    - III. Comprehensive Automated Testing (Unified for Python and TypeScript)
-    - IV. Async/Sync Concurrency (Unified for Threads and Worker Threads)
-    - V. Monorepo Dependency Discipline (Updated to include backend-node)
+    - V. Concurrency & Real-Time Feedback (Redefined for IO-bound efficiency)
 - Added sections: None.
 - Removed sections: None.
 - Templates requiring updates:
-    - .specify/templates/plan-template.md: ✅ updated (Added backend-node structure and Dual-Stack Gates)
-    - .specify/templates/tasks-template.md: ✅ updated (Added backend-node Path Conventions)
+    - .specify/templates/plan-template.md: ✅ updated (Clarified Dual-Stack concurrency expectations)
+    - .specify/templates/tasks-template.md: ✅ updated (Aligned with Async Event Loop terminology)
 - Follow-up TODOs: None.
 -->
 
@@ -32,7 +28,7 @@ Each social platform MUST have its own isolated uploader implementation. For Pyt
 Every new feature, bug fix, or platform uploader update MUST include automated tests for BOTH backends if both are maintained. Python changes require `pytest` suites; Node.js changes require `Vitest` suites. Functional parity MUST be verified by running equivalent test cases across both stacks. CI/CD pipelines MUST pass all tests for all active backends before merging.
 
 ### V. Concurrency & Real-Time Feedback
-Long-running publishing tasks MUST run asynchronously to avoid blocking the API request-response cycle. Python uses `threading.Thread` (daemon threads), while Node.js uses `worker_threads`. Communication between API handlers and background workers MUST use thread-safe queues. Real-time status updates MUST be delivered via Server-Sent Events (SSE).
+Long-running publishing tasks MUST run asynchronously to avoid blocking the API request-response cycle. Python uses `threading.Thread` (daemon threads) to bridge sync/async gaps. Node.js MUST use its **Asynchronous Event Loop orchestration** (via `setImmediate` or Promises) for IO-bound tasks like browser automation and uploading to maximize throughput with minimal overhead. `worker_threads` are reserved strictly for future CPU-intensive tasks (e.g., video processing). Real-time status updates MUST be delivered via Server-Sent Events (SSE).
 
 ### VI. Monorepo Consistency & Dependency Discipline
 Dependencies MUST be managed strictly within their respective workspace. `apps/frontend` and `apps/backend-node` use npm; `apps/backend` uses pip. All backends MUST use consistent directory structures and share common assets like `stealth.min.js`. Root-level scripts in `package.json` MUST be the primary interface for multi-stack development and testing.
@@ -49,4 +45,4 @@ All development MUST follow the "Research -> Strategy -> Execution" lifecycle. E
 
 This Constitution is the foundational document for OmniPost development and supersedes all other project-specific practices. Amendments to this document require a MINOR or MAJOR version bump. All architectural decisions, especially those involving cross-backend parity, MUST be validated against these principles.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-07
+**Version**: 1.2.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-09
