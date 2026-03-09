@@ -49,9 +49,7 @@ router.get('/login', (req: Request, res: Response) => {
     });
 
     emitter.on('end', () => {
-        logger.info(`清理队列: ${id}`);
-        activeQueues.delete(id);
-        res.end();
+        logger.info(`任务结束，等待客户端关闭 SSE: ${id}`);
     });
 
     // Handle client disconnect

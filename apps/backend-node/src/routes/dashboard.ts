@@ -73,8 +73,12 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
             seriesFailed.push(failed);
         }
 
-        // Recent tasks
-        const recentTasks = db.prepare('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 10').all();
+        // Recent tasks - parse JSON fields
+        const recentTasks = (db.prepare('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5').all() as any[]).map(task => ({
+            ...task,
+            platforms: task.platforms ? JSON.parse(task.platforms) : [],
+            account_list: task.account_list ? JSON.parse(task.account_list) : [],
+        }));
 
         res.json({
             code: 200,
@@ -93,11 +97,17 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
                 taskTrend: {
                     xAxis,
                     series: [
-                        { name: '完成', data: seriesCompleted },
-                        { name: '失败', data: seriesFailed },
+                        { name: '完成任务', data: seriesCompleted },
+                        { name: '失败任务', data: seriesFailed },
                     ],
                 },
-                contentStatsData: { xAxis: [], series: [] },
+                contentStatsData: {
+                    xAxis: ['快手', '抖音', '视频号', '小红书', 'Bilibili'],
+                    series: [
+                        { name: '已发布', data: [0, 0, 0, 0, 0] },
+                        { name: '草稿', data: [0, 0, 0, 0, 0] },
+                    ],
+                },
                 recentTasks,
             },
         });

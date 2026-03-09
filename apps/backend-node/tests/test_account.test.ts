@@ -54,7 +54,7 @@ describe('Account Route', () => {
         const res = await request(app).get('/api/getAccounts');
         expect(res.body.code).toBe(200);
         expect(res.body.data).toHaveLength(1);
-        expect(res.body.data[0].userName).toBe('user1');
+        expect(res.body.data[0][3]).toBe('user1');
     });
 
     it('POST /api/updateUserinfo should update user info', async () => {

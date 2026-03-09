@@ -107,7 +107,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         }
 
         logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
-        taskService.updateTaskStatus(taskId, 'completed', 100);
+        taskService.updateTaskStatus(taskId, 'completed', 100, null);
     } catch (error: any) {
         logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
         logger.error(error.stack);

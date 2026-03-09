@@ -7,9 +7,10 @@
     "apps/*"
   ],
   "scripts": {
-    "setup": "npm install && npm run setup -w apps/backend",
-    "install:all": "npm install && npm run env:create -w apps/backend && npm run env:install -w apps/backend",
+    "setup": "npm install && npm run setup -w apps/backend && npm run db:init -w apps/backend-node",
+    "install:all": "npm install && npm run install:backend && npm run install:node && npm run install:frontend",
     "install:backend": "npm run env:create -w apps/backend && npm run env:install -w apps/backend",
+    "install:node": "npm install -w apps/backend-node",
     "install:frontend": "npm install -w apps/frontend",
     "dev:backend": "npm run dev -w apps/backend",
     "dev:frontend": "npm run dev -w apps/frontend",
@@ -17,6 +18,7 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "lint:backend": "npm run lint -w apps/backend",
+    "lint:node": "npm run lint -w apps/backend-node",
     "lint:frontend": "npm run lint -w apps/frontend",
     "test": "npm run test --workspaces --if-present",
     "test:backend": "npm run test -w apps/backend",
@@ -52,14 +54,16 @@
     "xiaohongshu",
     "playwright",
     "vue3",
-    "flask"
+    "flask",
+    "typescript"
   ],
   "author": "rbbtsn0w <hamiltonsnow@gmail.com>",
   "license": "MIT",
   "notes": [
-    "This is a full-stack project with separate dependencies for frontend and backend.",
+    "This is a full-stack project with separate dependencies for frontend and dual backends (Python & Node.js).",
     "Frontend dependencies are managed by npm in apps/frontend/package.json.",
-    "Backend dependencies are managed by pip in apps/backend/requirements.txt.",
+    "Node.js backend dependencies are managed by npm in apps/backend-node/package.json.",
+    "Python backend dependencies are managed by pip in apps/backend/requirements.txt.",
     "Python version must be 3.10.x (>=3.10.0 <3.11.0) as specified in README.md.",
     "It is recommended to run Python in a virtual environment (venv) as specified in README.md.",
     "Use the :venv suffix commands to run in a virtual environment.",
@@ -75,6 +79,9 @@
   "lint-staged": {
     "apps/frontend/**/*.{js,vue}": [
       "eslint --fix --config apps/frontend/eslint.config.js"
+    ],
+    "apps/backend-node/**/*.ts": [
+      "npm run lint -w apps/backend-node"
     ],
     "apps/backend/**/*.py": [
       "apps/backend/.venv/bin/black",

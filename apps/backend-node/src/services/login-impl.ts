@@ -83,7 +83,24 @@ export async function douyinCookieGen(
 
         // Wait for URL change (login success)
         try {
-            await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
+            await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('TIMEOUT'));
+                }, 30000);
+
+                const onUrlChange = async () => {
+                    if (page.url() !== originalUrl) {
+                        clearTimeout(timeoutId);
+                        resolve();
+                    }
+                };
+
+                page.on('framenavigated', async (frame) => {
+                    if (frame === page.mainFrame()) {
+                        await onUrlChange();
+                    }
+                });
+            });
             debugPrint('[DEBUG] 抖音登录检测成功');
         } catch {
             logger.warn('抖音登录页面跳转监听超时');
@@ -144,7 +161,45 @@ export async function getTencentCookie(
 
         // Wait for URL change or new page (login success)
         try {
-            await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
+            await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('TIMEOUT'));
+                }, 30000);
+
+                const onUrlChange = async () => {
+                    if (page.url() !== originalUrl) {
+                        clearTimeout(timeoutId);
+                        resolve();
+                    }
+                };
+
+                // Handle new page popups
+                context.on('page', async (newPage) => {
+                    debugPrint(`[DEBUG] 新窗口创建，URL：${newPage.url()}`);
+
+                    newPage.on('load', () => {
+                        debugPrint(`[DEBUG] 新窗口加载完成，URL：${newPage.url()}`);
+                        clearTimeout(timeoutId);
+                        resolve();
+                    });
+
+                    newPage.on('framenavigated', (frame) => {
+                        if (frame === newPage.mainFrame()) {
+                            debugPrint(`[DEBUG] 新窗口导航，当前URL：${frame.url()}`);
+                            clearTimeout(timeoutId);
+                            resolve();
+                        }
+                    });
+                });
+
+                // Handle frame navigations in current page
+                page.on('framenavigated', async (frame) => {
+                    if (frame === page.mainFrame()) {
+                        debugPrint(`[DEBUG] 主窗口framenavigated事件触发，当前URL：${frame.url()}`);
+                        await onUrlChange();
+                    }
+                });
+            });
             debugPrint('[DEBUG] 监听页面跳转或登录检测成功');
         } catch {
             emitter.emit('message', '500');
@@ -177,7 +232,7 @@ export async function getTencentCookie(
 }
 
 /**
- * Kuaishou login implementation
+ * Kuaishou login implementation (Strict 1:1 Python port)
  */
 export async function getKsCookie(
     id: string,
@@ -188,9 +243,98 @@ export async function getKsCookie(
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
+    let originalUrl = '';
+
+    const logWithTimestamp = async (message: string, level: string = 'DEBUG') => {
+        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 23);
+        if (level === 'DEBUG') {
+            debugPrint(`[${timestamp}] [DEBUG] ${message}`);
+        } else {
+            if (level === 'ERROR') {
+                logger.error(`[${timestamp}] [ERROR] ${message}`);
+            } else {
+                logger.info(`[${timestamp}] [${level}] ${message}`);
+            }
+        }
+    };
+
+    const verifyLoginSuccess = async (): Promise<boolean> => {
+        try {
+            await logWithTimestamp('开始基于页面内容验证登录状态...');
+            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
+
+            const pageTitle = await page.title().catch(() => 'Unknown');
+            await logWithTimestamp(`当前页面标题: ${pageTitle}`);
+
+            try {
+                const avatarCount = await page.locator('img[class*="avatar"]').count();
+                if (avatarCount > 0) {
+                    await logWithTimestamp('检测到用户头像，可能登录成功');
+                    return true;
+                }
+            } catch (e) {
+                await logWithTimestamp(`检查头像元素时出错: ${e}`);
+            }
+
+            try {
+                const publishCount = await page.getByRole('button', { name: '发布' }).count();
+                if (publishCount > 0) {
+                    await logWithTimestamp('检测到发布按钮，可能登录成功');
+                    return true;
+                }
+            } catch (e) {
+                await logWithTimestamp(`检查发布按钮时出错: ${e}`);
+            }
+
+            try {
+                const userInfoCount = await page.locator('.user-info').count();
+                if (userInfoCount > 0) {
+                    await logWithTimestamp('检测到用户信息，可能登录成功');
+                    return true;
+                }
+            } catch (e) {
+                await logWithTimestamp(`检查用户信息元素时出错: ${e}`);
+            }
+
+            try {
+                const loginTextCount = await page.getByText('扫码登录').count();
+                if (loginTextCount === 0) {
+                    await logWithTimestamp('未检测到扫码登录文本，可能登录成功');
+                    if (page.url().includes('cp.kuaishou.com/profile')) {
+                        await logWithTimestamp('检测到profile页面且无登录文本，登录成功');
+                        return true;
+                    }
+                }
+            } catch (e) {
+                await logWithTimestamp(`检查登录文本时出错: ${e}`);
+            }
+
+            await logWithTimestamp('基于页面内容验证：未确认登录成功');
+            return false;
+        } catch (e) {
+            await logWithTimestamp(`登录验证过程出错: ${e}`, 'ERROR');
+            return false;
+        }
+    };
+
     try {
-        await page.goto('https://cp.kuaishou.com', { waitUntil: 'networkidle' });
-        const originalUrl = page.url();
+        page.on('request', (request) => {
+            const url = request.url();
+            if (url.includes('cp.kuaishou.com') || url.includes('passport.kuaishou.com')) {
+                logWithTimestamp(`请求URL: ${url}, 方法: ${request.method()}`).catch(() => { });
+            }
+        });
+
+        page.on('response', (response) => {
+            const url = response.url();
+            if (url.includes('cp.kuaishou.com') || url.includes('passport.kuaishou.com')) {
+                logWithTimestamp(`响应URL: ${url}, 状态码: ${response.status()}`).catch(() => { });
+            }
+        });
+
+        const initialUrl = 'https://cp.kuaishou.com';
+        await page.goto(initialUrl, { waitUntil: 'networkidle' });
+        originalUrl = page.url();
 
         await page.getByRole('link', { name: '立即登录' }).click();
         await page.getByText('扫码登录').click();
@@ -200,34 +344,91 @@ export async function getKsCookie(
         logger.info(`✅ 快手 图片地址: ${src}`);
         emitter.emit('message', src);
 
-        // Wait for login redirect
+        page.on('load', () => {
+            logWithTimestamp(`页面加载完成事件触发，当前URL: ${page.url()}`).catch(() => { });
+        });
+
+        // Wait for login success via framenavigated events
         try {
-            await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
-            debugPrint('[DEBUG] 快手登录检测成功');
-        } catch {
+            await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    page.off('framenavigated', onFrameNavigated);
+                    reject(new Error('TIMEOUT'));
+                }, 30000); // Strict 30s timeout matching Python
+
+                const onFrameNavigated = async (frame: any) => {
+                    if (frame !== page.mainFrame()) return;
+
+                    const currentUrl = frame.url();
+                    await logWithTimestamp(`URL变化检测 - 当前URL: ${currentUrl}`);
+                    await logWithTimestamp(`URL变化检测 - 原始URL: ${originalUrl}`);
+
+                    let loginSuccess = false;
+
+                    if (currentUrl.includes('cp.kuaishou.com/profile')) {
+                        await logWithTimestamp(`检测到跳转到profile页面: ${currentUrl}`);
+                        loginSuccess = await verifyLoginSuccess();
+                    } else if (currentUrl !== originalUrl) {
+                        await logWithTimestamp(`页面URL变化: ${originalUrl} -> ${currentUrl}`);
+                        loginSuccess = await verifyLoginSuccess();
+                    }
+
+                    if (loginSuccess) {
+                        await logWithTimestamp('基于页面内容验证：登录成功');
+                        clearTimeout(timeoutId);
+                        page.off('framenavigated', onFrameNavigated);
+                        resolve();
+                    }
+                };
+
+                page.on('framenavigated', onFrameNavigated);
+            });
+            await logWithTimestamp('快手登录检测成功');
+        } catch (error) {
+            await logWithTimestamp('监听页面跳转超时，登录失败', 'ERROR');
             emitter.emit('message', '500');
-            logger.warn('快手 监听页面跳转超时，登录失败');
-            return { success: false, error: 'URL_CHANGE_TIMEOUT' };
+            const errorMsg = '监听页面跳转超时，登录失败';
+            logger.error(errorMsg);
+            return { success: false, error: 'URL_CHANGE_TIMEOUT', message: errorMsg };
+        }
+
+        const finalLoginSuccess = await verifyLoginSuccess();
+        if (!finalLoginSuccess) {
+            await logWithTimestamp('最终页面内容验证失败', 'ERROR');
+            emitter.emit('message', '500');
+            return {
+                success: false,
+                error: 'FINAL_VERIFICATION_FAILED',
+                message: '登录成功后基于页面内容验证失败',
+            };
         }
 
         const cookieId = uuidv1();
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
-        await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
+        const cookiePath = path.join(COOKIES_DIR, `${cookieId}.json`);
+        await context.storageState({ path: cookiePath });
+        await logWithTimestamp(`Cookie信息已保存到: ${cookiePath}`);
 
         const result = await getCookieService().checkCookie(4, `${cookieId}.json`);
         if (!result) {
+            await logWithTimestamp('Cookie验证失败，登录状态无效', 'ERROR');
             emitter.emit('message', '500');
-            logger.warn('快手 Cookie验证失败，登录状态无效');
-            return { success: false, error: 'COOKIE_VALIDATION_FAILED' };
+            const errorMsg = 'Cookie验证失败，登录状态无效';
+            logger.error(errorMsg);
+            return { success: false, error: 'COOKIE_VALIDATION_FAILED', message: errorMsg };
         }
 
         const groupId = getOrCreateGroup(groupName);
         saveUserInfo(4, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
+    } catch (error: any) {
+        logger.error(`快手登录发生未捕获异常: ${error.message}`);
+        emitter.emit('message', '500');
+        return { success: false, error: 'UNEXPECTED_ERROR', message: error.message };
     } finally {
-        await page.close();
-        await context.close();
-        await browser.close();
+        await page.close().catch(() => { });
+        await context.close().catch(() => { });
+        await browser.close().catch(() => { });
     }
 }
 
@@ -261,8 +462,27 @@ export async function xiaohongshuCookieGen(
         logger.info(`✅ 小红书 图片地址: ${src}`);
         emitter.emit('message', src);
 
+        // Wait for login success via framenavigated events
         try {
-            await page.waitForURL((url) => url.toString() !== originalUrl, { timeout: 30000 });
+            await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    page.off('framenavigated', onFrameNavigated);
+                    reject(new Error('TIMEOUT'));
+                }, 30000);
+
+                const onFrameNavigated = async (frame: any) => {
+                    if (frame !== page.mainFrame()) return;
+
+                    if (page.url() !== originalUrl) {
+                        debugPrint(`[DEBUG] 小红书原页面URL变化: ${originalUrl} -> ${page.url()}`);
+                        clearTimeout(timeoutId);
+                        page.off('framenavigated', onFrameNavigated);
+                        resolve();
+                    }
+                };
+
+                page.on('framenavigated', onFrameNavigated);
+            });
             logger.info('小红书 监听页面跳转成功');
         } catch {
             emitter.emit('message', '500');
@@ -328,13 +548,25 @@ export async function bilibiliCookieGen(
 
         // Wait for login redirect (not to passport page)
         try {
-            await page.waitForURL(
-                (url) => {
-                    const urlStr = url.toString();
-                    return urlStr !== originalUrl && !urlStr.includes('passport.bilibili.com');
-                },
-                { timeout: 60000 }
-            );
+            await new Promise<void>((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    reject(new Error('TIMEOUT'));
+                }, 60000);
+
+                const onUrlChange = async () => {
+                    const currentUrl = page.url();
+                    if (currentUrl !== originalUrl && !currentUrl.includes('passport.bilibili.com')) {
+                        clearTimeout(timeoutId);
+                        resolve();
+                    }
+                };
+
+                page.on('framenavigated', async (frame) => {
+                    if (frame === page.mainFrame()) {
+                        await onUrlChange();
+                    }
+                });
+            });
             debugPrint('[DEBUG] Bilibili登录检测成功');
         } catch {
             logger.warn('Bilibili登录页面跳转监听超时');

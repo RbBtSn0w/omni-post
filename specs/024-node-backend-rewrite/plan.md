@@ -7,30 +7,30 @@
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+The objective is to rewrite the Python Flask backend into a Node.js TypeScript Express backend, maintaining 1:1 functional and API parity with the Python version. The Node.js version will replicate SQLite interactions, SSE login streams, scheduled publishing, and multi-platform Playwright uploading, utilizing the existing Vue 3 frontend without modifications.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x, Node.js >= 18 LTS
-**Primary Dependencies**: Express.js 4.x, better-sqlite3, Playwright >= 1.50.0, multer, cors, winston, uuid
-**Storage**: SQLite (与 Python 后端相同 schema)
-**Testing**: Vitest (与前端测试生态统一)
-**Target Platform**: macOS / Linux 服务器
-**Project Type**: Web Service (REST API + SSE + Playwright 自动化)
-**Performance Goals**: 与 Python 后端相同（单用户单任务模式）
-**Constraints**: API 端点 100% 兼容，前端零修改
-**Scale/Scope**: 28 个 API 端点, 7 个服务模块, 5 个平台上传器, 33+ 个测试文件
+**Language/Version**: TypeScript 5.x, Node.js 18+ LTS
+**Primary Dependencies**: Express.js, Playwright, better-sqlite3
+**Storage**: SQLite (shared database with Python)
+**Testing**: Vitest
+**Target Platform**: Node.js server
+**Project Type**: web-service (backend API)
+**Performance Goals**: N/A
+**Constraints**: 100% API parity with existing Python backend; strict ESM module system
+**Scale/Scope**: 25+ API endpoints, 5 platform uploaders, complex SSE state streams
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Principle I (Architecture Parity)**: ✅ The design ensures 1:1 functional parity across both backends, providing a drop-in replacement API.
-- **Principle II (Pattern)**: ✅ Implementation follows the exact Routes → Services → Uploaders pattern mapping Python blueprints/classes to Express/TS concepts.
-- **Principle III (Isolation)**: ✅ 5 platform uploaders are isolated in `src/uploader/<platform>/main.ts`, using shared utility logic but not depending on each other.
-- **Principle IV (Testing)**: ✅ 98 Vitest cases mapped from the 33 Python pytest files, ensuring automated verification of both backends.
-- **Principle V (Concurrency)**: ✅ Async execution using `setImmediate` (Node async event loop) replicating Python daemon threads, with SSE for real-time status.
-- **Principle VI (Monorepo)**: ✅ `apps/backend-node` is managed with its own package.json & npm workspace, sharing root commands.
+- **Principle I (Architecture Parity)**: Yes. Complete Drop-in replacement with 1:1 REST API parity.
+- **Principle II (Pattern)**: Yes. Adhering to Routes → Services → Uploaders folder structure.
+- **Principle III (Isolation)**: Yes. Each platform uploader (Bilibili, Douyin, etc.) is an isolated class managing its own Playwright context.
+- **Principle IV (Testing)**: Yes. Porting 33 Python pytest files to Vitest.
+- **Principle V (Concurrency)**: Yes. Replacing Python backend threads/queues with Node Event Loop Promises and EventEmitters for SSE.
+- **Principle VI (Monorepo)**: Yes. Dependencies strictly confined to `apps/backend-node/package.json`.
 
 ## Project Structure
 
@@ -78,5 +78,4 @@ apps/
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| N/A | Structure complies fully with Constitution | N/A |

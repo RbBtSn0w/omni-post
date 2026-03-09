@@ -38,13 +38,21 @@ class TaskService {
       VALUES (?, ?, 'waiting', 0, 1, ?, ?, ?, ?, ?)
     `);
 
+        // Build schedule_data from top-level fields (matching Python's route-layer assembly)
+        const scheduleData = {
+            enableTimer: publishData.enableTimer ?? null,
+            videosPerDay: publishData.videosPerDay ?? null,
+            dailyTimes: publishData.dailyTimes ?? null,
+            startDays: publishData.startDays ?? null,
+        };
+
         stmt.run(
             taskId,
             publishData.title || null,
             JSON.stringify(publishData.platforms || [publishData.type]),
             JSON.stringify(publishData.fileList || []),
             JSON.stringify(publishData.accountList || []),
-            JSON.stringify(publishData.scheduleData || null),
+            JSON.stringify(scheduleData),
             JSON.stringify(publishData)
         );
 
@@ -58,7 +66,7 @@ class TaskService {
         taskId: string,
         status: string,
         progress?: number,
-        errorMsg?: string
+        errorMsg?: string | null
     ): void {
         const db = dbManager.getDb();
 

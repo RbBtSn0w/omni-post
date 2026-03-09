@@ -45,5 +45,24 @@ This document outlines the architectural, logic, and behavioral differences betw
    - Python 中个别无强类型的 JSON 取值，抛出异常会在 `except Exception` 里捕获。
    - Node.js (TypeScript) 中采用了可选链 `?.` 以及显式的类型断言，这降低了运行时的 TypeError，是更安全的演进，视为正面差异。
 
+## 4. Playwright Event Loop 与 DOM 检测差异 (新近对齐)
+
+在扫码登录流程的重构中，发现了 Node.js 异步模型和 Python `asyncio` 模型中存在的显著行为偏差，目前已强制 100% 对齐回 Python 版本。
+
+### 表现差异分析
+- **Python (`asyncio` + Playwright Async)**：
+  - Python 原版大量使用了 `page.on("framenavigated", ...)` 等事件订阅，结合 `asyncio.Event()` 来实现**长时间阻塞挂起**（通常是 30-60 秒）。
+  - 跳转发生后，Python 会进入严格的页面 DOM 探测期：显式使用 `page.wait_for_load_state("networkidle")`，并且寻找含有 `avatar` / `.user-info` / `发布` 按钮等特定特征，以此判定真实登录成功态，而非单纯的中间路由跳转。
+- **Node.js (早期投机版本)**：
+  - Node 版曾采用内置的 `page.waitForURL((url) => url !== originalUrl, { timeout: 30000 })`。
+  - **副作用**：快手和视频号等平台在扫码确认瞬间，会发生一连串内部路由中间件跳转（例如 `passport.kuaishou.com` -> `cp.kuaishou.com/profile`）。Node 版本的 `waitForURL` 过于敏感，捕捉到第一跳时就立刻判定“URL 已改变 = 登录成功”抛出响应，并在随后的 Cookie 获取阶段因鉴权未完全落地而验证失败（报错 `500` 与前端断流）。
+
+### 重构最终版（以对齐 Python 为唯一准则）
+为了绝对的稳定性，Node 版的五个平台扫码逻辑现已 1:1 重写：
+1. **摒弃 `waitForURL`**：改为与 Python 相同的 `page.on('framenavigated')` 事件订阅机制，将异步流程包装在 `new Promise` 闭包里。
+2. **重现严格的面相 DOM 进行校验 (`verifyLoginSuccess`)**：特别是**快手平台**，引入了多达 40 行的 DOM 特征嗅探逻辑（头像、登录文本反转验证），确保真正进站才落盘 Cookie。
+3. **修复多窗口（Popups）穿透**：针对**视频号**，恢复了对 `context.on('page', ...)` 新打开 Tab 的事件挂载拦截。
+4. **日志维度**：完全复制了 Python 中的 Request/Response `log_with_timestamp`，在出现由于网站结构调整导致的超时等硬失效时，控制台能直接暴露最终状态码。
+
 ---
-*总结：在保持原有外部契约和业务逻辑（100% Parity）不变的前提下，Node.js 版本利用异步机制获得了巨大的性能和可维护性提升。*
+*总结：在保持原有外部契约和业务逻辑（100% Parity）不变的前提下，Node.js 版本利用异步机制获得了巨大的性能和可维护性提升。且高脆弱性的反爬虫 / 鉴权等待机制已严格降级回 Python 久经考验的设计范式。*

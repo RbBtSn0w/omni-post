@@ -11,6 +11,11 @@
 
 作为一名内容创作者，我需要新的 Node.js TypeScript 后端提供与 Python 后端完全相同的 REST API 接口（路径、请求/响应格式、状态码），使得现有 Vue 3 前端无需任何修改即可无缝切换到新后端。
 
+## Clarifications
+### Session 2026-03-08
+- Q: 如何验证 `stealth.min.js` 的防封禁机制是否有效？
+  → A: **默认信任**：只要 `stealth.min.js` 成功注入 Playwright 上下文且常规端到端登录不报错即可，不需要专门的前端反指纹测试用例。（已更新至 FR-013）
+
 **Why this priority**: 这是整个重写的核心价值——如果 API 不兼容，前端将无法正常工作，用户将无法使用任何功能。
 
 **Independent Test**: 可以通过将前端 API 地址切换到新后端，验证所有页面和功能是否正常工作来独立测试。
@@ -113,7 +118,7 @@
 - **FR-010**: 系统 MUST 支持 SSE (Server-Sent Events) 用于登录流程的实时状态推送
 - **FR-011**: 系统 MUST 支持文件上传（视频文件）和静态文件服务
 - **FR-012**: 系统 MUST 实现定时发布功能，使用与 Python 后端相同的时间计算逻辑
-- **FR-013**: 系统 MUST 复用 Python 后端中的 `stealth.min.js` 脚本用于浏览器反检测
+- **FR-013**: 系统 MUST 复用 Python 后端中的 `stealth.min.js` 脚本用于浏览器反检测（验证标准：成功注入且不引发端到端流程报错即可，无需专门的反爬指纹测试用例）
 - **FR-014**: 系统 MUST 编写与 Python 后端 33 个测试文件逻辑等价的 TypeScript 测试代码
 - **FR-015**: 系统 MUST 使用三层架构模式（Routes → Services → Uploaders），与 Python 后端架构保持一致
 - **FR-016**: 系统 MUST 使用抽象接口 + 默认实现的服务设计模式（如 `CookieService` → `DefaultCookieService`）

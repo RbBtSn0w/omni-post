@@ -38,31 +38,69 @@ export class BilibiliUploader {
                     await page.waitForTimeout(5000);
 
                     if (title) {
-                        const titleInput = page.locator('.ql-editor, [placeholder*="标题"]').first();
+                        const titleInput = page.locator('input[placeholder*="标题"], .video-title input').first();
+                        await titleInput.waitFor({ state: 'visible', timeout: 30000 });
                         await titleInput.fill(title);
                     }
 
                     if (tags && tags.length > 0) {
-                        const tagInput = page.locator('.tag-input-wrp input, [placeholder*="标签"]').first();
-                        for (const tag of tags) {
-                            await tagInput.fill(tag);
-                            await page.keyboard.press('Enter');
-                            await page.waitForTimeout(300);
+                        const tagInput = page.locator('.tag-container input, .video-tag input, input[placeholder*="标签"]').first();
+                        if (await tagInput.count() > 0) {
+                            for (const tag of tags) {
+                                await tagInput.fill(tag);
+                                await page.keyboard.press('Enter');
+                                await page.waitForTimeout(500);
+                            }
                         }
+                    }
+
+                    // Fill description (Python parity)
+                    const descArea = page.locator('.desc-container .ql-editor, .video-desc textarea, textarea[placeholder*="简介"]').first();
+                    if (await descArea.count() > 0) {
+                        const descText = `${title}\n${tags.map(t => '#' + t).join(' ')}`;
+                        await descArea.click();
+                        await page.keyboard.press('Control+KeyA');
+                        await page.keyboard.press('Backspace');
+                        await descArea.fill(descText);
                     }
 
                     // Select category/zone if provided
                     if (category) {
                         bilibiliLogger.info(`[Bilibili] 设置分区: ${category}`);
+                        // TODO: Implement category selection if needed
                     }
 
-                    await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-                    const publishBtn = page.getByRole('button', { name: '立即投稿' }).or(
-                        page.getByRole('button', { name: '投稿' })
-                    );
-                    await publishBtn.click();
+                    await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`);
+
+                    // Ensure '自制' (Self-produced) is selected (Type)
+                    const selfCreatedRadio = page.locator('span:text("自制"), label:has-text("自制")').first();
+                    if (await selfCreatedRadio.count() > 0) {
+                        await selfCreatedRadio.click();
+                        await page.waitForTimeout(500);
+                    }
+
+                    // Attempt to click publish button
+                    bilibiliLogger.info(`[Bilibili] 尝试点击发布按钮...`);
+                    // Scroll to bottom to ensure UI renders submit container
+                    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+                    await page.waitForTimeout(2000);
+
+                    // Include generic button:has-text / div:has-text in case of DOM changes
+                    const publishBtn = page.locator('.submit-container .cc-btn, .submit-btn, .submit-add, button:has-text("立即投稿"), div:has-text("立即投稿"), button:has-text("发布")').first();
+
+                    try {
+                        await publishBtn.waitFor({ state: 'attached', timeout: 30000 });
+                        await publishBtn.scrollIntoViewIfNeeded();
+                        await publishBtn.click({ force: true });
+                    } catch (e) {
+                        bilibiliLogger.error(`[Bilibili] 无法点击发布按钮: ${e}`);
+                        await debugScreenshot(page, screenshotDir, `submit_failed_${i}.png`);
+                        throw e;
+                    }
+
                     bilibiliLogger.info(`[Bilibili] 视频 ${i + 1} 投稿成功`);
-                    await page.waitForTimeout(3000);
+                    await page.waitForTimeout(5000);
+                    await debugScreenshot(page, screenshotDir, `after_publish_${i}.png`);
                 }
             } catch (error: any) {
                 bilibiliLogger.error(`[Bilibili] 上传失败: ${error.message}`);
