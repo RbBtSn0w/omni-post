@@ -6,8 +6,16 @@
 import { EventEmitter } from 'events';
 import { logger } from '../core/logger.js';
 
+/**
+ * SSE 任务句柄，包含通信通道和取消令牌 (FR-005)
+ */
+export interface SseTaskHandle {
+    emitter: EventEmitter;
+    abortController: AbortController;
+}
+
 // Global active queues (thread-safe status communication)
-export const activeQueues: Map<string, EventEmitter> = new Map();
+export const activeQueues: Map<string, SseTaskHandle> = new Map();
 
 /**
  * SSE stream generator — yields "data: msg\n\n" format
@@ -36,11 +44,11 @@ export interface LoginService {
     pollTimeout: number;
     pollInterval: number;
 
-    douyinCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any>;
-    getTencentCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any>;
-    getKsCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any>;
-    xiaohongshuCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any>;
-    bilibiliCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any>;
+    douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
 }
 
 /**
@@ -64,31 +72,36 @@ export class MockLoginService implements LoginService {
         this.pollInterval = pollInterval;
     }
 
-    async douyinCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/douyin');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async getTencentCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/tencent');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async getKsCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/ks');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/xiaohongshu');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async bilibiliCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/bilibili');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
@@ -104,29 +117,29 @@ export class DefaultLoginService implements LoginService {
     pollTimeout = 30;
     pollInterval = 1.0;
 
-    async douyinCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         const { douyinCookieGen } = await import('./login-impl.js');
-        return douyinCookieGen(id, emitter, groupName);
+        return douyinCookieGen(id, emitter, signal, groupName);
     }
 
-    async getTencentCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         const { getTencentCookie } = await import('./login-impl.js');
-        return getTencentCookie(id, emitter, groupName);
+        return getTencentCookie(id, emitter, signal, groupName);
     }
 
-    async getKsCookie(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         const { getKsCookie } = await import('./login-impl.js');
-        return getKsCookie(id, emitter, groupName);
+        return getKsCookie(id, emitter, signal, groupName);
     }
 
-    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         const { xiaohongshuCookieGen } = await import('./login-impl.js');
-        return xiaohongshuCookieGen(id, emitter, groupName);
+        return xiaohongshuCookieGen(id, emitter, signal, groupName);
     }
 
-    async bilibiliCookieGen(id: string, emitter: EventEmitter, groupName?: string | null): Promise<any> {
+    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         const { bilibiliCookieGen } = await import('./login-impl.js');
-        return bilibiliCookieGen(id, emitter, groupName);
+        return bilibiliCookieGen(id, emitter, signal, groupName);
     }
 }
 
@@ -138,6 +151,7 @@ export function runAsyncFunction(
     type: string,
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): void {
     const loginService = new DefaultLoginService();
@@ -145,16 +159,20 @@ export function runAsyncFunction(
     const run = async () => {
         try {
             switch (type) {
-                case '1': await loginService.xiaohongshuCookieGen(id, emitter, groupName); break;
-                case '2': await loginService.getTencentCookie(id, emitter, groupName); break;
-                case '3': await loginService.douyinCookieGen(id, emitter, groupName); break;
-                case '4': await loginService.getKsCookie(id, emitter, groupName); break;
-                case '5': await loginService.bilibiliCookieGen(id, emitter, groupName); break;
+                case '1': await loginService.xiaohongshuCookieGen(id, emitter, signal, groupName); break;
+                case '2': await loginService.getTencentCookie(id, emitter, signal, groupName); break;
+                case '3': await loginService.douyinCookieGen(id, emitter, signal, groupName); break;
+                case '4': await loginService.getKsCookie(id, emitter, signal, groupName); break;
+                case '5': await loginService.bilibiliCookieGen(id, emitter, signal, groupName); break;
                 default: emitter.emit('message', '500');
             }
-        } catch (error) {
-            logger.error(`[Login] Error: ${error}`);
-            emitter.emit('message', '500');
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                logger.info(`[Login] Task for ${id} was aborted.`);
+            } else {
+                logger.error(`[Login] Error: ${error}`);
+                emitter.emit('message', '500');
+            }
         } finally {
             emitter.emit('end');
         }

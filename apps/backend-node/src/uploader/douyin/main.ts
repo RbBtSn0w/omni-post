@@ -4,97 +4,101 @@
  */
 
 import path from 'path';
-import { createScreenshotDir, debugScreenshot, launchBrowser, setInitScript } from '../../core/browser.js';
-import { COOKIES_DIR, VIDEOS_DIR } from '../../core/config.js';
+import { type BrowserContext } from 'playwright';
+import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
+import { VIDEOS_DIR } from '../../core/config.js';
 import { douyinLogger } from '../../core/logger.js';
 import type { UploadOptions } from '../../services/publish-service.js';
 import { generateScheduleTimeNextDay } from '../../utils/files-times.js';
+import { BaseUploader } from '../base-uploader.js';
 
-export class DouyinUploader {
-    async upload(opts: UploadOptions): Promise<void> {
+export class DouyinUploader extends BaseUploader {
+    protected platformName = 'Douyin';
+
+    /**
+     * 实现 BaseUploader 的 postVideo 接口 (SC-006)
+     */
+    async postVideo(
+        context: BrowserContext,
+        opts: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void> {
         const {
-            title, fileList, tags, accountList, category,
-            enableTimer, videosPerDay, dailyTimes, startDays,
-            thumbnailPath, productLink, productTitle,
+            title, fileList, tags, enableTimer, videosPerDay, dailyTimes, startDays
         } = opts;
 
-        douyinLogger.info(`[Douyin] 开始上传 - 标题: ${title}, 文件数: ${fileList.length}, 账号数: ${accountList.length}`);
+        this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
+        const page = await this.createPage(context);
+        const screenshotDir = createScreenshotDir('douyin');
 
-        for (const accountFile of accountList) {
-            const cookiePath = path.join(COOKIES_DIR, accountFile);
-            douyinLogger.info(`[Douyin] 使用账号: ${accountFile}`);
+        try {
+            await page.goto('https://creator.douyin.com/creator-micro/content/upload', {
+                waitUntil: 'networkidle',
+            });
+            await debugScreenshot(page, screenshotDir, 'upload_page.png', '上传页面');
 
-            const browser = await launchBrowser();
-            const context = await setInitScript(
-                await browser.newContext({ storageState: cookiePath })
-            );
-            const page = await context.newPage();
-            const screenshotDir = createScreenshotDir('douyin');
+            for (let i = 0; i < fileList.length; i++) {
+                const videoFile = fileList[i];
+                const videoPath = path.join(VIDEOS_DIR, videoFile);
+                this.log(`上传视频 ${i + 1}/${fileList.length}: ${videoFile}`);
 
-            try {
-                await page.goto('https://creator.douyin.com/creator-micro/content/upload', {
-                    waitUntil: 'networkidle',
-                });
-                await debugScreenshot(page, screenshotDir, 'upload_page.png', '上传页面');
+                // Upload video file
+                const fileInput = page.locator('input[type="file"]').first();
+                await fileInput.setInputFiles(videoPath);
+                this.log(`文件已选择，等待上传完成...`);
 
-                for (let i = 0; i < fileList.length; i++) {
-                    const videoFile = fileList[i];
-                    const videoPath = path.join(VIDEOS_DIR, videoFile);
-                    douyinLogger.info(`[Douyin] 上传视频 ${i + 1}/${fileList.length}: ${videoFile}`);
+                // Wait for upload to complete
+                await page.waitForTimeout(5000);
 
-                    // Upload video file
-                    const fileInput = page.locator('input[type="file"]').first();
-                    await fileInput.setInputFiles(videoPath);
-                    douyinLogger.info(`[Douyin] 文件已选择，等待上传完成...`);
-
-                    // Wait for upload to complete
-                    await page.waitForTimeout(5000);
-
-                    // Fill title
-                    if (title) {
-                        const titleInput = page.locator('.notranslate').first();
-                        await titleInput.fill('');
-                        await titleInput.fill(title);
-                    }
-
-                    // Add tags
-                    if (tags && tags.length > 0) {
-                        for (const tag of tags) {
-                            const titleInput = page.locator('.notranslate').first();
-                            await titleInput.type(`#${tag} `);
-                            await page.waitForTimeout(500);
-                        }
-                    }
-
-                    // Set schedule if enabled
-                    if (enableTimer && videosPerDay) {
-                        const schedules = generateScheduleTimeNextDay(
-                            fileList.length, videosPerDay, dailyTimes, false, startDays
-                        ) as Date[];
-                        if (schedules[i]) {
-                            douyinLogger.info(`[Douyin] 定时发布: ${schedules[i]}`);
-                        }
-                    }
-
-                    await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-
-                    // Click publish button
-                    const publishBtn = page.getByRole('button', { name: '发布' });
-                    await publishBtn.click();
-                    douyinLogger.info(`[Douyin] 视频 ${i + 1} 发布成功`);
-
-                    await page.waitForTimeout(3000);
+                // Fill title
+                if (title) {
+                    const titleInput = page.locator('.notranslate').first();
+                    await titleInput.fill('');
+                    await titleInput.fill(title);
                 }
-            } catch (error: any) {
-                douyinLogger.error(`[Douyin] 上传失败: ${error.message}`);
-                throw error;
-            } finally {
-                await page.close();
-                await context.close();
-                await browser.close();
-            }
-        }
 
-        douyinLogger.info(`[Douyin] 全部上传完成`);
+                // Add tags
+                if (tags && tags.length > 0) {
+                    for (const tag of tags) {
+                        const titleInput = page.locator('.notranslate').first();
+                        await titleInput.type(`#${tag} `);
+                        await page.waitForTimeout(500);
+                    }
+                }
+
+                // Set schedule if enabled
+                if (enableTimer && videosPerDay) {
+                    const schedules = generateScheduleTimeNextDay(
+                        fileList.length, videosPerDay, dailyTimes || null, false, startDays
+                    ) as Date[];
+                    if (schedules[i]) {
+                        this.log(`定时发布: ${schedules[i]}`);
+                    }
+                }
+
+                await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
+
+                // Click publish button
+                const publishBtn = page.getByRole('button', { name: '发布' });
+                await publishBtn.click();
+                this.log(`视频 ${i + 1} 发布成功`);
+
+                onProgress(Math.floor(((i + 1) / fileList.length) * 100));
+                await page.waitForTimeout(3000);
+            }
+        } catch (error: any) {
+            this.log(`上传失败: ${error.message}`, 'error');
+            throw error;
+        } finally {
+            await page.close();
+        }
+    }
+
+    /**
+     * 兼容性方法 (保留以防旧代码调用)
+     */
+    async upload(opts: UploadOptions): Promise<void> {
+        this.log('Legacy upload() called, but browser management should be handled by PublishService.');
+        throw new Error('Please use postVideo(context, opts) instead.');
     }
 }

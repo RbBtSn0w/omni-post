@@ -4,66 +4,76 @@
  */
 
 import path from 'path';
-import { createScreenshotDir, debugScreenshot, launchBrowser, setInitScript } from '../../core/browser.js';
-import { COOKIES_DIR, VIDEOS_DIR } from '../../core/config.js';
-import { xiaohongshuLogger } from '../../core/logger.js';
+import { type BrowserContext } from 'playwright';
+import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
+import { VIDEOS_DIR } from '../../core/config.js';
 import type { UploadOptions } from '../../services/publish-service.js';
+import { BaseUploader } from '../base-uploader.js';
 
-export class XiaohongshuUploader {
-    async upload(opts: UploadOptions): Promise<void> {
-        const { title, fileList, tags, accountList, enableTimer, videosPerDay, dailyTimes, startDays } = opts;
+export class XiaohongshuUploader extends BaseUploader {
+    protected platformName = 'Xiaohongshu';
 
-        xiaohongshuLogger.info(`[XHS] 开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
+    /**
+     * 实现 BaseUploader 的 postVideo 接口 (SC-006)
+     */
+    async postVideo(
+        context: BrowserContext,
+        opts: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void> {
+        const { title, fileList, tags } = opts;
 
-        for (const accountFile of accountList) {
-            const cookiePath = path.join(COOKIES_DIR, accountFile);
-            const browser = await launchBrowser();
-            const context = await setInitScript(
-                await browser.newContext({ storageState: cookiePath })
-            );
-            const page = await context.newPage();
-            const screenshotDir = createScreenshotDir('xiaohongshu');
+        this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
+        const page = await this.createPage(context);
+        const screenshotDir = createScreenshotDir('xiaohongshu');
 
-            try {
-                await page.goto('https://creator.xiaohongshu.com/publish/publish', {
-                    waitUntil: 'networkidle',
-                });
+        try {
+            await page.goto('https://creator.xiaohongshu.com/publish/publish', {
+                waitUntil: 'networkidle',
+            });
 
-                for (let i = 0; i < fileList.length; i++) {
-                    const videoPath = path.join(VIDEOS_DIR, fileList[i]);
-                    xiaohongshuLogger.info(`[XHS] 上传视频 ${i + 1}/${fileList.length}`);
+            for (let i = 0; i < fileList.length; i++) {
+                const videoPath = path.join(VIDEOS_DIR, fileList[i]);
+                this.log(`上传视频 ${i + 1}/${fileList.length}: ${fileList[i]}`);
 
-                    const fileInput = page.locator('input[type="file"]').first();
-                    await fileInput.setInputFiles(videoPath);
-                    await page.waitForTimeout(5000);
+                const fileInput = page.locator('input[type="file"]').first();
+                await fileInput.setInputFiles(videoPath);
+                await page.waitForTimeout(5000);
 
-                    if (title) {
-                        const titleInput = page.locator('#composerTitleInput, .title input').first();
-                        await titleInput.fill(title);
-                    }
-
-                    if (tags && tags.length > 0) {
-                        const descInput = page.locator('#composerDescInput, .desc-input').first();
-                        for (const tag of tags) {
-                            await descInput.type(`#${tag} `);
-                            await page.waitForTimeout(500);
-                        }
-                    }
-
-                    await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-                    const publishBtn = page.getByRole('button', { name: '发布' });
-                    await publishBtn.click();
-                    xiaohongshuLogger.info(`[XHS] 视频 ${i + 1} 发布成功`);
-                    await page.waitForTimeout(3000);
+                if (title) {
+                    const titleInput = page.locator('#composerTitleInput, .title input').first();
+                    await titleInput.fill(title);
                 }
-            } catch (error: any) {
-                xiaohongshuLogger.error(`[XHS] 上传失败: ${error.message}`);
-                throw error;
-            } finally {
-                await page.close();
-                await context.close();
-                await browser.close();
+
+                if (tags && tags.length > 0) {
+                    const descInput = page.locator('#composerDescInput, .desc-input').first();
+                    for (const tag of tags) {
+                        await descInput.type(`#${tag} `);
+                        await page.waitForTimeout(500);
+                    }
+                }
+
+                await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
+                const publishBtn = page.getByRole('button', { name: '发布' });
+                await publishBtn.click();
+                this.log(`视频 ${i + 1} 发布成功`);
+                
+                onProgress(Math.floor(((i + 1) / fileList.length) * 100));
+                await page.waitForTimeout(3000);
             }
+        } catch (error: any) {
+            this.log(`上传失败: ${error.message}`, 'error');
+            throw error;
+        } finally {
+            await page.close();
         }
+    }
+
+    /**
+     * 兼容性方法
+     */
+    async upload(opts: UploadOptions): Promise<void> {
+        this.log('Legacy upload() called, but browser management should be handled by PublishService.');
+        throw new Error('Please use postVideo(context, opts) instead.');
     }
 }

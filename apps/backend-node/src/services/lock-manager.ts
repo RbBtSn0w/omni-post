@@ -1,4 +1,4 @@
-import { logger } from '../core/logger';
+import { logger } from '../core/logger.js';
 
 /**
  * AccountLockManager (账号级互斥锁管理器)

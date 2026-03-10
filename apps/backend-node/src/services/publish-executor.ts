@@ -10,6 +10,7 @@ import path from 'path';
 import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
 import { logger } from '../core/logger.js';
+import { lockManager } from './lock-manager.js';
 import {
     postVideoBilibili,
     postVideoDouyin,
@@ -59,18 +60,28 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
     // 等待并发槽位分配
     await acquireSlot(taskId);
 
-    logger.info(`\n${'='.repeat(50)}`);
-    logger.info(`[PUBLISH] Starting task ${taskId}`);
-    logger.info(`${'='.repeat(50)}`);
-    taskService.updateTaskStatus(taskId, 'uploading', 0);
+    const accountList: string[] = publishData.accountList || [];
+    const lockedAccounts: string[] = [];
 
     try {
+        // 尝试锁定所有涉及的账号 (SC-003)
+        for (const account of accountList) {
+            if (!lockManager.lock(account)) {
+                throw new Error('账号正在使用中，请稍后再试');
+            }
+            lockedAccounts.push(account);
+        }
+
+        logger.info(`\n${'='.repeat(50)}`);
+        logger.info(`[PUBLISH] Starting task ${taskId}`);
+        logger.info(`${'='.repeat(50)}`);
+        taskService.updateTaskStatus(taskId, 'uploading', 0);
+
         // Extract data
         const type = publishData.type;
         const title = publishData.title || '';
         const tags = publishData.tags || [];
         const fileList: string[] = publishData.fileList || [];
-        const accountList: string[] = publishData.accountList || [];
         let category = publishData.category;
         if (category === 0) category = null;
         const enableTimer = publishData.enableTimer;
@@ -148,6 +159,10 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         logger.error(error.stack);
         taskService.updateTaskStatus(taskId, 'failed', undefined, error.message);
     } finally {
+        // 释放所有已持有的账号锁
+        for (const account of lockedAccounts) {
+            lockManager.unlock(account);
+        }
         releaseSlot(taskId);
     }
 }

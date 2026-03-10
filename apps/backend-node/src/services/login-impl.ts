@@ -59,16 +59,23 @@ function saveUserInfo(
 export async function douyinCookieGen(
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
     const screenshotDir = createScreenshotDir('douyin');
-    const urlChanged = false;
 
     const browser = await launchBrowser();
+    const abortHandler = () => {
+        logger.info('[Login:Douyin] Detected abort signal, closing browser...');
+        browser.close().catch(() => {});
+    };
+    signal.addEventListener('abort', abortHandler);
+
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
     try {
+        if (signal.aborted) return;
         await debugScreenshot(page, screenshotDir, 'before_navigation.png', '导航前');
         await page.goto('https://creator.douyin.com/');
         const originalUrl = page.url();
@@ -100,13 +107,21 @@ export async function douyinCookieGen(
                         await onUrlChange();
                     }
                 });
+
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('AbortError'));
+                });
             });
             debugPrint('[DEBUG] 抖音登录检测成功');
-        } catch {
+        } catch (err: any) {
+            if (err.message === 'AbortError') throw err;
             logger.warn('抖音登录页面跳转监听超时');
             emitter.emit('message', '500');
             return { success: false, error: 'TIMEOUT' };
         }
+
+        if (signal.aborted) throw new Error('AbortError');
 
         // Save cookies
         const cookieId = uuidv1();
@@ -124,9 +139,10 @@ export async function douyinCookieGen(
         saveUserInfo(3, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
-        await page.close();
-        await context.close();
-        await browser.close();
+        signal.removeEventListener('abort', abortHandler);
+        await page.close().catch(() => {});
+        await context.close().catch(() => {});
+        await browser.close().catch(() => {});
     }
 }
 
@@ -136,15 +152,23 @@ export async function douyinCookieGen(
 export async function getTencentCookie(
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
     const screenshotDir = createScreenshotDir('tencent');
 
     const browser = await launchBrowser();
+    const abortHandler = () => {
+        logger.info('[Login:Tencent] Detected abort signal, closing browser...');
+        browser.close().catch(() => {});
+    };
+    signal.addEventListener('abort', abortHandler);
+
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
     try {
+        if (signal.aborted) return;
         await debugScreenshot(page, screenshotDir, 'before_navigation.png', '导航前');
         await page.goto('https://channels.weixin.qq.com');
         const originalUrl = page.url();
@@ -199,13 +223,21 @@ export async function getTencentCookie(
                         await onUrlChange();
                     }
                 });
+
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('AbortError'));
+                });
             });
             debugPrint('[DEBUG] 监听页面跳转或登录检测成功');
-        } catch {
+        } catch (err: any) {
+            if (err.message === 'AbortError') throw err;
             emitter.emit('message', '500');
             logger.warn('视频号 监听页面跳转超时，登录失败');
             return { success: false, error: 'TIMEOUT' };
         }
+
+        if (signal.aborted) throw new Error('AbortError');
 
         const cookieId = uuidv1();
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
@@ -224,9 +256,10 @@ export async function getTencentCookie(
         emitter.emit('message', '200');
         return {};
     } finally {
-        await page.close();
-        await context.close();
-        await browser.close();
+        signal.removeEventListener('abort', abortHandler);
+        await page.close().catch(() => {});
+        await context.close().catch(() => {});
+        await browser.close().catch(() => {});
         debugPrint('[DEBUG] 浏览器资源已释放');
     }
 }
@@ -237,9 +270,16 @@ export async function getTencentCookie(
 export async function getKsCookie(
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
     const browser = await launchBrowser();
+    const abortHandler = () => {
+        logger.info('[Login:Kuaishou] Detected abort signal, closing browser...');
+        browser.close().catch(() => {});
+    };
+    signal.addEventListener('abort', abortHandler);
+
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
@@ -318,6 +358,7 @@ export async function getKsCookie(
     };
 
     try {
+        if (signal.aborted) return;
         page.on('request', (request) => {
             const url = request.url();
             if (url.includes('cp.kuaishou.com') || url.includes('passport.kuaishou.com')) {
@@ -382,15 +423,24 @@ export async function getKsCookie(
                 };
 
                 page.on('framenavigated', onFrameNavigated);
+
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    page.off('framenavigated', onFrameNavigated);
+                    reject(new Error('AbortError'));
+                });
             });
             await logWithTimestamp('快手登录检测成功');
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === 'AbortError') throw error;
             await logWithTimestamp('监听页面跳转超时，登录失败', 'ERROR');
             emitter.emit('message', '500');
             const errorMsg = '监听页面跳转超时，登录失败';
             logger.error(errorMsg);
             return { success: false, error: 'URL_CHANGE_TIMEOUT', message: errorMsg };
         }
+
+        if (signal.aborted) throw new Error('AbortError');
 
         const finalLoginSuccess = await verifyLoginSuccess();
         if (!finalLoginSuccess) {
@@ -422,10 +472,12 @@ export async function getKsCookie(
         saveUserInfo(4, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } catch (error: any) {
+        if (error.message === 'AbortError') throw error;
         logger.error(`快手登录发生未捕获异常: ${error.message}`);
         emitter.emit('message', '500');
         return { success: false, error: 'UNEXPECTED_ERROR', message: error.message };
     } finally {
+        signal.removeEventListener('abort', abortHandler);
         await page.close().catch(() => { });
         await context.close().catch(() => { });
         await browser.close().catch(() => { });
@@ -438,15 +490,23 @@ export async function getKsCookie(
 export async function xiaohongshuCookieGen(
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
     const screenshotDir = createScreenshotDir('xiaohongshu');
 
     const browser = await launchBrowser();
+    const abortHandler = () => {
+        logger.info('[Login:Xiaohongshu] Detected abort signal, closing browser...');
+        browser.close().catch(() => {});
+    };
+    signal.addEventListener('abort', abortHandler);
+
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
     try {
+        if (signal.aborted) return;
         await debugScreenshot(page, screenshotDir, 'before_navigation.png', '导航前');
         await page.goto('https://creator.xiaohongshu.com/');
         const originalUrl = page.url();
@@ -466,7 +526,6 @@ export async function xiaohongshuCookieGen(
         try {
             await new Promise<void>((resolve, reject) => {
                 const timeoutId = setTimeout(() => {
-                    page.off('framenavigated', onFrameNavigated);
                     reject(new Error('TIMEOUT'));
                 }, 30000);
 
@@ -482,13 +541,22 @@ export async function xiaohongshuCookieGen(
                 };
 
                 page.on('framenavigated', onFrameNavigated);
+
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    page.off('framenavigated', onFrameNavigated);
+                    reject(new Error('AbortError'));
+                });
             });
             logger.info('小红书 监听页面跳转成功');
-        } catch {
+        } catch (err: any) {
+            if (err.message === 'AbortError') throw err;
             emitter.emit('message', '500');
             logger.warn('小红书登录页面跳转监听超时');
             return { success: false, error: 'TIMEOUT' };
         }
+
+        if (signal.aborted) throw new Error('AbortError');
 
         const cookieId = uuidv1();
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
@@ -504,9 +572,10 @@ export async function xiaohongshuCookieGen(
         saveUserInfo(1, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
-        await page.close();
-        await context.close();
-        await browser.close();
+        signal.removeEventListener('abort', abortHandler);
+        await page.close().catch(() => {});
+        await context.close().catch(() => {});
+        await browser.close().catch(() => {});
     }
 }
 
@@ -516,15 +585,23 @@ export async function xiaohongshuCookieGen(
 export async function bilibiliCookieGen(
     id: string,
     emitter: EventEmitter,
+    signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
     const screenshotDir = createScreenshotDir('bilibili');
 
     const browser = await launchBrowser();
+    const abortHandler = () => {
+        logger.info('[Login:Bilibili] Detected abort signal, closing browser...');
+        browser.close().catch(() => {});
+    };
+    signal.addEventListener('abort', abortHandler);
+
     const context = await setInitScript(await browser.newContext());
     const page = await context.newPage();
 
     try {
+        if (signal.aborted) return;
         await debugScreenshot(page, screenshotDir, 'before_navigation.png', '导航前');
         await page.goto('https://member.bilibili.com/platform/home');
         const originalUrl = page.url();
@@ -566,13 +643,21 @@ export async function bilibiliCookieGen(
                         await onUrlChange();
                     }
                 });
+
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('AbortError'));
+                });
             });
             debugPrint('[DEBUG] Bilibili登录检测成功');
-        } catch {
+        } catch (err: any) {
+            if (err.message === 'AbortError') throw err;
             logger.warn('Bilibili登录页面跳转监听超时');
             emitter.emit('message', '500');
             return { success: false, error: 'TIMEOUT' };
         }
+
+        if (signal.aborted) throw new Error('AbortError');
 
         const cookieId = uuidv1();
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
@@ -588,8 +673,9 @@ export async function bilibiliCookieGen(
         saveUserInfo(5, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
-        await page.close();
-        await context.close();
-        await browser.close();
+        signal.removeEventListener('abort', abortHandler);
+        await page.close().catch(() => {});
+        await context.close().catch(() => {});
+        await browser.close().catch(() => {});
     }
 }

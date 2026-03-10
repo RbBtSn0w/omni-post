@@ -5,6 +5,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { dbManager } from '../db/database.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
 
@@ -23,9 +24,9 @@ router.get('/getGroups', (_req: Request, res: Response) => {
       ORDER BY g.created_at DESC
     `).all();
 
-        res.json({ code: 200, message: '获取成功', data: groups });
+        sendSuccess(res, groups, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, message: `获取组列表失败: ${error.message}` });
+        sendError(res, 500, `获取组列表失败: ${error.message}`);
     }
 });
 
@@ -39,14 +40,14 @@ router.post('/createGroup', (req: Request, res: Response) => {
         const { name, description } = req.body;
 
         if (!name) {
-            res.status(400).json({ code: 400, message: '组名不能为空' });
+            sendError(res, 400, '组名不能为空');
             return;
         }
 
         // Check for duplicate name
         const existing = db.prepare('SELECT id FROM account_groups WHERE name = ?').get(name);
         if (existing) {
-            res.status(400).json({ code: 400, message: '组名已存在' });
+            sendError(res, 400, '组名已存在');
             return;
         }
 
@@ -54,13 +55,9 @@ router.post('/createGroup', (req: Request, res: Response) => {
             'INSERT INTO account_groups (name, description) VALUES (?, ?)'
         ).run(name, description || null);
 
-        res.json({
-            code: 200,
-            message: '创建成功',
-            data: { id: result.lastInsertRowid, name, description },
-        });
+        sendSuccess(res, { id: result.lastInsertRowid, name, description }, '创建成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, message: `创建组失败: ${error.message}` });
+        sendError(res, 500, `创建组失败: ${error.message}`);
     }
 });
 
@@ -75,21 +72,21 @@ router.put('/updateGroup/:groupId', (req: Request, res: Response) => {
         const { name, description } = req.body;
 
         if (!name) {
-            res.status(400).json({ code: 400, message: '组名不能为空' });
+            sendError(res, 400, '组名不能为空');
             return;
         }
 
         // Check group exists
         const group = db.prepare('SELECT id FROM account_groups WHERE id = ?').get(groupId);
         if (!group) {
-            res.status(404).json({ code: 404, message: '组不存在' });
+            sendError(res, 404, '组不存在');
             return;
         }
 
         // Check for duplicate name (excluding current group)
         const duplicate = db.prepare('SELECT id FROM account_groups WHERE name = ? AND id != ?').get(name, groupId);
         if (duplicate) {
-            res.status(400).json({ code: 400, message: '组名已存在' });
+            sendError(res, 400, '组名已存在');
             return;
         }
 
@@ -97,9 +94,9 @@ router.put('/updateGroup/:groupId', (req: Request, res: Response) => {
             'UPDATE account_groups SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
         ).run(name, description || null, groupId);
 
-        res.json({ code: 200, message: '更新成功' });
+        sendSuccess(res, null, '更新成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, message: `更新组失败: ${error.message}` });
+        sendError(res, 500, `更新组失败: ${error.message}`);
     }
 });
 
@@ -115,21 +112,21 @@ router.delete('/deleteGroup/:groupId', (req: Request, res: Response) => {
         // Check group exists
         const group = db.prepare('SELECT id FROM account_groups WHERE id = ?').get(groupId);
         if (!group) {
-            res.status(404).json({ code: 404, message: '组不存在' });
+            sendError(res, 404, '组不存在');
             return;
         }
 
         // Check if group has accounts
         const accountCount = (db.prepare('SELECT COUNT(*) as count FROM user_info WHERE group_id = ?').get(groupId) as any).count;
         if (accountCount > 0) {
-            res.status(400).json({ code: 400, message: `无法删除，组内还有 ${accountCount} 个账号` });
+            sendError(res, 400, `无法删除，组内还有 ${accountCount} 个账号`);
             return;
         }
 
         db.prepare('DELETE FROM account_groups WHERE id = ?').run(groupId);
-        res.json({ code: 200, message: '删除成功' });
+        sendSuccess(res, null, '删除成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, message: `删除组失败: ${error.message}` });
+        sendError(res, 500, `删除组失败: ${error.message}`);
     }
 });
 
@@ -143,8 +140,8 @@ router.get('/getGroupAccounts/:groupId', (req: Request, res: Response) => {
         const groupId = Number(req.params.groupId);
 
         const accounts = db.prepare('SELECT * FROM user_info WHERE group_id = ? ORDER BY id DESC').all(groupId);
-        res.json({ code: 200, message: '获取成功', data: accounts });
+        sendSuccess(res, accounts, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, message: `获取组内账号失败: ${error.message}` });
+        sendError(res, 500, `获取组内账号失败: ${error.message}`);
     }
 });

@@ -9,8 +9,41 @@ import path from 'path';
 import { COOKIES_DIR } from '../core/config.js';
 import { getPlatformName } from '../core/constants.js';
 import { dbManager } from '../db/database.js';
+import { getCookieService } from '../services/cookie-service.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
+
+const VALIDATION_COOLDOWN_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+/**
+ * Perform real-time validation if cooldown expired or forced.
+ */
+async function validateAccountIfNeeded(account: any, force: boolean = false): Promise<any> {
+    const now = Date.now();
+    // Append Z if missing to ensure UTC parsing
+    const dateStr = account.last_validated_at && !account.last_validated_at.endsWith('Z') 
+        ? account.last_validated_at.replace(' ', 'T') + 'Z' 
+        : account.last_validated_at;
+    const lastValidated = dateStr ? new Date(dateStr).getTime() : 0;
+    
+    if (force || (now - lastValidated > VALIDATION_COOLDOWN_MS)) {
+        try {
+            const isValid = await getCookieService().checkCookie(account.type, account.filePath);
+            const status = isValid ? 1 : 0;
+            const validatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            
+            const db = dbManager.getDb();
+            db.prepare('UPDATE user_info SET status = ?, last_validated_at = ? WHERE id = ?')
+                .run(status, validatedAt, account.id);
+            
+            return { ...account, status, last_validated_at: validatedAt };
+        } catch (error) {
+            console.error(`[Account] Validation failed for ${account.userName}:`, error);
+        }
+    }
+    return account;
+}
 
 /**
  * GET /getAccounts
@@ -31,9 +64,9 @@ router.get('/getAccounts', (_req: Request, res: Response) => {
             account.created_at,
             account.last_validated_at
         ]);
-        res.json({ code: 200, msg: '获取成功', data: rowsList });
+        sendSuccess(res, rowsList, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `获取账号列表失败: ${error.message}` });
+        sendError(res, 500, `获取账号列表失败: ${error.message}`);
     }
 });
 
@@ -41,11 +74,13 @@ router.get('/getAccounts', (_req: Request, res: Response) => {
  * GET /getValidAccounts
  * Get accounts with cookie validation.
  * Optional: ?id=<accountId> to filter single account.
+ * Optional: ?force=true to skip cooldown.
  */
 router.get('/getValidAccounts', async (req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
         const accountId = req.query.id as string | undefined;
+        const force = req.query.force === 'true';
 
         let accounts: any[];
         if (accountId) {
@@ -54,10 +89,12 @@ router.get('/getValidAccounts', async (req: Request, res: Response) => {
             accounts = db.prepare('SELECT * FROM user_info ORDER BY id DESC').all();
         }
 
-        // In Python version, getValidAccounts also returns lists and potentially performs validation
-        // Our current implementation doesn't do background validation here yet, but must return same format
-        // Match Python's 8-element array format (no extra platformName)
-        const rowsList = accounts.map(account => [
+        // Perform real-time validation for each account
+        const validatedAccounts = await Promise.all(
+            accounts.map(acc => validateAccountIfNeeded(acc, force))
+        );
+
+        const rowsList = validatedAccounts.map(account => [
             account.id,
             account.type,
             account.filePath,
@@ -68,49 +105,49 @@ router.get('/getValidAccounts', async (req: Request, res: Response) => {
             account.last_validated_at,
         ]);
 
-        res.json({ code: 200, msg: '获取成功', data: rowsList });
+        sendSuccess(res, rowsList, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `获取有效账号失败: ${error.message}` });
+        sendError(res, 500, `获取有效账号失败: ${error.message}`);
     }
 });
 
 /**
  * GET /getAccountStatus
  * Get single account status.
+ * Optional: ?force=true to skip cooldown.
  */
 router.get('/getAccountStatus', async (req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
         const id = req.query.id as string;
+        const force = req.query.force === 'true';
 
         if (!id) {
-            res.status(400).json({ code: 400, msg: '缺少账号ID' });
+            sendError(res, 400, '缺少账号ID');
             return;
         }
 
-        const account = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as any;
+        let account = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as any;
         if (!account) {
-            res.status(404).json({ code: 404, msg: '账号不存在' });
+            sendError(res, 404, '账号不存在');
             return;
         }
 
-        // Add real-time validation and statusText to match Python's getAccountStatus
-        res.json({
-            code: 200,
-            msg: '获取成功',
-            data: {
-                id: account.id,
-                type: account.type,
-                filePath: account.filePath,
-                userName: account.userName,
-                status: account.status,
-                statusText: account.status === 1 ? '正常' : '异常',
-                isValid: account.status === 1,
-                platformName: getPlatformName(account.type),
-            },
-        });
+        account = await validateAccountIfNeeded(account, force);
+
+        sendSuccess(res, {
+            id: account.id,
+            type: account.type,
+            filePath: account.filePath,
+            userName: account.userName,
+            status: account.status,
+            statusText: account.status === 1 ? '正常' : '异常',
+            isValid: account.status === 1,
+            platformName: getPlatformName(account.type),
+            last_validated_at: account.last_validated_at,
+        }, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `获取账号状态失败: ${error.message}` });
+        sendError(res, 500, `获取账号状态失败: ${error.message}`);
     }
 });
 
@@ -124,14 +161,14 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
         const id = req.query.id as string;
 
         if (!id) {
-            res.status(400).json({ code: 400, msg: '缺少账号ID' });
+            sendError(res, 400, '缺少账号ID');
             return;
         }
 
         // Query the record first to get filePath for cookie cleanup (matching Python)
         const record = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as any;
         if (!record) {
-            res.status(404).json({ code: 404, msg: 'account not found', data: null });
+            sendError(res, 404, 'account not found');
             return;
         }
 
@@ -141,22 +178,18 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
             try {
                 if (fs.existsSync(cookieFile)) {
                     fs.unlinkSync(cookieFile);
-                    console.log(`✅ Cookie 文件已删除: ${cookieFile}`);
-                } else {
-                    console.log(`ℹ️ Cookie 文件不存在: ${cookieFile}`);
                 }
             } catch (fileError) {
-                console.log(`⚠️ 删除 Cookie 文件失败: ${fileError}`);
-                // File deletion failure should not prevent account deletion
+                console.error(`⚠️ 删除 Cookie 文件失败: ${fileError}`);
             }
         }
 
         // Delete database record
         db.prepare('DELETE FROM user_info WHERE id = ?').run(Number(id));
 
-        res.json({ code: 200, msg: 'account deleted successfully', data: null });
+        sendSuccess(res, null, 'account deleted successfully');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `删除账号失败: ${error.message}` });
+        sendError(res, 500, `删除账号失败: ${error.message}`);
     }
 });
 
@@ -170,7 +203,7 @@ router.post('/updateUserinfo', (req: Request, res: Response) => {
         const { id, type, filePath, userName, group_id } = req.body;
 
         if (!id) {
-            res.status(400).json({ code: 400, msg: '缺少账号ID' });
+            sendError(res, 400, '缺少账号ID');
             return;
         }
 
@@ -195,15 +228,15 @@ router.post('/updateUserinfo', (req: Request, res: Response) => {
         }
 
         if (updates.length === 0) {
-            res.status(400).json({ code: 400, msg: '没有需要更新的字段' });
+            sendError(res, 400, '没有需要更新的字段');
             return;
         }
 
         values.push(Number(id));
         db.prepare(`UPDATE user_info SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
-        res.json({ code: 200, msg: '更新成功' });
+        sendSuccess(res, null, '更新成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `更新账号失败: ${error.message}` });
+        sendError(res, 500, `更新账号失败: ${error.message}`);
     }
 });

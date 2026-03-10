@@ -6,9 +6,10 @@
 import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import multer from 'multer';
-import path from 'path';
 import { COOKIES_DIR } from '../core/config.js';
 import { dbManager } from '../db/database.js';
+import { safeJoin } from '../utils/path.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
 
@@ -35,7 +36,7 @@ const uploadCookie = multer({ storage: cookieStorage });
 router.post('/uploadCookie', uploadCookie.single('file'), (req: Request, res: Response) => {
     try {
         if (!req.file) {
-            res.status(400).json({ code: 400, msg: '没有选择文件' });
+            sendError(res, 400, '没有选择文件');
             return;
         }
 
@@ -43,7 +44,7 @@ router.post('/uploadCookie', uploadCookie.single('file'), (req: Request, res: Re
         const platform = req.body.platform;
 
         if (!accountId || !platform) {
-            res.status(400).json({ code: 400, msg: '缺少账号ID或平台类型' });
+            sendError(res, 400, '缺少账号ID或平台类型');
             return;
         }
 
@@ -52,15 +53,11 @@ router.post('/uploadCookie', uploadCookie.single('file'), (req: Request, res: Re
         db.prepare('UPDATE user_info SET filePath = ?, status = 1, last_validated_at = CURRENT_TIMESTAMP WHERE id = ?')
             .run(req.file.filename, Number(accountId));
 
-        res.json({
-            code: 200,
-            msg: '上传成功',
-            data: {
-                filePath: req.file.filename,
-            },
-        });
+        sendSuccess(res, {
+            filePath: req.file.filename,
+        }, '上传成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `上传Cookie失败: ${error.message}` });
+        sendError(res, 500, `上传Cookie失败: ${error.message}`);
     }
 });
 
@@ -72,18 +69,25 @@ router.get('/downloadCookie', (req: Request, res: Response) => {
     try {
         const filePath = req.query.filePath as string;
         if (!filePath) {
-            res.status(400).json({ code: 400, msg: '缺少文件路径参数' });
+            sendError(res, 400, '缺少文件路径参数');
             return;
         }
 
-        const fullPath = path.join(COOKIES_DIR, filePath);
+        let fullPath: string;
+        try {
+            fullPath = safeJoin(COOKIES_DIR, filePath);
+        } catch (error: any) {
+            sendError(res, 400, error.message);
+            return;
+        }
+
         if (!fs.existsSync(fullPath)) {
-            res.status(404).json({ code: 404, msg: 'Cookie文件不存在' });
+            sendError(res, 404, 'Cookie文件不存在');
             return;
         }
 
         res.download(fullPath);
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: `下载Cookie失败: ${error.message}` });
+        sendError(res, 500, `下载Cookie失败: ${error.message}`);
     }
 });

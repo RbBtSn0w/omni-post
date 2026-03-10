@@ -1,5 +1,5 @@
-import { logger } from '../core/logger';
-import { taskService } from './task-service';
+import { logger } from '../core/logger.js';
+import { taskService } from './task-service.js';
 
 /**
  * StartupService (启动自愈服务)

@@ -39,6 +39,18 @@ export function createTables(): void {
     )
   `);
 
+  // Ensure last_validated_at column exists for existing databases
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(user_info)").all() as any[];
+    const columnExists = tableInfo.some(col => col.name === 'last_validated_at');
+    if (!columnExists) {
+      db.exec("ALTER TABLE user_info ADD COLUMN last_validated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+      logger.info('Added last_validated_at column to user_info table.');
+    }
+  } catch (error: any) {
+    logger.error(`Error checking/adding last_validated_at column: ${error.message}`);
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS file_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

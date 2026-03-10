@@ -2,9 +2,8 @@
   // =====================================
   // Python 配置
   // =====================================
-  "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python",
-  "python.defaultInterpreterPath.windows": "${workspaceFolder}\\apps\\backend\\.venv\\Scripts\\python.exe",
-  "python.envFile": "${workspaceFolder}/apps/backend/.env",
+  "python.defaultInterpreterPath": "apps/backend/.venv/bin/python3",
+  "python.defaultInterpreterPath.windows": "apps\\backend\\.venv\\Scripts\\python.exe",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/apps/backend"
   ],
@@ -58,7 +57,6 @@
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.exclude": {
-    "**/.venv": true,
     "**/node_modules": true
   }
 }

@@ -126,7 +126,7 @@ jobs:
 
       - name: Security (NPM Audit)
         working-directory: apps/backend-node
-        run: npm audit --audit-level=high --omit=dev || echo "NPM Audit met warnings but continuing..."
+        run: npm audit --audit-level=high --omit=dev
 
       - name: Lint
         working-directory: apps/backend-node

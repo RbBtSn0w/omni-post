@@ -6,6 +6,7 @@
 import { Router, type Request, type Response } from 'express';
 import { PlatformType } from '../core/constants.js';
 import { dbManager } from '../db/database.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
 
@@ -80,39 +81,35 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
             account_list: task.account_list ? JSON.parse(task.account_list) : [],
         }));
 
-        res.json({
-            code: 200,
-            msg: '获取数据成功',
-            data: {
-                accountStats: { total: totalAccounts, normal: normalAccounts, abnormal: abnormalAccounts },
-                platformStats,
-                taskStats: {
-                    total: totalTasks,
-                    completed: completedTasks,
-                    inProgress: inProgressTasks,
-                    failed: failedTasks,
-                    waiting: waitingTasks,
-                },
-                contentStats: { total: totalFiles, published: completedTasks, draft: 0 },
-                taskTrend: {
-                    xAxis,
-                    series: [
-                        { name: '完成任务', data: seriesCompleted },
-                        { name: '失败任务', data: seriesFailed },
-                    ],
-                },
-                contentStatsData: {
-                    xAxis: ['快手', '抖音', '视频号', '小红书', 'Bilibili'],
-                    series: [
-                        { name: '已发布', data: [0, 0, 0, 0, 0] },
-                        { name: '草稿', data: [0, 0, 0, 0, 0] },
-                    ],
-                },
-                recentTasks,
+        sendSuccess(res, {
+            accountStats: { total: totalAccounts, normal: normalAccounts, abnormal: abnormalAccounts },
+            platformStats,
+            taskStats: {
+                total: totalTasks,
+                completed: completedTasks,
+                inProgress: inProgressTasks,
+                failed: failedTasks,
+                waiting: waitingTasks,
             },
-        });
+            contentStats: { total: totalFiles, published: completedTasks, draft: 0 },
+            taskTrend: {
+                xAxis,
+                series: [
+                    { name: '完成任务', data: seriesCompleted },
+                    { name: '失败任务', data: seriesFailed },
+                ],
+            },
+            contentStatsData: {
+                xAxis: ['快手', '抖音', '视频号', '小红书', 'Bilibili'],
+                series: [
+                    { name: '已发布', data: [0, 0, 0, 0, 0] },
+                    { name: '草稿', data: [0, 0, 0, 0, 0] },
+                ],
+            },
+            recentTasks,
+        }, '获取成功');
     } catch (error: any) {
         console.error(`[Dashboard] Error: ${error.message}`);
-        res.status(500).json({ code: 500, msg: `获取数据失败: ${error.message}` });
+        sendError(res, 500, `获取数据失败: ${error.message}`);
     }
 });

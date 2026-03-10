@@ -13,7 +13,7 @@ export default defineConfig({
             provider: 'v8',
             include: ['src/**/*.ts'],
             exclude: ['src/index.ts', 'src/db/migrations.ts'],
-            reporter: ['text', 'html', 'lcov'],
+            reporter: ['text', 'html', 'lcov', 'json'],
         },
     },
     resolve: {

@@ -12,6 +12,7 @@ import { dbManager } from '../db/database.js';
 import { activeQueues, runAsyncFunction } from '../services/login-service.js';
 import { startPublishThread } from '../services/publish-executor.js';
 import { taskService } from '../services/task-service.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
 
@@ -28,7 +29,7 @@ router.get('/login', (req: Request, res: Response) => {
     const groupName = (req.query.group as string) || undefined;
 
     if (!type || !id) {
-        res.status(400).json({ code: 400, msg: '缺少 type 或 id 参数' });
+        sendError(res, 400, '缺少 type 或 id 参数');
         return;
     }
 
@@ -39,28 +40,40 @@ router.get('/login', (req: Request, res: Response) => {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // Create event emitter for status communication
+    // Create communication and cancellation tokens (FR-005)
     const emitter = new EventEmitter();
-    activeQueues.set(id, emitter);
+    const abortController = new AbortController();
+    activeQueues.set(id, { emitter, abortController });
 
     // Listen for messages and send as SSE
     emitter.on('message', (msg: string) => {
-        res.write(`data: ${msg}\n\n`);
+        if (!res.writableEnded) {
+            res.write(`data: ${msg}\n\n`);
+        }
     });
 
     emitter.on('end', () => {
-        logger.info(`任务结束，等待客户端关闭 SSE: ${id}`);
+        logger.info(`任务结束，关闭 SSE: ${id}`);
+        activeQueues.delete(id);
+        emitter.removeAllListeners();
+        if (!res.writableEnded) {
+            res.end();
+        }
     });
 
     // Handle client disconnect
     req.on('close', () => {
-        logger.info(`客户端断开连接: ${id}`);
-        activeQueues.delete(id);
-        emitter.removeAllListeners();
+        const handle = activeQueues.get(id);
+        if (handle) {
+            logger.info(`客户端断开连接，中止任务: ${id}`);
+            handle.abortController.abort();
+            activeQueues.delete(id);
+            handle.emitter.removeAllListeners();
+        }
     });
 
     // Start login in background
-    runAsyncFunction(type, id, emitter, groupName);
+    runAsyncFunction(type, id, emitter, abortController.signal, groupName);
 });
 
 // ─── Task Management Endpoints (US3) ──────────────────────────────────
@@ -72,9 +85,9 @@ router.get('/login', (req: Request, res: Response) => {
 router.get('/tasks', (_req: Request, res: Response) => {
     try {
         const tasks = taskService.getAllTasks();
-        res.json({ code: 200, data: tasks });
+        sendSuccess(res, tasks, '获取成功');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });
 
@@ -85,9 +98,9 @@ router.get('/tasks', (_req: Request, res: Response) => {
 router.delete('/tasks/:taskId', (req: Request, res: Response) => {
     try {
         const success = taskService.deleteTask(req.params.taskId as string);
-        res.json({ code: 200, msg: success ? 'Deleted' : 'Failed' });
+        sendSuccess(res, null, success ? 'Deleted' : 'Failed');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });
 
@@ -100,12 +113,12 @@ router.patch('/tasks/:taskId', (req: Request, res: Response) => {
         const { status, progress } = req.body;
         if (status) {
             taskService.updateTaskStatus(req.params.taskId as string, status, progress);
-            res.json({ code: 200, msg: 'Updated' });
+            sendSuccess(res, null, 'Updated');
         } else {
-            res.status(400).json({ code: 400, msg: 'Status required' });
+            sendError(res, 400, 'Status required');
         }
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });
 
@@ -119,7 +132,7 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         const task = taskService.getTask(taskId);
 
         if (!task) {
-            res.status(404).json({ code: 404, msg: 'Task not found' });
+            sendError(res, 404, 'Task not found');
             return;
         }
 
@@ -151,10 +164,7 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         }
 
         if (validAccounts.length === 0) {
-            res.status(400).json({
-                code: 400,
-                msg: `Task has no valid accounts for platform ${platformType}`,
-            });
+            sendError(res, 400, `Task has no valid accounts for platform ${platformType}`);
             return;
         }
 
@@ -162,9 +172,9 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
 
         // Start async execution
         startPublishThread(taskId, publishData);
-        res.json({ code: 200, msg: 'Task started' });
+        sendSuccess(res, null, 'Task started');
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });
 
@@ -199,11 +209,7 @@ router.post('/postVideo', async (req: Request, res: Response) => {
         }
 
         if (validAccounts.length === 0) {
-            res.status(400).json({
-                code: 400,
-                msg: `没有匹配平台 ${platformType} 的有效账号`,
-                data: null,
-            });
+            sendError(res, 400, `没有匹配平台 ${platformType} 的有效账号`);
             return;
         }
 
@@ -212,12 +218,12 @@ router.post('/postVideo', async (req: Request, res: Response) => {
         const taskId = taskService.createTask(data);
         if (taskId) {
             startPublishThread(taskId, data);
-            res.json({ code: 200, msg: 'Task started', data: { taskId } });
+            sendSuccess(res, { taskId }, 'Task started');
         } else {
-            res.status(500).json({ code: 500, msg: 'Failed to create task', data: null });
+            sendError(res, 500, 'Failed to create task');
         }
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });
 
@@ -229,7 +235,7 @@ router.post('/postVideoBatch', async (req: Request, res: Response) => {
     try {
         const dataList = req.body;
         if (!Array.isArray(dataList)) {
-            res.status(400).json({ error: 'Expected a JSON array' });
+            sendError(res, 400, 'Expected a JSON array');
             return;
         }
 
@@ -243,12 +249,8 @@ router.post('/postVideoBatch', async (req: Request, res: Response) => {
             }
         }
 
-        res.json({
-            code: 200,
-            msg: `Created ${createdTasks.length} tasks`,
-            data: createdTasks,
-        });
+        sendSuccess(res, createdTasks, `Created ${createdTasks.length} tasks`);
     } catch (error: any) {
-        res.status(500).json({ code: 500, msg: error.message });
+        sendError(res, 500, error.message);
     }
 });

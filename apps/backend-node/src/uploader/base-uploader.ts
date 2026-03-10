@@ -1,6 +1,6 @@
 import { BrowserContext, Page } from 'playwright';
-import { logger } from '../core/logger';
-import { UploadOptions } from '../db/models';
+import { logger } from '../core/logger.js';
+import { UploadOptions } from '../db/models.js';
 
 /**
  * PlatformUploader (平台上传器基类接口)
