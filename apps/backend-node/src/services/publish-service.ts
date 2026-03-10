@@ -70,7 +70,7 @@ async function runWithOptimizedBrowser(
             try {
                 // Use the standardized postVideo method if available, fallback to upload
                 if (typeof uploader.postVideo === 'function') {
-                    await uploader.postVideo(context, enrichedOpts, (_progress) => {
+                    await uploader.postVideo(context, enrichedOpts, (_progress: number) => {
                         // Progress logging can be added here
                     });
                 } else if (typeof uploader.upload === 'function') {
