@@ -26,7 +26,7 @@
     "test:node": "npm run test -w apps/backend-node",
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
     "clean": "npm run clean --workspaces --if-present",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "engines": {
     "node": ">=20.19.0",
