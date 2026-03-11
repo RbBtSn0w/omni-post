@@ -175,7 +175,9 @@ export class DefaultCookieService implements CookieService {
                 'https://member.bilibili.com/platform/home',
                 { waitUntil: 'domcontentloaded' }
             );
-            if (page.url().includes('passport.bilibili.com')) {
+            
+            const urlObj = new URL(page.url());
+            if (urlObj.hostname === 'passport.bilibili.com') {
                 bilibiliLogger.error('[+] bilibili cookie 失效');
                 return false;
             } else {

@@ -337,10 +337,11 @@ export async function getKsCookie(
             }
 
             try {
+                const urlObj = new URL(page.url());
                 const loginTextCount = await page.getByText('扫码登录').count();
                 if (loginTextCount === 0) {
                     await logWithTimestamp('未检测到扫码登录文本，可能登录成功');
-                    if (page.url().includes('cp.kuaishou.com/profile')) {
+                    if (urlObj.hostname === 'cp.kuaishou.com' && urlObj.pathname.startsWith('/profile')) {
                         await logWithTimestamp('检测到profile页面且无登录文本，登录成功');
                         return true;
                     }
@@ -361,14 +362,16 @@ export async function getKsCookie(
         if (signal.aborted) return;
         page.on('request', (request) => {
             const url = request.url();
-            if (url.includes('cp.kuaishou.com') || url.includes('passport.kuaishou.com')) {
+            const urlObj = new URL(url);
+            if (urlObj.hostname === 'cp.kuaishou.com' || urlObj.hostname === 'passport.kuaishou.com') {
                 logWithTimestamp(`请求URL: ${url}, 方法: ${request.method()}`).catch(() => { });
             }
         });
 
         page.on('response', (response) => {
             const url = response.url();
-            if (url.includes('cp.kuaishou.com') || url.includes('passport.kuaishou.com')) {
+            const urlObj = new URL(url);
+            if (urlObj.hostname === 'cp.kuaishou.com' || urlObj.hostname === 'passport.kuaishou.com') {
                 logWithTimestamp(`响应URL: ${url}, 状态码: ${response.status()}`).catch(() => { });
             }
         });
@@ -401,12 +404,13 @@ export async function getKsCookie(
                     if (frame !== page.mainFrame()) return;
 
                     const currentUrl = frame.url();
+                    const urlObj = new URL(currentUrl);
                     await logWithTimestamp(`URL变化检测 - 当前URL: ${currentUrl}`);
                     await logWithTimestamp(`URL变化检测 - 原始URL: ${originalUrl}`);
 
                     let loginSuccess = false;
 
-                    if (currentUrl.includes('cp.kuaishou.com/profile')) {
+                    if (urlObj.hostname === 'cp.kuaishou.com' && urlObj.pathname.startsWith('/profile')) {
                         await logWithTimestamp(`检测到跳转到profile页面: ${currentUrl}`);
                         loginSuccess = await verifyLoginSuccess();
                     } else if (currentUrl !== originalUrl) {
@@ -632,7 +636,8 @@ export async function bilibiliCookieGen(
 
                 const onUrlChange = async () => {
                     const currentUrl = page.url();
-                    if (currentUrl !== originalUrl && !currentUrl.includes('passport.bilibili.com')) {
+                    const urlObj = new URL(currentUrl);
+                    if (currentUrl !== originalUrl && urlObj.hostname !== 'passport.bilibili.com') {
                         clearTimeout(timeoutId);
                         resolve();
                     }
