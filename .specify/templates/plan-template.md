@@ -17,10 +17,10 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., Python 3.11, TypeScript 5.x, Node.js 18+ LTS or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, Express.js, Playwright, better-sqlite3 or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., SQLite, PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, Vitest, XCTest, cargo test or NEEDS CLARIFICATION]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -31,11 +31,12 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Principle I (Architecture)**: Does the design follow the Routes → Services → Uploaders pattern?
-- **Principle II (Isolation)**: If a new platform is added, is it isolated in its own uploader directory?
-- **Principle III (Testing)**: Are automated tests defined for both frontend and backend components?
-- **Principle IV (Async)**: Does the design handle async/sync boundaries using thread-safe queues?
-- **Principle V (Monorepo)**: Are dependencies and scripts correctly assigned to `apps/backend` or `apps/frontend`?
+- **Principle I (Architecture Parity)**: Does the design ensure functional parity across both backends?
+- **Principle II (Pattern)**: Does the implementation follow the Routes → Services → Uploaders pattern?
+- **Principle III (Isolation)**: Are uploader implementations isolated and stateless?
+- **Principle IV (Testing)**: Are automated tests defined for both active backends (Python and Node.js)?
+- **Principle V (Concurrency)**: Does the design handle async tasks using threads/worker threads and SSE?
+- **Principle VI (Monorepo)**: Are dependencies and scripts correctly assigned within the monorepo?
 
 ## Project Structure
 
@@ -55,13 +56,19 @@ specs/[###-feature]/
 
 ```text
 apps/
-├── backend/
+├── backend/             # Python Flask Backend
 │   ├── src/
 │   │   ├── routes/      # HTTP Endpoints
 │   │   ├── services/    # Business Logic
 │   │   └── uploader/    # Platform Automations
 │   └── tests/           # Pytest suite
-└── frontend/
+├── backend-node/        # Node.js TypeScript Backend
+│   ├── src/
+│   │   ├── routes/      # Express Routes
+│   │   ├── services/    # Business Logic
+│   │   └── uploader/    # Platform Automations
+│   └── tests/           # Vitest suite
+└── frontend/            # Vue 3 Frontend
     ├── src/
     │   ├── views/       # Vue Pages
     │   ├── stores/      # Pinia State
@@ -69,7 +76,7 @@ apps/
     └── tests/           # Vitest suite
 ```
 
-**Structure Decision**: Standard OmniPost Monorepo layout.
+**Structure Decision**: Standard OmniPost Monorepo layout with dual-backend support.
 
 ## Complexity Tracking
 

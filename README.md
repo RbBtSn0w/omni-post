@@ -48,17 +48,25 @@
 
 ## 🔧 Tech Stack
 
-### Backend
+
+### Frontend
+- **Framework**: Vue 3 + Vite
+- **UI Component Library**: Element Plus
+### Backend Options (Dual Support)
+
+#### 1. Python Backend (Default)
 - **Language**: Python 3.10
 - **Framework**: Flask (with async support)
 - **Browser Automation**: Playwright
 - **Database**: SQLite
 - **Testing Framework**: pytest + pytest-asyncio
-- **Code Quality**: Black, isort, flake8, pylint, radon
 
-### Frontend
-- **Framework**: Vue 3 + Vite
-- **UI Component Library**: Element Plus
+#### 2. Node.js Backend (Modern TypeScript)
+- **Language**: Node.js 20+ (TypeScript 5.x)
+- **Framework**: Express.js (ESM)
+- **Browser Automation**: Playwright (Node.js version)
+- **Database**: SQLite (Shared with Python)
+- **Testing Framework**: Vitest
 - **State Management**: Pinia
 - **Routing**: Vue Router
 - **HTTP Client**: Axios
@@ -94,20 +102,25 @@ cd omni-post
 ### 2. Install Dependencies
 
 ```bash
-# Install all dependencies at once (recommended)
-npm run install:all
+# Install monorepo dependencies
+npm install
 
-# Or install separately
-npm install                    # Install root dependencies
-npm run install:backend        # Install backend dependencies
-npm run install:frontend       # Install frontend dependencies
+# Install Python backend dependencies (requires Python 3.10)
+npm run install:backend
+
+# Install Frontend dependencies (Vue 3)
+npm run install:frontend
 ```
 
 ### 3. Install Playwright Browser Driver
 
 ```bash
+# For Python backend
 cd apps/backend
 .venv/bin/python -m playwright install chromium
+
+# Or for Node.js backend
+npx playwright install chromium
 ```
 
 ### 4. Initialize Database
@@ -120,12 +133,16 @@ cd apps/backend
 ### 5. Start the Services
 
 ```bash
-# Start both frontend and backend simultaneously (from root directory)
+# Option A: Start with Python Backend (Default)
 npm run dev
 
-# Or start separately
-npm run dev:backend    # Backend service http://localhost:5409
-npm run dev:frontend   # Frontend service http://localhost:5173
+# Option B: Start with Node.js TypeScript Backend
+npm run dev:node & npm run dev:frontend
+
+# Or individually
+npm run dev:backend       # Python Backend (http://localhost:5409)
+npm run dev:node          # Node.js Backend (http://localhost:5409)
+npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
 
 ## 🏁 Quick Start
@@ -141,24 +158,24 @@ npm run dev:frontend   # Frontend service http://localhost:5173
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask Backend
+│   ├── backend/                 # Python Flask Backend (Primary)
 │   │   ├── src/
-│   │   │   ├── app.py          # Flask application entry point
-│   │   │   ├── core/           # Core configuration and logging
-│   │   │   ├── routes/         # API endpoints (account, publish, etc.)
-│   │   │   ├── services/       # Business logic (auth, task, publish)
-│   │   │   ├── uploader/       # Platform uploaders
-│   │   │   │   ├── douyin_uploader/
-│   │   │   │   ├── tencent_uploader/
-│   │   │   │   ├── xiaohongshu_uploader/
-│   │   │   │   └── ks_uploader/
-│   │   │   ├── utils/          # Utility functions
-│   │   │   └── db/             # Database management
-│   │   ├── tests/              # Backend test suite
-│   │   ├── requirements.txt    # Python dependencies
-│   │   └── pytest.ini          # Pytest configuration
+│   │   │   ├── app.py          # Entry point
+│   │   │   ├── core/           # Config & Logging
+│   │   │   ├── routes/         # API Endpoints
+│   │   │   ├── services/       # Business Logic
+│   │   │   └── uploader/       # Playwright Uploaders
+│   │   └── tests/              # Pytest suite
 │   │
-│   └── frontend/               # Vue.js Frontend
+│   ├── backend-node/            # Node.js TypeScript Backend (New)
+│   │   ├── src/
+│   │   │   ├── app.ts          # Express Application
+│   │   │   ├── routes/         # 1:1 API Parity Routes
+│   │   │   ├── services/       # Business Logic (Worker/Task)
+│   │   │   └── uploader/       # TS Playwright Uploaders
+│   │   └── tests/              # Vitest suite
+│   │
+│   └── frontend/               # Vue.js 3 Frontend (Shared)
 │       ├── src/
 │       │   ├── views/          # Page components (Dashboard, Publish, etc.)
 │       │   ├── components/     # Reusable components
@@ -207,17 +224,6 @@ omni-post/
 ### Running Tests
 
 ```bash
-# Run all tests
-npm run test
-
-# Run backend tests only
-npm run test:backend
-
-# Run frontend tests only
-npm run test:frontend
-
-# Frontend tests with coverage
-npm run test:frontend:coverage
 ```
 
 ### Code Quality & Linting

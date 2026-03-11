@@ -45,13 +45,21 @@
 
 ## 🔧 技术栈
 
-### 后端
+### 后端选项 (双端支持)
+
+#### 1. Python 后端 (默认/稳定)
 - **语言**: Python 3.10
 - **框架**: Flask (异步支持)
 - **浏览器自动化**: Playwright
 - **数据库**: SQLite
 - **测试框架**: pytest + pytest-asyncio
-- **代码质量**: Black, isort, flake8, pylint, radon
+
+#### 2. Node.js 后端 (现代化 TypeScript)
+- **语言**: Node.js 20+ (TypeScript 5.x)
+- **框架**: Express.js (ESM)
+- **浏览器自动化**: Playwright (Node.js 版)
+- **数据库**: SQLite (与 Python 共用)
+- **测试框架**: Vitest
 
 ### 前端
 - **框架**: Vue 3 + Vite
@@ -89,20 +97,25 @@ cd omni-post
 ### 2. 安装依赖
 
 ```bash
-# 一键安装所有依赖（推荐）
-npm run install:all
+# 一键安装 Monorepo 根依赖
+npm install
 
-# 或者分别安装
-npm install                    # 安装根目录依赖
-npm run install:backend        # 安装后端依赖
-npm run install:frontend       # 安装前端依赖
+# 安装 Python 后端环境 (需要 Python 3.10)
+npm run install:backend
+
+# 安装 Vue 3 前端依赖
+npm run install:frontend
 ```
 
 ### 3. 安装 Playwright 浏览器驱动
 
 ```bash
+# Python 后端
 cd apps/backend
 .venv/bin/python -m playwright install chromium
+
+# Node.js 后端
+npx playwright install chromium
 ```
 
 ### 4. 初始化数据库
@@ -115,12 +128,16 @@ cd apps/backend
 ### 5. 启动服务
 
 ```bash
-# 同时启动前后端（在根目录）
+# 选项 A：启动 Python 后端 (默认)
 npm run dev
 
-# 或分别启动
-npm run dev:backend    # 后端服务 http://localhost:5409
-npm run dev:frontend   # 前端服务 http://localhost:5173
+# 选项 B：启动 Node.js TypeScript 后端
+npm run dev:node & npm run dev:frontend
+
+# 或者分别启动
+npm run dev:backend    # Python 后端 (http://localhost:5409)
+npm run dev:node       # Node.js 后端 (http://localhost:5409)
+npm run dev:frontend   # 前端服务 (http://localhost:5173)
 ```
 
 ## 🏁 快速开始
@@ -136,22 +153,24 @@ npm run dev:frontend   # 前端服务 http://localhost:5173
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask 后端
+│   ├── backend/                 # Python Flask 后端 (核心)
 │   │   ├── src/
-│   │   │   ├── app.py          # Flask 应用入口
-│   │   │   ├── core/           # 核心配置与日志
-│   │   │   ├── routes/         # API 路由 (account, publish 等)
-│   │   │   ├── services/       # 业务逻辑 (auth, task, publish)
-│   │   │   ├── uploader/       # 平台上传器
-│   │   │   │   ├── douyin_uploader/
-│   │   │   │   ├── tencent_uploader/
-│   │   │   │   ├── xiaohongshu_uploader/
-│   │   │   │   └── ks_uploader/
-│   │   │   ├── utils/          # 工具函数
-│   │   │   └── db/             # 数据库管理
-│   │   └── tests/              # 后端测试
+│   │   │   ├── app.py          # 应用入口
+│   │   │   ├── core/           # 配置与日志
+│   │   │   ├── routes/         # API 路由
+│   │   │   ├── services/       # 业务逻辑
+│   │   │   └── uploader/       # 视频上传驱动
+│   │   └── tests/              # Pytest 测试集
 │   │
-│   └── frontend/               # Vue.js 前端
+│   ├── backend-node/            # Node.js TypeScript 后端 (新)
+│   │   ├── src/
+│   │   │   ├── app.ts          # Express 应用
+│   │   │   ├── routes/         # 1:1 API 兼容路由
+│   │   │   ├── services/       # 业务逻辑与执行器
+│   │   │   └── uploader/       # TS 版上传驱动
+│   │   └── tests/              # Vitest 测试集
+│   │
+│   └── frontend/               # Vue.js 前端 (共用)
 │       ├── src/
 │       │   ├── views/          # 页面组件 (Dashboard, PublishCenter 等)
 │       │   ├── components/     # 公共组件

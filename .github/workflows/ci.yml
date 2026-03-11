@@ -107,3 +107,43 @@ jobs:
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
+
+  backend-node-ci:
+    name: Backend Node (Lint, Typecheck & Test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node Backend
+        uses: ./.github/actions/setup-node-backend
+
+      - name: Install Playwright
+        working-directory: apps/backend-node
+        run: npx playwright install chromium --with-deps
+
+      - name: Security (NPM Audit)
+        working-directory: apps/backend-node
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Lint
+        working-directory: apps/backend-node
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: apps/backend-node
+        run: npm run typecheck
+
+      - name: Run Tests
+        run: npm test -w apps/backend-node -- --coverage
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./apps/backend-node/coverage/coverage-final.json
+          flags: backend-node
+          name: backend-node-coverage
+          fail_ci_if_error: false
