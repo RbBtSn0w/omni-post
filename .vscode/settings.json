@@ -2,8 +2,7 @@
     // =====================================
     // Python 配置
     // =====================================
-    "python.defaultInterpreterPath": "apps/backend/.venv/bin/python3",
-    "python.defaultInterpreterPath.windows": "apps\\backend\\.venv\\Scripts\\python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python3",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/apps/backend"
     ],
@@ -37,6 +36,8 @@
     "eslint.validate": [
         "javascript",
         "javascriptreact",
+        "typescript",
+        "typescriptreact",
         "vue"
     ],
     // Python 格式化配置 (需安装 Black Formatter 和 isort 扩展)
@@ -49,7 +50,7 @@
     },
     // Vue 文件配置
     "[vue]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     // =====================================
     // 通用编辑器配置
