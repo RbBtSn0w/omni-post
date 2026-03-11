@@ -5,7 +5,6 @@
 
 import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
-import path from 'path';
 import { COOKIES_DIR } from '../core/config.js';
 import { getPlatformName } from '../core/constants.js';
 import { dbManager } from '../db/database.js';
@@ -17,10 +16,21 @@ export const router = Router();
 
 const VALIDATION_COOLDOWN_MS = 3 * 60 * 60 * 1000; // 3 hours
 
+interface AccountRecord {
+  id: number;
+  type: number;
+  filePath: string;
+  userName: string;
+  status: number;
+  group_id: number | null;
+  created_at: string;
+  last_validated_at: string | null;
+}
+
 /**
  * Perform real-time validation if cooldown expired or forced.
  */
-async function validateAccountIfNeeded(account: any, force: boolean = false): Promise<any> {
+async function validateAccountIfNeeded(account: AccountRecord, force: boolean = false): Promise<AccountRecord> {
     const now = Date.now();
     // Append Z if missing to ensure UTC parsing
     const dateStr = account.last_validated_at && !account.last_validated_at.endsWith('Z') 
@@ -53,7 +63,7 @@ async function validateAccountIfNeeded(account: any, force: boolean = false): Pr
 router.get('/getAccounts', (_req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
-        const accounts = db.prepare('SELECT * FROM user_info ORDER BY id DESC').all() as any[];
+        const accounts = db.prepare('SELECT * FROM user_info ORDER BY id DESC').all() as AccountRecord[];
         // Convert objects to arrays to match Python's cursor.fetchall() -> list(row) behavior
         const rowsList = accounts.map(account => [
             account.id,
@@ -66,8 +76,9 @@ router.get('/getAccounts', (_req: Request, res: Response) => {
             account.last_validated_at
         ]);
         sendSuccess(res, rowsList, '获取成功');
-    } catch (error: any) {
-        sendError(res, 500, `获取账号列表失败: ${error.message}`);
+    } catch (error: unknown) {
+        const err = error as Error;
+        sendError(res, 500, `获取账号列表失败: ${err.message}`);
     }
 });
 
@@ -83,11 +94,11 @@ router.get('/getValidAccounts', async (req: Request, res: Response) => {
         const accountId = req.query.id as string | undefined;
         const force = req.query.force === 'true';
 
-        let accounts: any[];
+        let accounts: AccountRecord[];
         if (accountId) {
-            accounts = db.prepare('SELECT * FROM user_info WHERE id = ?').all(Number(accountId));
+            accounts = db.prepare('SELECT * FROM user_info WHERE id = ?').all(Number(accountId)) as AccountRecord[];
         } else {
-            accounts = db.prepare('SELECT * FROM user_info ORDER BY id DESC').all();
+            accounts = db.prepare('SELECT * FROM user_info ORDER BY id DESC').all() as AccountRecord[];
         }
 
         // Perform real-time validation for each account
