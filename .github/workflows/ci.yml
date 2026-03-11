@@ -137,8 +137,7 @@ jobs:
         run: npm run typecheck
 
       - name: Run Tests
-        working-directory: apps/backend-node
-        run: npm run test:coverage
+        run: npm test -w apps/backend-node -- --coverage
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
