@@ -11,10 +11,11 @@ describe('MockLoginService', () => {
     it('should emit QR code URL and 200 on success', async () => {
         const service = new MockLoginService(true, true);
         const emitter = new EventEmitter();
+        const controller = new AbortController();
         const messages: string[] = [];
         emitter.on('message', (msg: string) => messages.push(msg));
 
-        await service.douyinCookieGen('user1', emitter);
+        await service.douyinCookieGen('user1', emitter, controller.signal);
         expect(messages).toContain('https://mock-qrcode-url.com/douyin');
         expect(messages).toContain('200');
     });
@@ -22,20 +23,22 @@ describe('MockLoginService', () => {
     it('should emit 500 on login failure', async () => {
         const service = new MockLoginService(false, true);
         const emitter = new EventEmitter();
+        const controller = new AbortController();
         const messages: string[] = [];
         emitter.on('message', (msg: string) => messages.push(msg));
 
-        await service.getTencentCookie('user1', emitter);
+        await service.getTencentCookie('user1', emitter, controller.signal);
         expect(messages).toContain('500');
     });
 
     it('should emit 500 on invalid cookie', async () => {
         const service = new MockLoginService(true, false);
         const emitter = new EventEmitter();
+        const controller = new AbortController();
         const messages: string[] = [];
         emitter.on('message', (msg: string) => messages.push(msg));
 
-        await service.getKsCookie('user1', emitter);
+        await service.getKsCookie('user1', emitter, controller.signal);
         expect(messages).toContain('500');
     });
 
@@ -45,9 +48,10 @@ describe('MockLoginService', () => {
 
         for (const method of platforms) {
             const emitter = new EventEmitter();
+            const controller = new AbortController();
             const messages: string[] = [];
             emitter.on('message', (msg: string) => messages.push(msg));
-            await (service as any)[method]('user1', emitter);
+            await (service as any)[method]('user1', emitter, controller.signal);
             expect(messages).toContain('200');
         }
     });

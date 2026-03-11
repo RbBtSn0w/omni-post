@@ -58,9 +58,9 @@ export class MockTestLoginService implements LoginService {
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
     }
 
-    async douyinCookieGen(_id: string, emitter: EventEmitter): Promise<any> { this.emitResult(emitter, 'douyin'); return {}; }
-    async getTencentCookie(_id: string, emitter: EventEmitter): Promise<any> { this.emitResult(emitter, 'tencent'); return {}; }
-    async getKsCookie(_id: string, emitter: EventEmitter): Promise<any> { this.emitResult(emitter, 'ks'); return {}; }
-    async xiaohongshuCookieGen(_id: string, emitter: EventEmitter): Promise<any> { this.emitResult(emitter, 'xiaohongshu'); return {}; }
-    async bilibiliCookieGen(_id: string, emitter: EventEmitter): Promise<any> { this.emitResult(emitter, 'bilibili'); return {}; }
+    async douyinCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'douyin'); return {}; }
+    async getTencentCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'tencent'); return {}; }
+    async getKsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'ks'); return {}; }
+    async xiaohongshuCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'xiaohongshu'); return {}; }
+    async bilibiliCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'bilibili'); return {}; }
 }
