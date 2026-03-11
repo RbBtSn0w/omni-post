@@ -20,6 +20,7 @@ import {
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
+import { safeJoin } from '../utils/path.js';
 
 /**
  * Concurrency Limit (资源并发限制)
@@ -104,7 +105,14 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         // Validate files exist
         logger.info(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
         for (const f of fileList) {
-            const filePath = path.join(VIDEOS_DIR, f);
+            let filePath: string;
+            try {
+                filePath = safeJoin(VIDEOS_DIR, f);
+            } catch (error: any) {
+                logger.error(`  ✗ Video Path Invalid: ${f}`);
+                throw new Error(`非法的文件路径: ${f}`);
+            }
+
             if (fs.existsSync(filePath)) {
                 logger.info(`  ✓ Video exists: ${f}`);
             } else {
@@ -115,7 +123,14 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
 
         logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
         for (const acc of accountList) {
-            const accPath = path.join(COOKIES_DIR, acc);
+            let accPath: string;
+            try {
+                accPath = safeJoin(COOKIES_DIR, acc);
+            } catch (error: any) {
+                logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
+                throw new Error(`非法的文件路径: ${acc}`);
+            }
+
             if (fs.existsSync(accPath)) {
                 logger.info(`  ✓ Cookie exists: ${acc}`);
             } else {

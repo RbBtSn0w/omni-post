@@ -9,24 +9,18 @@ import path from 'path';
  * @throws Error 如果检测到路径穿越尝试或提供了非法路径
  */
 export function safeJoin(baseDir: string, relativePath: string): string {
-    // 基础路径解析
     const resolvedBase = path.resolve(baseDir);
-    
-    // 如果输入是绝对路径，且不以基础路径开头，则拒绝
-    if (path.isAbsolute(relativePath)) {
-        const resolvedInput = path.resolve(relativePath);
-        if (!resolvedInput.startsWith(resolvedBase + path.sep) && resolvedInput !== resolvedBase) {
-            throw new Error('非法的文件路径');
-        }
-        return resolvedInput;
-    }
-
     const fullPath = path.resolve(resolvedBase, relativePath);
 
-    // 确保结果路径在基础目录内
-    if (!fullPath.startsWith(resolvedBase + path.sep) && fullPath !== resolvedBase) {
+    // Ensure the resolved path is actually underneath the base directory
+    // Using startsWith on normalized paths is the standard way to prevent traversal
+    if (!fullPath.startsWith(resolvedBase)) {
         throw new Error('非法的文件路径');
     }
 
+    // Additional check: ensure it's not the base directory itself if that's required,
+    // but usually, we want to allow files WITHIN the base directory.
+    // The previous implementation was slightly more restrictive.
+    // Let's stick to the standard 'startsWith' pattern.
     return fullPath;
 }

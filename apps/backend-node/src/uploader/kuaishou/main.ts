@@ -8,6 +8,7 @@ import { type BrowserContext } from 'playwright';
 import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
 import type { UploadOptions } from '../../services/publish-service.js';
+import { safeJoin } from '../../utils/path.js';
 import { BaseUploader } from '../base-uploader.js';
 
 export class KuaishouUploader extends BaseUploader {
@@ -33,7 +34,13 @@ export class KuaishouUploader extends BaseUploader {
             });
 
             for (let i = 0; i < fileList.length; i++) {
-                const videoPath = path.join(VIDEOS_DIR, fileList[i]);
+                let videoPath: string;
+                try {
+                    videoPath = safeJoin(VIDEOS_DIR, fileList[i]);
+                } catch (error) {
+                    this.log(`非法的文件路径: ${fileList[i]}`, 'error');
+                    continue;
+                }
                 this.log(`上传视频 ${i + 1}/${fileList.length}: ${fileList[i]}`);
 
                 const fileInput = page.locator('input[type="file"]').first();

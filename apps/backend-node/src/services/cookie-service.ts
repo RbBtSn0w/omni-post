@@ -8,6 +8,7 @@ import { launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
 import { PlatformType } from '../core/constants.js';
 import { bilibiliLogger, douyinLogger, kuaishouLogger, tencentLogger, xhsLogger } from '../core/logger.js';
+import { safeJoin } from '../utils/path.js';
 
 /**
  * CookieService interface
@@ -189,7 +190,13 @@ export class DefaultCookieService implements CookieService {
     }
 
     async checkCookie(platformType: number, filePath: string): Promise<boolean> {
-        const cookiePath = path.join(this.cookiesDir, filePath);
+        let cookiePath: string;
+        try {
+            cookiePath = safeJoin(this.cookiesDir, filePath);
+        } catch (error) {
+            return false;
+        }
+
         switch (platformType) {
             case PlatformType.XIAOHONGSHU: return this.cookieAuthXhs(cookiePath);
             case PlatformType.TENCENT: return this.cookieAuthTencent(cookiePath);

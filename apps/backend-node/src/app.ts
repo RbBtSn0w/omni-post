@@ -5,6 +5,7 @@
 
 import cors from 'cors';
 import express, { type Express } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createTables } from './db/migrations.js';
@@ -25,6 +26,16 @@ const __dirname = path.dirname(__filename);
  */
 export function createApp(): Express {
     const app = express();
+
+    // Rate limiting (FR-Security: prevents DOS and satisfies CodeQL)
+    const limiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 1000, // limit each IP to 1000 requests per windowMs
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { code: 429, msg: 'Too many requests, please try again later.', data: null },
+    });
+    app.use(limiter);
 
     // CORS (match Flask-CORS behavior: allow all origins)
     app.use(cors());

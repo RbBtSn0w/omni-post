@@ -10,6 +10,7 @@ import { VIDEOS_DIR } from '../../core/config.js';
 import { douyinLogger } from '../../core/logger.js';
 import type { UploadOptions } from '../../services/publish-service.js';
 import { generateScheduleTimeNextDay } from '../../utils/files-times.js';
+import { safeJoin } from '../../utils/path.js';
 import { BaseUploader } from '../base-uploader.js';
 
 export class DouyinUploader extends BaseUploader {
@@ -39,7 +40,14 @@ export class DouyinUploader extends BaseUploader {
 
             for (let i = 0; i < fileList.length; i++) {
                 const videoFile = fileList[i];
-                const videoPath = path.join(VIDEOS_DIR, videoFile);
+                let videoPath: string;
+                try {
+                    videoPath = safeJoin(VIDEOS_DIR, videoFile);
+                } catch (error) {
+                    this.log(`非法的文件路径: ${videoFile}`, 'error');
+                    continue;
+                }
+
                 this.log(`上传视频 ${i + 1}/${fileList.length}: ${videoFile}`);
 
                 // Upload video file

@@ -10,6 +10,7 @@ import { COOKIES_DIR } from '../core/config.js';
 import { getPlatformName } from '../core/constants.js';
 import { dbManager } from '../db/database.js';
 import { getCookieService } from '../services/cookie-service.js';
+import { safeJoin } from '../utils/path.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
@@ -174,8 +175,8 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
 
         // Delete associated Cookie file (matching Python's account.py behavior)
         if (record.filePath) {
-            const cookieFile = path.join(COOKIES_DIR, record.filePath);
             try {
+                const cookieFile = safeJoin(COOKIES_DIR, record.filePath);
                 if (fs.existsSync(cookieFile)) {
                     fs.unlinkSync(cookieFile);
                 }

@@ -20,9 +20,9 @@ const cookieStorage = multer.diskStorage({
         cb(null, COOKIES_DIR);
     },
     filename: (req, file, cb) => {
-        // Use account ID and platform type as filename prefix
-        const accountId = req.body.id || 'unknown';
-        const platform = req.body.platform || 'unknown';
+        // Sanitize components to prevent path injection (SC-001)
+        const accountId = String(req.body.id || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+        const platform = String(req.body.platform || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
         cb(null, `${platform}_${accountId}_cookies.json`);
     },
 });

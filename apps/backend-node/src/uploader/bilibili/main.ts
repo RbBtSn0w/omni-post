@@ -9,6 +9,7 @@ import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
 import { bilibiliLogger } from '../../core/logger.js';
 import { UploadOptions } from '../../db/models.js';
+import { safeJoin } from '../../utils/path.js';
 import { BaseUploader } from '../base-uploader.js';
 
 export class BilibiliUploader extends BaseUploader {
@@ -35,7 +36,13 @@ export class BilibiliUploader extends BaseUploader {
             });
 
             for (let i = 0; i < fileList.length; i++) {
-                const videoPath = path.join(VIDEOS_DIR, fileList[i]);
+                let videoPath: string;
+                try {
+                    videoPath = safeJoin(VIDEOS_DIR, fileList[i]);
+                } catch (error) {
+                    this.log(`非法的文件路径: ${fileList[i]}`, 'error');
+                    continue;
+                }
                 this.log(`上传视频 ${i + 1}/${fileList.length}: ${fileList[i]}`);
 
                 const fileInput = page.locator('input[type="file"]').first();

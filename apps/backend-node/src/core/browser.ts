@@ -68,10 +68,12 @@ export async function launchBrowser(headless?: boolean): Promise<Browser> {
  * Create platform-specific session screenshot directory.
  */
 export function createScreenshotDir(platform: string): string {
+    // Sanitize platform name (SC-001)
+    const safePlatform = String(platform).replace(/[^a-zA-Z0-9_-]/g, '');
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -1);
     const screenshotsRoot = path.join(LOGS_DIR, 'screenshots');
     fs.mkdirSync(screenshotsRoot, { recursive: true });
-    const sessionDir = path.join(screenshotsRoot, platform, timestamp);
+    const sessionDir = path.join(screenshotsRoot, safePlatform, timestamp);
     fs.mkdirSync(sessionDir, { recursive: true });
     return sessionDir;
 }
@@ -91,7 +93,9 @@ export async function debugScreenshot(
         filename = `${filename}.png`;
     }
 
-    const screenshotPath = path.join(sessionDir, filename);
+    // Sanitize filename (SC-001)
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_.-]/g, '');
+    const screenshotPath = path.join(sessionDir, safeFilename);
 
     try {
         await page.screenshot({

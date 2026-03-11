@@ -10,6 +10,7 @@ import { COOKIES_DIR } from '../core/config.js';
 import { launchBrowser, setInitScript } from '../core/browser.js';
 import type { UploadOptions } from '../db/models.js';
 import { generateScheduleTimeNextDay } from '../utils/files-times.js';
+import { safeJoin } from '../utils/path.js';
 
 export type { UploadOptions };
 
@@ -62,7 +63,14 @@ async function runWithOptimizedBrowser(
         const uploader = await uploaderFactory();
         
         for (const accountFile of opts.accountList) {
-            const cookiePath = path.join(COOKIES_DIR, accountFile);
+            let cookiePath: string;
+            try {
+                cookiePath = safeJoin(COOKIES_DIR, accountFile);
+            } catch (error) {
+                console.error(`[PublishService] Invalid account path: ${accountFile}`);
+                continue;
+            }
+
             const context = await setInitScript(
                 await browser.newContext({ storageState: cookiePath })
             );
