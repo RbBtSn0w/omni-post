@@ -4,8 +4,8 @@
       <el-aside :width="isCollapse ? '64px' : '200px'">
         <div class="sidebar">
           <div class="logo">
-            <img v-show="isCollapse" src="/vite.svg" alt="Logo" class="logo-img">
-            <h2 v-show="!isCollapse">自媒体自动化运营系统</h2>
+            <img src="/logo.png" alt="Logo" class="logo-img">
+            <h2 v-show="!isCollapse">OmniPost</h2>
           </div>
           <el-menu
             :router="true"
