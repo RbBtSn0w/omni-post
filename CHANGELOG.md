@@ -1,3 +1,28 @@
+## [1.1.0](https://github.com/RbBtSn0w/omni-post/compare/v1.0.0...v1.1.0) (2026-03-11)
+
+### ✨ Features
+
+* **backend-node:** finalize parity verification and refactor logging ([12d420c](https://github.com/RbBtSn0w/omni-post/commit/12d420c9eca5c857873a59efa847ece14f6a32ad))
+* **backend-node:** implement security hardening, ESM stability, and API parity ([47a5305](https://github.com/RbBtSn0w/omni-post/commit/47a530553909509336ab21d89e7cdc8492363503))
+* **backend-node:** re-implement playwright login logic to strictly match python parity for all 5 platforms ([fed0ccf](https://github.com/RbBtSn0w/omni-post/commit/fed0ccf97da2810a8e95a7ab8488317c36e78cd5))
+* **backend-node:** update concurrency principle and fix E2E route paths ([0f5eeae](https://github.com/RbBtSn0w/omni-post/commit/0f5eeae371e9e275e0615f3c2adfd6832bf9bcfe))
+* complete node.js backend rewrite with improved safety features and platform parity ([ed69465](https://github.com/RbBtSn0w/omni-post/commit/ed69465b469eabcfcf65282cc8a6b5916f3fa64b))
+* implement Node.js TypeScript backend (phases 1-6) ([bec501a](https://github.com/RbBtSn0w/omni-post/commit/bec501a2d9d9b6bf331354b531475d9b5b1786bc))
+* initialize speck-kit (constitution, templates, and workflows) ([2ca7a6c](https://github.com/RbBtSn0w/omni-post/commit/2ca7a6c1e0a7067e2ff8c5a5cc38cce49f77ae32))
+* **spec:** add API and functional parity checklist for node backend rewrite ([df092e6](https://github.com/RbBtSn0w/omni-post/commit/df092e6ddfbbffddf7e4c87b543430814ef86519))
+* **spec:** initial design documents for Node.js backend rewrite ([5a00240](https://github.com/RbBtSn0w/omni-post/commit/5a00240357b32f7a2472c011b8eab9f74ae01d9b))
+
+### 🐛 Bug Fixes
+
+* **backend-node:** fix bilibili dispatch test spy expectation ([533c03c](https://github.com/RbBtSn0w/omni-post/commit/533c03c082dd509c24a936bddab01627ab74866b))
+* **backend-node:** fix implicit any type error in publish-service ([67ac161](https://github.com/RbBtSn0w/omni-post/commit/67ac161b80f623a1c005da180267b98cafda389f))
+* **backend-node:** harden security and add rate limiting to satisfy CodeQL ([fc2dbfc](https://github.com/RbBtSn0w/omni-post/commit/fc2dbfcc026454cba00d1219688001ed2e823bc0))
+* **backend-node:** resolve CodeQL incomplete URL sanitization alerts ([112f356](https://github.com/RbBtSn0w/omni-post/commit/112f356bb6df56efaa0cef0ef51223e09747e13b))
+* **ci:** replace cycjimmy/semantic-release-action to fix Node 20 Date.prototype.toString error ([b441b98](https://github.com/RbBtSn0w/omni-post/commit/b441b98de057bad60eb7b8b5a06ea082ebe606bf))
+* resolve TypeScript errors in account.ts ([74cc755](https://github.com/RbBtSn0w/omni-post/commit/74cc75598673d37ce443fabc9c71ec34e054a901))
+* update default formatter for Vue files and comment out Python formatter ([ea5d4ec](https://github.com/RbBtSn0w/omni-post/commit/ea5d4eca39387b7ae8575dcc82b4490e65b9653b))
+* update Python interpreter path and improve ESLint configuration ([518f11d](https://github.com/RbBtSn0w/omni-post/commit/518f11db1b461aad805ef2da71dd16272e213e1b))
+
 # 1.0.0 (2026-02-03)
 
 
