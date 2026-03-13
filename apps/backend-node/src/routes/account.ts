@@ -153,6 +153,7 @@ router.get('/getAccountStatus', async (req: Request, res: Response) => {
             filePath: account.filePath,
             userName: account.userName,
             status: account.status,
+            group_id: account.group_id,
             statusText: account.status === 1 ? '正常' : '异常',
             isValid: account.status === 1,
             platformName: getPlatformName(account.type),

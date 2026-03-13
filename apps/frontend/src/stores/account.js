@@ -100,6 +100,7 @@ export const useAccountStore = defineStore('account', () => {
           filePath: item.filePath,
           name: item.userName,
           status: item.statusText || initialStatus,
+          group_id: item.group_id,
           platform: platformTypes[item.type] || '未知',
           avatar: '/vite.svg',
           isRefreshing: false,

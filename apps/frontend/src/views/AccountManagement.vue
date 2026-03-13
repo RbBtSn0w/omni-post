@@ -101,7 +101,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -109,6 +109,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -176,7 +184,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -184,6 +192,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -239,7 +255,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -247,6 +263,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -302,7 +326,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -310,6 +334,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -365,7 +397,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -373,6 +405,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -428,7 +468,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
-                <el-table-column prop="platform" label="平台">
+                <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
                       :type="getPlatformTagType(scope.row.platform)"
@@ -436,6 +476,14 @@
                     >
                       {{ scope.row.platform }}
                     </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="账号组" width="120">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    </el-tag>
+                    <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="status" label="状态">
@@ -644,6 +692,7 @@ const handleRefreshSingleAccount = async (row) => {
 
       accountStore.updateAccount(row.id, {
         status: statusText,
+        group_id: updatedAccount[5],
         isRefreshing: false
       })
 
@@ -1186,10 +1235,15 @@ const submitAccountForm = () => {
           };
           const type = platformTypeMap[accountForm.platform] || 1;
 
+          // 获取选中的组 ID
+          const group = groupStore.groups.find(g => g.name === accountForm.groupName);
+          const group_id = group ? group.id : 0; // 如果是新输入的组名且尚未刷新，之后获取时会更新
+
           const res = await accountApi.updateAccount({
             id: accountForm.id,
             type: type,
-            userName: accountForm.name
+            userName: accountForm.name,
+            group_id: group_id
           })
           if (res.code === 200) {
             // 更新状态管理中的账号
@@ -1197,13 +1251,15 @@ const submitAccountForm = () => {
               id: accountForm.id,
               name: accountForm.name,
               platform: accountForm.platform,
+              group_id: group_id, // 保存组ID
               status: accountForm.status // Keep the existing status
             };
             accountStore.updateAccount(accountForm.id, updatedAccount)
             ElMessage.success('更新成功')
             dialogVisible.value = false
-            // 刷新账号列表
+            // 刷新账号和组列表，确保新添加的组可见
             fetchAccounts()
+            groupStore.fetchGroups()
           } else {
             ElMessage.error(res.msg || '更新账号失败')
           }
