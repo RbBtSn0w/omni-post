@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/RbBtSn0w/omni-post/compare/v1.2.0...v1.2.1) (2026-03-13)
+
+### 🐛 Bug Fixes
+
+* **account:** resolve account group loss and add visibility in UI ([c88202f](https://github.com/RbBtSn0w/omni-post/commit/c88202f6234966dfc9e53dc3a689c1a8e6ac0706))
+
 ## [1.2.0](https://github.com/RbBtSn0w/omni-post/compare/v1.1.0...v1.2.0) (2026-03-11)
 
 ### ✨ Features
