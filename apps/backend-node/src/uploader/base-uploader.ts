@@ -26,6 +26,15 @@ export abstract class BaseUploader {
     ): Promise<void>;
 
     /**
+     * 执行文章发布的核心流程
+     */
+    public abstract postArticle?(
+        context: BrowserContext,
+        options: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void>;
+
+    /**
      * 子类通用的工具方法: 创建并配置新页面
      */
     protected async createPage(context: BrowserContext): Promise<Page> {

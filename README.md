@@ -33,6 +33,9 @@
 ## 💡 Features
 
 - ✅ **Multi-Platform Support**: Covers major Chinese social media platforms
+- ✅ **Article Publishing**: Support for Markdown publishing to Zhihu and Juejin (New!)
+- ✅ **Browser Session Reuse**: Direct use of local Chrome sessions for zero-friction login (New!)
+- ✅ **Unified CLI**: Powerful command-line tool for developers (New!)
 - ✅ **Scheduled Publishing**: Support for precise publication timing
 - ✅ **Separated Frontend & Backend**: Intuitive web management interface
 - ✅ **API Encapsulation**: Support for integration with other systems

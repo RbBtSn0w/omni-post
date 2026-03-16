@@ -25,6 +25,19 @@ export function createTables(): void {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS browser_profiles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      browser_type TEXT NOT NULL DEFAULT 'chrome',
+      user_data_dir TEXT NOT NULL,
+      profile_name TEXT NOT NULL DEFAULT 'Default',
+      is_default INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS user_info (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type INTEGER NOT NULL,
@@ -32,23 +45,30 @@ export function createTables(): void {
       userName TEXT NOT NULL,
       status INTEGER DEFAULT 0,
       group_id INTEGER,
+      session_source TEXT DEFAULT 'managed',
+      browser_profile_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       last_validated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(type, userName),
-      FOREIGN KEY (group_id) REFERENCES account_groups(id)
+      FOREIGN KEY (group_id) REFERENCES account_groups(id),
+      FOREIGN KEY (browser_profile_id) REFERENCES browser_profiles(id)
     )
   `);
 
-  // Ensure last_validated_at column exists for existing databases
+  // Ensure columns exist for user_info
   try {
     const tableInfo = db.prepare("PRAGMA table_info(user_info)").all() as any[];
-    const columnExists = tableInfo.some(col => col.name === 'last_validated_at');
-    if (!columnExists) {
+    if (!tableInfo.some(col => col.name === 'last_validated_at')) {
       db.exec("ALTER TABLE user_info ADD COLUMN last_validated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
-      logger.info('Added last_validated_at column to user_info table.');
+    }
+    if (!tableInfo.some(col => col.name === 'session_source')) {
+      db.exec("ALTER TABLE user_info ADD COLUMN session_source TEXT DEFAULT 'managed'");
+    }
+    if (!tableInfo.some(col => col.name === 'browser_profile_id')) {
+      db.exec("ALTER TABLE user_info ADD COLUMN browser_profile_id TEXT");
     }
   } catch (error: any) {
-    logger.error(`Error checking/adding last_validated_at column: ${error.message}`);
+    logger.error(`Error updating user_info table: ${error.message}`);
   }
 
   db.exec(`
@@ -62,22 +82,54 @@ export function createTables(): void {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS articles (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      tags TEXT,
+      cover_image TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
       id TEXT PRIMARY KEY,
       title TEXT,
       status TEXT DEFAULT 'waiting',
       progress REAL DEFAULT 0,
       priority INTEGER DEFAULT 1,
+      content_type TEXT DEFAULT 'video',
+      content_id TEXT,
       platforms TEXT,
       file_list TEXT,
       account_list TEXT,
+      browser_profile_id TEXT,
       schedule_data TEXT,
       error_msg TEXT,
       publish_data TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (browser_profile_id) REFERENCES browser_profiles(id)
     )
   `);
+
+  // Ensure columns exist for tasks
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(tasks)").all() as any[];
+    if (!tableInfo.some(col => col.name === 'content_type')) {
+      db.exec("ALTER TABLE tasks ADD COLUMN content_type TEXT DEFAULT 'video'");
+    }
+    if (!tableInfo.some(col => col.name === 'content_id')) {
+      db.exec("ALTER TABLE tasks ADD COLUMN content_id TEXT");
+    }
+    if (!tableInfo.some(col => col.name === 'browser_profile_id')) {
+      db.exec("ALTER TABLE tasks ADD COLUMN browser_profile_id TEXT");
+    }
+  } catch (error: any) {
+    logger.error(`Error updating tasks table: ${error.message}`);
+  }
 }
 
 // If run directly, create tables

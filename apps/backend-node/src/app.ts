@@ -12,8 +12,11 @@ import { createTables } from './db/migrations.js';
 
 // Route imports
 import { router as accountRouter } from './routes/account.js';
+import { router as articleRouter } from './routes/article.js';
+import { router as browserRouter } from './routes/browser.js';
 import { router as cookieRouter } from './routes/cookie.js';
 import { router as dashboardRouter } from './routes/dashboard.js';
+import { router as explorerRouter } from './routes/explorer.js';
 import { router as fileRouter } from './routes/file.js';
 import { router as groupRouter } from './routes/group.js';
 import { router as publishRouter } from './routes/publish.js';
@@ -49,7 +52,10 @@ export function createApp(): Express {
 
     // Register route blueprints under root prefix to match Python backend
     app.use('/', dashboardRouter);
+    app.use('/', explorerRouter);
     app.use('/', accountRouter);
+    app.use('/', articleRouter);
+    app.use('/', browserRouter);
     app.use('/', fileRouter);
     app.use('/', cookieRouter);
     app.use('/', groupRouter);

@@ -17,6 +17,8 @@ import {
     postVideoKs,
     postVideoTencent,
     postVideoXhs,
+    postArticleZhihu,
+    postArticleJuejin,
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
@@ -25,10 +27,9 @@ import { safeJoin } from '../utils/path.js';
 /**
  * Concurrency Limit (资源并发限制)
  * 限制同时运行的浏览器实例数量，防止内存溢出。
- * 对标 CHK012 要求。
  */
 let activeTasks = 0;
-const MAX_CONCURRENT_TASKS = 5; // 常规桌面环境下推荐设置为 5
+const MAX_CONCURRENT_TASKS = 5; 
 const taskQueue: (() => void)[] = [];
 
 async function acquireSlot(taskId: string): Promise<void> {
@@ -65,7 +66,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
     const lockedAccounts: string[] = [];
 
     try {
-        // 尝试锁定所有涉及的账号 (SC-003)
+        // 尝试锁定所有涉及的账号
         for (const account of accountList) {
             if (!lockManager.lock(account)) {
                 throw new Error('账号正在使用中，请稍后再试');
@@ -93,6 +94,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         const productTitle = publishData.productTitle || '';
         const thumbnailPath = publishData.thumbnail || '';
         const isDraft = publishData.isDraft || false;
+        const browser_profile_id = publishData.browser_profile_id || null;
 
         // Debug logging
         logger.info(`[PUBLISH] Platform: ${getPlatformName(type)}`);
@@ -100,7 +102,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         logger.info(`[PUBLISH] Tags: ${tags}`);
         logger.info(`[PUBLISH] File list: ${fileList}`);
         logger.info(`[PUBLISH] Account list: ${accountList}`);
-        logger.info(`[PUBLISH] Enable timer: ${enableTimer}`);
+        logger.info(`[PUBLISH] Browser Profile ID: ${browser_profile_id}`);
 
         // Validate files exist
         logger.info(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
@@ -121,22 +123,27 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             }
         }
 
-        logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
-        for (const acc of accountList) {
-            let accPath: string;
-            try {
-                accPath = safeJoin(COOKIES_DIR, acc);
-            } catch (error: any) {
-                logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
-                throw new Error(`非法的文件路径: ${acc}`);
-            }
+        // Managed cookies check only if NOT using local profile
+        if (!browser_profile_id) {
+            logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
+            for (const acc of accountList) {
+                let accPath: string;
+                try {
+                    accPath = safeJoin(COOKIES_DIR, acc);
+                } catch (error: any) {
+                    logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
+                    throw new Error(`非法的文件路径: ${acc}`);
+                }
 
-            if (fs.existsSync(accPath)) {
-                logger.info(`  ✓ Cookie exists: ${acc}`);
-            } else {
-                logger.error(`  ✗ Cookie MISSING: ${acc}`);
-                throw new Error(`Cookie file not found: ${accPath}`);
+                if (fs.existsSync(accPath)) {
+                    logger.info(`  ✓ Cookie exists: ${acc}`);
+                } else {
+                    logger.error(`  ✗ Cookie MISSING: ${acc}`);
+                    throw new Error(`Cookie file not found: ${accPath}`);
+                }
             }
+        } else {
+            logger.info('\n[VALIDATE] Skipping cookie check (using local browser profile).');
         }
 
         logger.info('\n[PUBLISH] All validations passed. Starting upload...');
@@ -155,6 +162,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             productLink,
             productTitle,
             isDraft,
+            browser_profile_id,
         };
 
         // Dispatch to appropriate uploader
@@ -164,6 +172,8 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             case PlatformType.DOUYIN: await postVideoDouyin(opts); break;
             case PlatformType.KUAISHOU: await postVideoKs(opts); break;
             case PlatformType.BILIBILI: await postVideoBilibili(opts); break;
+            case PlatformType.ZHIHU: await postArticleZhihu(opts); break;
+            case PlatformType.JUEJIN: await postArticleJuejin(opts); break;
             default: throw new Error(`Unknown platform type: ${type}`);
         }
 
@@ -184,7 +194,6 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
 
 /**
  * Start publish task in background (non-blocking).
- * Uses setImmediate to not block the event loop.
  */
 export function startPublishThread(taskId: string, publishData: any): void {
     setImmediate(() => {

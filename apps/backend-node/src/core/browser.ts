@@ -65,6 +65,44 @@ export async function launchBrowser(headless?: boolean): Promise<Browser> {
 }
 
 /**
+ * Launch browser with a persistent context (session reuse).
+ */
+export async function launchPersistentContext(
+    userDataDir: string,
+    profileName: string = 'Default',
+    headless?: boolean
+): Promise<BrowserContext> {
+    const browserArgs = [
+        '--lang=en-GB',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36',
+    ];
+
+    const launchOptions: Record<string, any> = {
+        headless: headless ?? LOCAL_CHROME_HEADLESS,
+        args: browserArgs,
+        viewport: { width: 1280, height: 800 },
+    };
+
+    if (LOCAL_CHROME_PATH && fs.existsSync(LOCAL_CHROME_PATH)) {
+        debugPrint(`[DEBUG] 使用系统 Chrome: ${LOCAL_CHROME_PATH}`);
+        launchOptions.executablePath = LOCAL_CHROME_PATH;
+    }
+
+    // Playwright uses the last path component as profile if not specified otherwise, 
+    // but typically it's better to point directly to the user data dir.
+    // Note: profileName is often a subdirectory of userDataDir.
+    const context = await chromium.launchPersistentContext(userDataDir, launchOptions);
+    
+    // Apply stealth script
+    await setInitScript(context);
+    
+    return context;
+}
+
+/**
  * Create platform-specific session screenshot directory.
  */
 export function createScreenshotDir(platform: string): string {
