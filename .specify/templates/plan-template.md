@@ -17,10 +17,10 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, TypeScript 5.x, Node.js 18+ LTS or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, Express.js, Playwright, better-sqlite3 or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., TypeScript 5.x, Node.js 18+ LTS or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., Express.js, Playwright, better-sqlite3 or NEEDS CLARIFICATION]  
 **Storage**: [if applicable, e.g., SQLite, PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, Vitest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Testing**: [e.g., Vitest, XCTest, cargo test or NEEDS CLARIFICATION]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -31,11 +31,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Principle I (Architecture Parity)**: Does the design ensure functional parity across both backends?
+- **Principle I (Primary Node.js Architecture)**: Does the design focus on Node.js implementation as the primary target?
 - **Principle II (Pattern)**: Does the implementation follow the Routes → Services → Uploaders pattern?
 - **Principle III (Isolation)**: Are uploader implementations isolated and stateless?
-- **Principle IV (Testing)**: Are automated tests defined for both active backends (Python and Node.js)?
-- **Principle V (Concurrency)**: Does the design handle async tasks using threads/worker threads and SSE?
+- **Principle IV (Node.js Testing)**: Are automated tests defined for the Node.js backend (using Vitest)?
+- **Principle V (Concurrency)**: Does the design handle async tasks using Node.js event loop and SSE?
 - **Principle VI (Monorepo)**: Are dependencies and scripts correctly assigned within the monorepo?
 
 ## Project Structure
@@ -56,13 +56,13 @@ specs/[###-feature]/
 
 ```text
 apps/
-├── backend/             # Python Flask Backend
+├── backend/             # Python Flask Backend (Legacy/Deprecated)
 │   ├── src/
 │   │   ├── routes/      # HTTP Endpoints
 │   │   ├── services/    # Business Logic
 │   │   └── uploader/    # Platform Automations
 │   └── tests/           # Pytest suite
-├── backend-node/        # Node.js TypeScript Backend
+├── backend-node/        # Node.js TypeScript Backend (Primary)
 │   ├── src/
 │   │   ├── routes/      # Express Routes
 │   │   ├── services/    # Business Logic
@@ -76,7 +76,7 @@ apps/
     └── tests/           # Vitest suite
 ```
 
-**Structure Decision**: Standard OmniPost Monorepo layout with dual-backend support.
+**Structure Decision**: Standard OmniPost Monorepo layout focusing on Node.js as primary backend.
 
 ## Complexity Tracking
 
