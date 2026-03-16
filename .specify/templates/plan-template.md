@@ -17,10 +17,10 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., TypeScript 5.x, Node.js 18+ LTS or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., Express.js, Playwright, better-sqlite3 or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., SQLite, PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., Vitest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -31,12 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Principle I (Primary Node.js Architecture)**: Does the design focus on Node.js implementation as the primary target?
-- **Principle II (Pattern)**: Does the implementation follow the Routes → Services → Uploaders pattern?
-- **Principle III (Isolation)**: Are uploader implementations isolated and stateless?
-- **Principle IV (Node.js Testing)**: Are automated tests defined for the Node.js backend (using Vitest)?
-- **Principle V (Concurrency)**: Does the design handle async tasks using Node.js event loop and SSE?
-- **Principle VI (Monorepo)**: Are dependencies and scripts correctly assigned within the monorepo?
+[Gates determined based on constitution file]
 
 ## Project Structure
 
@@ -49,34 +44,55 @@ specs/[###-feature]/
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-### Source Code (OmniPost Monorepo)
+### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
 ```text
-apps/
-├── backend/             # Python Flask Backend (Legacy/Deprecated)
-│   ├── src/
-│   │   ├── routes/      # HTTP Endpoints
-│   │   ├── services/    # Business Logic
-│   │   └── uploader/    # Platform Automations
-│   └── tests/           # Pytest suite
-├── backend-node/        # Node.js TypeScript Backend (Primary)
-│   ├── src/
-│   │   ├── routes/      # Express Routes
-│   │   ├── services/    # Business Logic
-│   │   └── uploader/    # Platform Automations
-│   └── tests/           # Vitest suite
-└── frontend/            # Vue 3 Frontend
-    ├── src/
-    │   ├── views/       # Vue Pages
-    │   ├── stores/      # Pinia State
-    │   └── api/         # API Clients
-    └── tests/           # Vitest suite
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
+
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
 ```
 
-**Structure Decision**: Standard OmniPost Monorepo layout focusing on Node.js as primary backend.
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
 ## Complexity Tracking
 

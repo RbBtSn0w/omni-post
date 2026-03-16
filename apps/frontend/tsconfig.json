@@ -1,0 +1,11 @@
+{
+  "extends": "../../packages/shared-config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*", "vite.config.js"]
+}

@@ -32,10 +32,15 @@
 ## 💡 功能特性
 
 - ✅ **多平台支持**：覆盖国内主流社交媒体平台
+- ✅ **文章发布**：支持 Markdown 发布到知乎、掘金（新！）
+- ✅ **浏览器会话复用**：直接复用本地 Chrome 会话，实现无感登录（新！）
+- ✅ **统一 CLI**：为开发者提供的强大命令行工具（新！）
 - ✅ **定时发布**：支持设置精确发布时间
 - ✅ **前后端分离**：提供直观的 Web 管理界面
 - ✅ **API 封装**：支持与其他系统集成
 - ✅ **Cookie 管理**：支持多账号 Cookie 存储与管理
+- ✅ **完善的测试**：全面的自动化测试保障稳定性
+- ✅ **自动化 CI/CD**：集成 GitHub Actions 持续集成流程
 
 ### 平台支持状态
 
@@ -100,14 +105,31 @@ cd omni-post
 ### 2. 安装依赖
 
 ```bash
-# 一键安装 Monorepo 根依赖
-npm install
+# 一键安装（Node 工作空间 + 可选 Python 依赖）
+npm run setup
 
-# 安装 Python 后端环境 (需要 Python 3.10)
-npm run install:backend
+# 仅安装 Node 工作空间依赖
+npm run install:ws
 
-# 安装 Vue 3 前端依赖
-npm run install:frontend
+# 安装 Python 后端依赖（可选）
+npm run install:python
+```
+
+### 2.1 工作空间命令
+
+```bash
+# 对所有工作空间执行 lint/test
+npm run lint
+npm run test
+
+# 清理工作空间产物
+npm run clean
+
+# 校验工作空间契约
+npm run check:workspace
+
+# 测量安装耗时（SC-001 基线）
+time npm install
 ```
 
 ### 3. 安装 Playwright 浏览器驱动
@@ -131,14 +153,13 @@ cd apps/backend
 ### 5. 启动服务
 
 ```bash
-# 选项 A：启动 Python 后端 (默认)
-npm run dev
+# 选项 A：启动 Python 后端 (遗留)
+npm run dev:backend
 
 # 选项 B：启动 Node.js TypeScript 后端
 npm run dev:node & npm run dev:frontend
 
 # 或者分别启动
-npm run dev:backend    # Python 后端 (http://localhost:5409)
 npm run dev:node       # Node.js 后端 (http://localhost:5409)
 npm run dev:frontend   # 前端服务 (http://localhost:5173)
 ```

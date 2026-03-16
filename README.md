@@ -108,14 +108,31 @@ cd omni-post
 ### 2. Install Dependencies
 
 ```bash
-# Install monorepo dependencies
-npm install
+# One command setup (Node workspaces + optional Python deps)
+npm run setup
 
-# Install Python backend dependencies (requires Python 3.10)
-npm run install:backend
+# Node workspaces only
+npm run install:ws
 
-# Install Frontend dependencies (Vue 3)
-npm run install:frontend
+# Python backend dependencies (optional)
+npm run install:python
+```
+
+### 2.1 Workspace Commands
+
+```bash
+# Run lint/test across all workspaces
+npm run lint
+npm run test
+
+# Clean workspace artifacts
+npm run clean
+
+# Validate workspace contract
+npm run check:workspace
+
+# Measure install time (SC-001 baseline)
+time npm install
 ```
 
 ### 3. Install Playwright Browser Driver
@@ -139,14 +156,13 @@ cd apps/backend
 ### 5. Start the Services
 
 ```bash
-# Option A: Start with Python Backend (Default)
-npm run dev
+# Option A: Start with Python Backend (Legacy)
+npm run dev:backend
 
 # Option B: Start with Node.js TypeScript Backend
 npm run dev:node & npm run dev:frontend
 
 # Or individually
-npm run dev:backend       # Python Backend (http://localhost:5409)
 npm run dev:node          # Node.js Backend (http://localhost:5409)
 npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
@@ -320,4 +336,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 > If this project has been helpful to you, please give it a ⭐ Star to show your support!
 
-Last Updated: January 2026
+Last Updated: March 2026

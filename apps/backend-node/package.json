@@ -1,5 +1,6 @@
 {
-    "name": "omni-post-backend-node",
+    "name": "@omni-post/backend-node",
+    "private": true,
     "version": "2.0.0",
     "description": "OmniPost Backend - Multi-platform content publishing service powered by Express and Playwright (TypeScript)",
     "type": "module",
@@ -13,7 +14,8 @@
         "test:coverage": "vitest run --coverage",
         "db:init": "tsx src/db/migrations.ts",
         "lint": "eslint src/ tests/",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf node_modules dist coverage"
     },
     "dependencies": {
         "better-sqlite3": "^11.7.0",
@@ -31,7 +33,7 @@
         "winston-daily-rotate-file": "^5.0.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.2",
+        "@omni-post/shared-config": "*",
         "@types/better-sqlite3": "^7.6.12",
         "@types/cors": "^2.8.17",
         "@types/express": "^5.0.0",
@@ -40,13 +42,9 @@
         "@types/supertest": "^6.0.2",
         "@types/uuid": "^10.0.0",
         "@vitest/coverage-v8": "^3.0.0",
-        "eslint": "^9.39.2",
         "eslint-plugin-import": "^2.32.0",
-        "globals": "^14.0.0",
         "supertest": "^7.0.0",
         "tsx": "^4.19.0",
-        "typescript": "^5.7.0",
-        "typescript-eslint": "^8.56.1",
         "vitest": "^3.0.0"
     },
     "engines": {

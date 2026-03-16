@@ -4,28 +4,37 @@
   "description": "OmniPost - Broadcast Everywhere, Manage Once. The Ultimate Multi-Platform Content Publishing Tool",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "setup": "npm install && npm run setup -w apps/backend && npm run db:init -w apps/backend-node",
+    "setup": "npm install && npm run install:python",
+    "install:ws": "npm install --workspaces",
     "install:all": "npm install && npm run install:backend && npm run install:node && npm run install:frontend",
+    "install:python": "node tools/scripts/install-python.mjs",
     "install:backend": "npm run env:create -w apps/backend && npm run env:install -w apps/backend",
     "install:node": "npm install -w apps/backend-node",
     "install:frontend": "npm install -w apps/frontend",
+    "dev": "npm run dev --workspaces",
+    "dev:all": "npm run dev --workspaces",
     "dev:backend": "npm run dev -w apps/backend",
     "dev:frontend": "npm run dev -w apps/frontend",
     "dev:node": "npm run dev -w apps/backend-node",
-    "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces",
+    "build:all": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:all": "npm run lint --workspaces",
     "lint:backend": "npm run lint -w apps/backend",
     "lint:node": "npm run lint -w apps/backend-node",
     "lint:frontend": "npm run lint -w apps/frontend",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces",
+    "test:all": "npm run test --workspaces",
     "test:backend": "npm run test -w apps/backend",
     "test:frontend": "npm run test -w apps/frontend",
     "test:node": "npm run test -w apps/backend-node",
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
-    "clean": "npm run clean --workspaces --if-present",
+    "clean": "node tools/scripts/clean-workspaces.mjs",
+    "check:workspace": "node tools/scripts/check-workspace.mjs",
     "prepare": "husky || true"
   },
   "engines": {
@@ -73,8 +82,15 @@
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.2",
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^17.3.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.2.5",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.1"
   },
   "lint-staged": {
     "apps/frontend/**/*.{js,vue}": [

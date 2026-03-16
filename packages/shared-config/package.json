@@ -1,0 +1,18 @@
+{
+  "name": "@omni-post/shared-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log('No dev script for shared-config')\"",
+    "build": "node -e \"console.log('No build script for shared-config')\"",
+    "test": "node -e \"console.log('No tests for shared-config')\"",
+    "lint": "node -e \"console.log('No lint step for shared-config')\"",
+    "clean": "rm -rf node_modules dist coverage"
+  },
+  "exports": {
+    "./eslint.config.js": "./eslint.config.js",
+    "./prettier.cjs": "./prettier.cjs",
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  }
+}

@@ -121,6 +121,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
@@ -160,6 +161,9 @@ cython_debug/
 .idea/
 
 .DS_Store
+
+# Node.js
+node_modules/
 
 # ==========================================
 # 敏感信息 - Cookie 和账号文件
