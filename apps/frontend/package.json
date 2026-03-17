@@ -25,7 +25,7 @@
     "vue-router": "^5.0.3"
   },
   "devDependencies": {
-    "@omni-post/shared-config": "*",
+    "@omni-post/shared-config": "workspace:*",
     "@pinia/testing": "^1.0.3",
     "@rushstack/eslint-patch": "^1.16.1",
     "@vitejs/plugin-vue": "^6.0.4",

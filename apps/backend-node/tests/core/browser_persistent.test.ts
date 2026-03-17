@@ -20,26 +20,33 @@ describe('Browser Persistent Context', () => {
   });
 
   it('should launch a persistent context and save data', async () => {
+    const expires = Math.floor(Date.now() / 1000) + 60 * 60;
     const context = await chromium.launchPersistentContext(testUserDataDir, {
       headless: true,
     });
-    
-    const page = await context.newPage();
-    await page.goto('about:blank');
-    await page.evaluate(() => {
-      localStorage.setItem('test-key', 'test-value');
-    });
-    
+
+    // Use cookie persistence instead of localStorage on about:blank.
+    // about:blank has opaque origin and can trigger SecurityError in newer Chromium.
+    await context.addCookies([
+      {
+        name: 'test-key',
+        value: 'test-value',
+        url: 'https://example.com',
+        expires,
+      },
+    ]);
+
     await context.close();
 
     // Re-launch and check if data persists
     const context2 = await chromium.launchPersistentContext(testUserDataDir, {
       headless: true,
     });
-    const page2 = await context2.newPage();
-    await page2.goto('about:blank');
-    const value = await page2.evaluate(() => localStorage.getItem('test-key'));
-    
+
+    const cookies = await context2.cookies('https://example.com');
+    const persisted = cookies.find((cookie) => cookie.name === 'test-key');
+    const value = persisted?.value ?? null;
+
     expect(value).toBe('test-value');
     await context2.close();
   }, 30000);
