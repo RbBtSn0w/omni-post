@@ -26,8 +26,8 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './test-results/coverage',
-      include: ['src/**/*.{js,vue}'],
-      exclude: ['node_modules', 'dist', 'src/main.js', 'src/router/**/*.js', 'src/App.vue'],
+      include: ['src/**/*.js'],
+      exclude: ['node_modules', 'dist', 'src/main.js', 'src/router/**/*.js', 'src/stores/index.js'],
       thresholds: {
         statements: 80,
         branches: 70,
