@@ -28,13 +28,13 @@ export async function asyncRetry<T>(
 
             if (maxRetries !== undefined && attempts >= maxRetries) {
                 logger.error(`Reached maximum retries of ${maxRetries}.`);
-                throw new Error(`Failed after ${maxRetries} retries.`);
+                throw new Error(`Failed after ${maxRetries} retries.`, { cause: error });
             }
 
             const elapsed = (Date.now() - startTime) / 1000;
             if (elapsed > timeout) {
                 logger.error(`Function timeout after ${timeout} seconds.`);
-                throw new Error(`Function execution exceeded ${timeout} seconds timeout.`);
+                throw new Error(`Function execution exceeded ${timeout} seconds timeout.`, { cause: error });
             }
 
             logger.warn(`Attempt ${attempts} failed: ${error}. Retrying...`);
