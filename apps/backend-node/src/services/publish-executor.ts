@@ -110,7 +110,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
                 filePath = safeJoin(VIDEOS_DIR, f);
             } catch (error: any) {
                 logger.error(`  ✗ Video Path Invalid: ${f}`);
-                throw new Error(`非法的文件路径: ${f}`);
+                throw new Error(`非法的文件路径: ${f}`, { cause: error });
             }
 
             if (fs.existsSync(filePath)) {
@@ -128,7 +128,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
                 accPath = safeJoin(COOKIES_DIR, acc);
             } catch (error: any) {
                 logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
-                throw new Error(`非法的文件路径: ${acc}`);
+                throw new Error(`非法的文件路径: ${acc}`, { cause: error });
             }
 
             if (fs.existsSync(accPath)) {
