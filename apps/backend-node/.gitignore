@@ -32,3 +32,6 @@ test-results/
 
 # Playwright
 playwright-report/
+
+# Test runtime browser profile artifacts
+tests/fixtures/user-data/

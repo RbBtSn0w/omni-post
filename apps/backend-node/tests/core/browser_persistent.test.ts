@@ -1,4 +1,5 @@
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
+import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { chromium } from 'playwright';
@@ -6,7 +7,7 @@ import { chromium } from 'playwright';
 // or wait until T011 is done. Let's write the test based on what we WANT.
 
 describe('Browser Persistent Context', () => {
-  const testUserDataDir = path.join(process.cwd(), 'tests', 'fixtures', 'user-data');
+  const testUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omni-post-browser-test-'));
 
   beforeAll(() => {
     if (!fs.existsSync(testUserDataDir)) {
@@ -15,8 +16,7 @@ describe('Browser Persistent Context', () => {
   });
 
   afterAll(() => {
-    // Cleanup if needed
-    // fs.rmSync(testUserDataDir, { recursive: true, force: true });
+    fs.rmSync(testUserDataDir, { recursive: true, force: true });
   });
 
   it('should launch a persistent context and save data', async () => {
