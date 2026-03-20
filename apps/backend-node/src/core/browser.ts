@@ -80,6 +80,10 @@ export async function launchPersistentContext(
         '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36',
     ];
 
+    if (profileName) {
+        browserArgs.push(`--profile-directory=${profileName}`);
+    }
+
     const launchOptions: Record<string, any> = {
         headless: headless ?? LOCAL_CHROME_HEADLESS,
         args: browserArgs,
@@ -91,15 +95,19 @@ export async function launchPersistentContext(
         launchOptions.executablePath = LOCAL_CHROME_PATH;
     }
 
-    // Playwright uses the last path component as profile if not specified otherwise, 
-    // but typically it's better to point directly to the user data dir.
-    // Note: profileName is often a subdirectory of userDataDir.
-    const context = await chromium.launchPersistentContext(userDataDir, launchOptions);
-    
-    // Apply stealth script
-    await setInitScript(context);
-    
-    return context;
+    try {
+        const context = await chromium.launchPersistentContext(userDataDir, launchOptions);
+        await setInitScript(context);
+        return context;
+    } catch (error: any) {
+        const msg = String(error?.message || error);
+        if (msg.includes('already in use') || msg.includes('User data directory is already in use')) {
+            throw new Error(
+                `浏览器配置目录正在使用中: ${userDataDir} (profile=${profileName})。请先关闭占用该配置的浏览器窗口后重试。`
+            );
+        }
+        throw error;
+    }
 }
 
 /**

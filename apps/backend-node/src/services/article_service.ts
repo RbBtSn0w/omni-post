@@ -5,6 +5,25 @@ import { taskService } from './task-service.js';
 import { startPublishThread } from './publish-executor.js';
 
 class ArticleService {
+  private resolveAccountFilePath(accountRef: string, expectedPlatformType: number): string {
+    const db = dbManager.getDb();
+    const isNumericId = /^\d+$/.test(String(accountRef));
+    const row = isNumericId
+      ? db.prepare('SELECT id, type, filePath FROM user_info WHERE id = ?').get(Number(accountRef)) as any
+      : db.prepare('SELECT id, type, filePath FROM user_info WHERE filePath = ?').get(accountRef) as any;
+
+    if (!row) {
+      throw new Error('Account not found');
+    }
+    if (row.type !== expectedPlatformType) {
+      throw new Error(`Account platform mismatch: expected=${expectedPlatformType}, actual=${row.type}`);
+    }
+    if (!row.filePath) {
+      throw new Error('Account cookie file is missing');
+    }
+    return row.filePath;
+  }
+
   /**
    * Get all articles.
    */
@@ -65,14 +84,17 @@ class ArticleService {
   ): Promise<string> {
     const article = this.getArticle(articleId);
     if (!article) throw new Error('Article not found');
+    const platformType = this._getPlatformType(platform);
+    if (!platformType) throw new Error(`Unsupported platform: ${platform}`);
+    const accountFilePath = this.resolveAccountFilePath(accountId, platformType);
 
     // Create a task
     const publishData = {
       title: article.title,
-      type: this._getPlatformType(platform),
+      type: platformType,
       content_type: 'article',
       content_id: articleId,
-      accountList: [accountId],
+      accountList: [accountFilePath],
       browser_profile_id: browserProfileId,
       schedule_time: scheduleTime,
       article: article // Pass full article data for the uploader

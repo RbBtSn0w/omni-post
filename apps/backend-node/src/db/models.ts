@@ -50,6 +50,12 @@ export interface UploadOptions {
     fileList: string[];
     tags: string[];
     accountList: string[];
+    article?: {
+        title: string;
+        content: string;
+        tags: string[];
+        cover_image?: string | null;
+    };
     category?: number | null;
     enableTimer?: boolean;
     videosPerDay?: number;

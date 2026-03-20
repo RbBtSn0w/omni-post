@@ -12,6 +12,8 @@ export const PlatformType = Object.freeze({
     DOUYIN: 3,
     KUAISHOU: 4,
     BILIBILI: 5,
+    ZHIHU: 6,
+    JUEJIN: 7,
 })
 
 // Platform display names (ID -> Chinese name)
@@ -21,6 +23,8 @@ export const PLATFORM_NAMES = Object.freeze({
     [PlatformType.DOUYIN]: '抖音',
     [PlatformType.KUAISHOU]: '快手',
     [PlatformType.BILIBILI]: 'Bilibili',
+    [PlatformType.ZHIHU]: '知乎',
+    [PlatformType.JUEJIN]: '掘金',
 })
 
 // Reverse mapping (Chinese name -> ID)
@@ -37,6 +41,8 @@ export const PLATFORM_TAG_TYPES = Object.freeze({
     '抖音': 'danger',
     '快手': 'success',
     'Bilibili': 'primary',
+    '知乎': 'info',
+    '掘金': 'success',
 })
 
 // Platform list for UI dropdowns (with display order)

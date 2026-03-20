@@ -9,7 +9,7 @@ export const useBrowserStore = defineStore('browser', () => {
   const fetchProfiles = async () => {
     loading.value = true
     try {
-      const response = await axios.get('/api/browser/profiles')
+      const response = await axios.get('/api/profiles')
       profiles.value = response.data
     } catch (error) {
       console.error('Failed to fetch browser profiles:', error)
@@ -20,7 +20,7 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const createProfile = async (profileData) => {
     try {
-      const response = await axios.post('/api/browser/profiles', profileData)
+      const response = await axios.post('/api/profiles', profileData)
       await fetchProfiles()
       return response.data.id
     } catch (error) {
@@ -31,7 +31,7 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const updateProfile = async (id, profileData) => {
     try {
-      await axios.put(`/api/browser/profiles/${id}`, profileData)
+      await axios.put(`/api/profiles/${id}`, profileData)
       await fetchProfiles()
     } catch (error) {
       console.error('Failed to update browser profile:', error)
@@ -41,7 +41,7 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const deleteProfile = async (id) => {
     try {
-      await axios.delete(`/api/browser/profiles/${id}`)
+      await axios.delete(`/api/profiles/${id}`)
       await fetchProfiles()
     } catch (error) {
       console.error('Failed to delete browser profile:', error)

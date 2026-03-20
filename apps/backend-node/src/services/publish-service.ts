@@ -5,7 +5,6 @@
  * Orchestrates video publishing to each platform by calling uploaders.
  */
 
-import path from 'path';
 import { COOKIES_DIR } from '../core/config.js';
 import { launchBrowser, launchPersistentContext, setInitScript } from '../core/browser.js';
 import type { UploadOptions } from '../db/models.js';
@@ -47,6 +46,22 @@ function enrichOpts(opts: UploadOptions): UploadOptions {
     return { ...opts, publishDatetimes };
 }
 
+async function dispatchUploader(uploader: any, context: any, opts: UploadOptions, browser: any): Promise<void> {
+    if (typeof uploader.postArticle === 'function' && opts.article) {
+        await uploader.postArticle(context, opts, (_progress: number) => {});
+        return;
+    }
+    if (typeof uploader.postVideo === 'function') {
+        await uploader.postVideo(context, opts, (_progress: number) => {});
+        return;
+    }
+    if (typeof uploader.upload === 'function') {
+        await uploader.upload(opts, context, browser);
+        return;
+    }
+    throw new Error('Uploader does not implement a supported publish method');
+}
+
 // ─── Platform Publish Functions ──────────────────────────────────────
 
 async function runWithOptimizedBrowser(
@@ -66,11 +81,7 @@ async function runWithOptimizedBrowser(
                 profile.profile_name
             );
             try {
-                if (typeof uploader.postVideo === 'function') {
-                    await uploader.postVideo(context, enrichedOpts, (_progress: number) => {});
-                } else if (typeof uploader.upload === 'function') {
-                    await uploader.upload(enrichedOpts, context, null as any);
-                }
+                await dispatchUploader(uploader, context, enrichedOpts, null);
             } finally {
                 await context.close();
             }
@@ -95,11 +106,12 @@ async function runWithOptimizedBrowser(
             );
             
             try {
-                if (typeof uploader.postVideo === 'function') {
-                    await uploader.postVideo(context, enrichedOpts, (_progress: number) => {});
-                } else if (typeof uploader.upload === 'function') {
-                    await uploader.upload({ ...enrichedOpts, accountList: [accountFile] }, context, browser);
-                }
+                await dispatchUploader(
+                    uploader,
+                    context,
+                    { ...enrichedOpts, accountList: [accountFile] },
+                    browser
+                );
             } finally {
                 await context.close();
             }

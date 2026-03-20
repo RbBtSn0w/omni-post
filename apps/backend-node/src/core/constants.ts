@@ -170,6 +170,8 @@ export enum PlatformType {
     DOUYIN = 3,
     KUAISHOU = 4,
     BILIBILI = 5,
+    ZHIHU = 6,
+    JUEJIN = 7,
 }
 
 // Platform display names (Chinese) - ID to name mapping
@@ -179,6 +181,8 @@ export const PLATFORM_NAMES: Record<PlatformType, string> = {
     [PlatformType.DOUYIN]: '抖音',
     [PlatformType.KUAISHOU]: '快手',
     [PlatformType.BILIBILI]: 'Bilibili',
+    [PlatformType.ZHIHU]: '知乎',
+    [PlatformType.JUEJIN]: '掘金',
 };
 
 // Reverse mapping: name -> type
@@ -193,6 +197,8 @@ export const PLATFORM_LOGIN_URLS: Record<PlatformType, string> = {
     [PlatformType.DOUYIN]: 'https://creator.douyin.com/',
     [PlatformType.KUAISHOU]: 'https://cp.kuaishou.com',
     [PlatformType.BILIBILI]: 'https://member.bilibili.com/platform/home',
+    [PlatformType.ZHIHU]: 'https://www.zhihu.com/signin',
+    [PlatformType.JUEJIN]: 'https://juejin.cn/',
 };
 
 /**
