@@ -2,161 +2,178 @@
 
 ## Project Overview
 
-OmniPost is a multi-platform video publishing automation tool using a monorepo architecture. The system enables content creators to publish videos to multiple Chinese social media platforms (Douyin, WeChat Channels, Xiaohongshu, Kuaishou) through a unified Vue 3 frontend and Python Flask backend.
+OmniPost is a multi-platform content publishing automation tool using a monorepo architecture.
+
+Current baseline:
+- `apps/backend-node` is the **active, maintained backend** (Express + TypeScript).
+- `apps/backend` (Python Flask) is **deprecated/legacy** and should not be used as the default implementation.
+- `apps/frontend` is a unified Vue 3 frontend for both video and article publishing workflows.
 
 **Key Stack:**
-- **Frontend:** Vue 3 + Vite, Pinia (state management), Element Plus UI, Axios
-- **Backend:** Flask, Python 3.10, SQLite, Playwright (browser automation)
-- **Dev Commands:** `npm run dev:frontend`, `npm run dev:backend`, `npm run test:backend`, `npm run test:frontend`
+- **Frontend:** Vue 3 + Vite, Pinia, Element Plus, Axios
+- **Backend (Primary):** Node.js 20+, Express, TypeScript, SQLite, Playwright
+- **Backend (Legacy/Deprecated):** Python 3.10 + Flask (kept for compatibility/reference)
+- **Dev Commands:** `npm run dev:node`, `npm run dev:frontend`, `npm run test:node`, `npm run test:frontend`
 
 ## Architecture Patterns
 
 ### Monorepo Structure
 - `/apps/frontend/` - Vue 3 web application
-- `/apps/backend/` - Flask REST API service
-- Shared via workspace in root `package.json`
-- Run commands with `-w apps/<name>` flag or from app directory
+- `/apps/backend-node/` - Primary REST API service (maintained)
+- `/apps/backend/` - Deprecated Python backend (legacy only)
+- `/packages/` - Shared config/CLI packages
+- Workspace managed in root `package.json`
 
-### Backend Service Layer Architecture
-The backend follows a **three-layer pattern**:
-1. **Routes** (`src/routes/*.py`) - HTTP endpoints, request handling
-2. **Services** (`src/services/*.py`) - Business logic and orchestration
-3. **Uploaders** (`src/uploader/*/main.py`) - Platform-specific automation
+### Backend Service Layer Architecture (Node Primary)
+The active backend follows a three-layer pattern:
+1. **Routes** (`apps/backend-node/src/routes/*.ts`) - HTTP endpoints and request handling
+2. **Services** (`apps/backend-node/src/services/*.ts`) - business orchestration
+3. **Uploaders** (`apps/backend-node/src/uploader/*/main.ts`) - platform-specific Playwright automation
 
-**Service examples:**
-- `PublishService` - Abstract interface for publishing logic
-- `TaskService` - Task lifecycle management (create, update, delete) using SQLite
-- `LoginService` - Platform authentication via Playwright
-- `DefaultPublishService` - Concrete implementation using uploaders
+Core services:
+- `task-service.ts` - task lifecycle management
+- `publish-service.ts` + `publish-executor.ts` - publish orchestration and background execution
+- `login-service.ts` + `cookie-service.ts` - auth/session management
+- `browser_service.ts` - local browser profile management
+- `article_service.ts` - article CRUD/publish pipeline
 
 ### Frontend State Management (Pinia)
-Stores are located in `src/stores/` using Composition API pattern:
-```javascript
-export const useTaskStore = defineStore('task', () => {
-  const tasks = ref([])
-  const fetchTasks = async () => { /* API call */ }
-  return { tasks, fetchTasks }
-})
-```
-Components dispatch store actions → stores call API services → responses update state.
+Stores are in `apps/frontend/src/stores/` using Composition API stores.
+Pattern: components -> store actions -> API layer (`src/api/*.js`) -> state updates.
 
 ## Data Flow & Integration
 
-**Publishing Workflow:**
-1. Frontend → Upload video file + metadata via `/api/file/upload_file`
-2. User selects platform, accounts, schedule → POST `/api/publish/postVideo`
-3. Backend creates `Task` record (status='waiting'), triggers `start_publish_thread()`
-4. Worker thread runs async uploader (e.g., `DouYinVideo.upload()`) using Playwright
-5. Task status updated throughout execution; frontend polls `/api/publish/tasks`
+### Video Publishing Workflow
+1. Frontend uploads media via endpoints like `/upload` or `/uploadSave`
+2. User submits publish payload to `/postVideo` or `/postVideoBatch`
+3. Backend creates a task in `tasks` table (status `waiting`)
+4. `startPublishThread()` runs platform uploader in background
+5. Frontend polls `/tasks` and updates task status/progress
 
-**Authentication Pattern:**
-- Login endpoint SSE stream at `/api/publish/login?type=<platform>&id=<accountId>`
-- Uses `Queue` for thread-safe communication between sync Flask handler and async worker
-- Worker sends status updates via SSE: `sse_stream()` generator iterates queue messages
+### Login & Session Workflow
+- SSE login endpoint: `/login?type=<platform>&id=<accountId>`
+- Node backend uses `EventEmitter + AbortController` for message/cancel flow
+- Session source supports managed cookies and local browser profile reuse
 
-## Database Schema
+### Article Publishing Workflow
+- Article CRUD: `/articles` and `/articles/:id`
+- Publish endpoint: `/publish/article`
+- Supported article platforms currently include Zhihu and Juejin via dedicated uploaders
 
-SQLite tables in `src/db/createTable.py`:
-- **user_info** - Social accounts (type: 1=Xiaohongshu, 2=WeChat, 3=Douyin, 4=Kuaishou)
-- **account_groups** - Group organization for accounts
-- **file_records** - Uploaded video metadata
-- **tasks** - Publishing job records (JSON fields: platforms, file_list, account_list, schedule_data)
+## Database Schema (Current Active)
 
-All data accessed via `TaskService` singleton which handles connection pooling.
+Primary schema is defined in `apps/backend-node/src/db/migrations.ts`:
+- `account_groups`
+- `browser_profiles`
+- `user_info` (includes `session_source`, `browser_profile_id`, `last_validated_at`)
+- `file_records`
+- `articles`
+- `tasks` (includes `content_type`, `content_id`, `browser_profile_id`, `publish_data`)
+
+Platform type mapping is maintained in `apps/backend-node/src/core/constants.ts`:
+- 1=Xiaohongshu, 2=WeChat Channels, 3=Douyin, 4=Kuaishou, 5=Bilibili, 6=Zhihu, 7=Juejin
 
 ## Platform Uploader Pattern
 
-Each platform in `src/uploader/<platform>_uploader/main.py` implements:
-- Constructor takes: title, file_path, tags, publish_date, account_file, optional params
-- `async upload(playwright: Playwright)` - Main orchestration using Playwright Page API
-- Uses Playwright for QR code scanning, form filling, file upload, time scheduling
-- Error handling with retry logic and `handle_upload_error()` pattern
+Each uploader in `apps/backend-node/src/uploader/<platform>/main.ts` exposes platform publish capabilities (`postVideo` / `postArticle` / `upload` depending on platform).
 
-**Key:** Uploaders are instantiated in `PublishService` methods which call `asyncio.run(uploader.upload(playwright))` to execute async code synchronously.
+Implemented platforms include:
+- Video: Douyin, WeChat Channels, Xiaohongshu, Kuaishou, Bilibili
+- Article: Zhihu, Juejin
+
+`publish-service.ts` dispatches by platform type and runs with one of two strategies:
+1. local browser profile (`browser_profile_id`)
+2. managed cookie fallback (`accountList`)
 
 ## Development Workflows
 
-### Backend Setup & Testing
+### Recommended (Node Primary)
 ```bash
-npm run install:backend          # Create .venv and install deps
-npm run dev:backend              # Start Flask on port 5409
-npm run test:backend             # Run pytest with coverage
-npm run lint:backend             # flake8 checks
+npm run install:node
+npm run dev:node
+npm run test:node
+npm run lint:node
+npm run db:init -w apps/backend-node
 ```
 
-### Frontend Setup & Testing
+### Frontend
 ```bash
-npm run install:frontend         # Install node_modules
-npm run dev:frontend             # Vite dev server on port 5173
-npm run test:frontend            # Vitest with coverage option
-npm run lint:frontend            # ESLint auto-fix
+npm run install:frontend
+npm run dev:frontend
+npm run test:frontend
+npm run lint:frontend
 ```
 
-### Database Initialization
+### Monorepo Utility Commands
 ```bash
-npm run db:init -w apps/backend  # Runs createTable.py, creates database.db
+npm run lint
+npm run test
+npm run clean
+npm run check:workspace
 ```
 
-### CI/CD
-GitHub Actions runs: linting, testing, and coverage on push to main.
+### Legacy Python Backend (Deprecated)
+- Exists in `apps/backend`, but not the default development or feature target.
+- Only touch Python backend when explicitly requested for migration/compatibility fixes.
 
 ## Project-Specific Patterns
 
-### Async/Sync Bridge
-Backend mixes sync Flask handlers with async worker threads:
-- Route handlers are sync (Flask requirement)
-- Long-running tasks spawn background threads via `threading.Thread(..., daemon=True)`
-- Thread-safe communication via `Queue` (status_queue)
-- SSE stream reads queue in generator: `def sse_stream(status_queue): yield f"data: {queue.get()}"`
+### Async + Background Execution
+- HTTP layer remains request/response oriented
+- Long-running publish/login tasks run in background execution paths
+- SSE is used for login status streaming
 
-### Service Mocking & Testing
-- `MockLoginService` in tests for isolation (conftest.py fixtures)
-- Patch service imports in test modules: `@patch('src.services.login_service.DefaultLoginService')`
-- Mock uploaders to avoid Playwright dependency in tests
-- Fixtures provide temp SQLite database for test isolation
+### API Response Convention
+Node primary APIs generally return `{ code, msg, data }` for core routes (via `utils/response.ts`).
+Some newer routes (e.g., browser/article/explorer) may return plain JSON objects.
+
+### Testing Strategy
+- Node backend: Vitest tests in `apps/backend-node/tests`
+- Frontend: Vitest tests in `apps/frontend/tests`
+- Legacy Python tests remain for historical parity but are not the primary quality gate
 
 ### Configuration & Constants
-- `src/core/config.py` - Paths (BASE_DIR, DATA_DIR, COOKIES_DIR, VIDEOS_DIR), Chrome path
-- `src/core/constants.py` - Enum types (TencentZoneTypes), platform type mappings
-- `src/core/browser.py` - Playwright browser initialization helpers
-- `src/core/logger.py` - Per-platform loggers (douyin_logger, etc.)
-
-### Error Handling
-- Services use try-finally for resource cleanup (Playwright contexts/browsers)
-- Uploaders catch and retry on failure via `handle_upload_error()`
-- TaskService logs errors to task.error_msg field
-- Network utilities provide `async_retry()` decorator with timeout support
+- `apps/backend-node/src/core/config.ts` - paths, host/port, runtime config
+- `apps/backend-node/src/core/constants.ts` - platform enums and mappings
+- `apps/backend-node/src/core/browser.ts` - Playwright/browser bootstrap helpers
+- `apps/backend-node/src/core/logger.ts` - logger setup
 
 ## Critical Files by Purpose
 
-**Understanding the System:**
-- [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system diagrams and data flows
-- [apps/backend/README.md](../apps/backend/README.md) - Backend-specific setup
+**System Overview:**
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - architecture and data flow
+- [README.md](./README.md) - latest project-level setup
 
-**Core Service Logic:**
-- [src/services/publish_service.py](../apps/backend/src/services/publish_service.py) - Publishing orchestration
-- [src/services/task_service.py](../apps/backend/src/services/task_service.py) - Task CRUD operations
-- [src/services/login_service.py](../apps/backend/src/services/login_service.py) - Auth orchestration
+**Node Backend Core:**
+- [app.ts](./apps/backend-node/src/app.ts) - Express app factory
+- [publish-service.ts](./apps/backend-node/src/services/publish-service.ts) - publish dispatch orchestration
+- [publish-executor.ts](./apps/backend-node/src/services/publish-executor.ts) - task execution pipeline
+- [task-service.ts](./apps/backend-node/src/services/task-service.ts) - task CRUD/status logic
+- [login-service.ts](./apps/backend-node/src/services/login-service.ts) - login orchestration/SSE integration
 
-**Platform Implementations:**
-- [src/uploader/douyin_uploader/main.py](../apps/backend/src/uploader/douyin_uploader/main.py) - Douyin platform automation
-- Similar pattern for `xiaohongshu_uploader`, `tencent_uploader`, `ks_uploader`
+**Node Route Layer:**
+- [publish.ts](./apps/backend-node/src/routes/publish.ts)
+- [file.ts](./apps/backend-node/src/routes/file.ts)
+- [account.ts](./apps/backend-node/src/routes/account.ts)
+- [article.ts](./apps/backend-node/src/routes/article.ts)
+- [browser.ts](./apps/backend-node/src/routes/browser.ts)
 
 **Frontend Integration:**
-- [src/stores/task.js](../apps/frontend/src/stores/task.js) - Task state management and API calls
-- [src/api/](../apps/frontend/src/api/) - All API client services
+- [task.js](./apps/frontend/src/stores/task.js)
+- [request.js](./apps/frontend/src/utils/request.js)
+- [config.js](./apps/frontend/src/core/config.js)
 
 **Testing Reference:**
-- [tests/test_app_async_function.py](../apps/backend/tests/test_app_async_function.py) - Async function testing patterns
-- [tests/conftest.py](../apps/backend/tests/conftest.py) - Pytest fixtures and database setup
+- [test_routes_publish.test.ts](./apps/backend-node/tests/test_routes_publish.test.ts)
+- [test_publish_executor.test.ts](./apps/backend-node/tests/test_publish_executor.test.ts)
+- [TaskManagement.test.js](./apps/frontend/tests/views/TaskManagement.test.js)
 
 ## Key Conventions to Follow
 
-1. **Service methods** are stateless; instantiate services per request or use singletons
-2. **Platform types** use integer constants (1-4) in database; convert to/from human-readable strings in API responses
-3. **Datetime scheduling** uses `utils/files_times.py` helpers to calculate publish times from user input
-4. **File paths** stored as relative paths in DB; resolve via `BASE_DIR` and `VIDEOS_DIR` at runtime
-5. **JSON serialization** in database: platform, file_list, account_list, schedule_data are stored as JSON strings
-6. **Logging** includes platform-specific loggers; use `logger_name.info()` for structured output
-7. **Mock imports** in tests use module paths matching actual imports to enable `@patch()`
-8. **Fault Diagnosis**: When encountering automation issues (e.g., upload timeouts, UI changes), use the `opencli-diagnostics` skill to perform deep analysis and self-healing.
+1. **Default implementation target is Node backend** (`apps/backend-node`).
+2. **Treat Python backend as deprecated** unless the task explicitly requires it.
+3. **Platform types use integer IDs** from `core/constants.ts`; avoid ad-hoc mappings.
+4. **Task payload fields** (`platforms`, `file_list`, `account_list`, `schedule_data`, `publish_data`) are JSON-serialized in DB.
+5. **Prefer safe path helpers** (`utils/path.ts`) for filesystem operations.
+6. **Route-service-uploader boundaries** should remain clear; avoid mixing automation logic into route handlers.
+7. **When diagnosing automation regressions**, use `opencli-diagnostics` workflow to capture real network/UI behavior before patching selectors.
