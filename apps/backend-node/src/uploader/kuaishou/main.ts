@@ -41,7 +41,11 @@ export class KuaishouUploader extends BaseUploader {
         throw new Error(`快手页面连续打开失败: ${lastError?.message || 'unknown error'}`);
     }
 
-    private async waitForUploadComplete(page: Page): Promise<void> {
+    /**
+     * 等待视频上传并同步至平台 (监听 /upload/finish)
+     * 注意：为了避免竞态风险，调用方应在触发上传动作前先行开启监听
+     */
+    private async waitForUploadFinishResponse(page: Page): Promise<void> {
         this.log('等待视频上传并同步至平台 (监听 /upload/finish)...');
         try {
             await page.waitForResponse(
@@ -49,7 +53,7 @@ export class KuaishouUploader extends BaseUploader {
                     response.url().includes('/rest/cp/works/v2/video/pc/upload/finish') && 
                     response.request().method() === 'POST' &&
                     response.status() === 200,
-                { timeout: 900_000 } // 15 minutes
+                { timeout: 900_000 } // 15 minutes, suitable for large videos
             );
             this.log('视频上传已同步');
         } catch (error: any) {
@@ -108,11 +112,15 @@ export class KuaishouUploader extends BaseUploader {
 
                 try {
                     page.on('request', uploadProgressListener);
+
+                    // 核心修复：先创建监听 Promise，再触发文件选择动作，消除小视频秒传导致的竞态
+                    const uploadFinishPromise = this.waitForUploadFinishResponse(page);
+
                     const fileInput = page.locator('input[type="file"]').first();
                     await fileInput.setInputFiles(videoPath);
                     this.log(`文件已选择，分片上传中...`);
 
-                    await this.waitForUploadComplete(page);
+                    await uploadFinishPromise;
                 } finally {
                     page.removeListener('request', uploadProgressListener);
                 }
@@ -145,6 +153,7 @@ export class KuaishouUploader extends BaseUploader {
                 }
                 this.log(`正在点击发布并等待确认响应...`);
                 try {
+                    // 核心修复：在点击任何按钮前先行注入响应监听，覆盖弹窗点击过程
                     const submitPromise = page.waitForResponse(
                         (resp) => resp.url().includes('/rest/cp/works/v2/video/pc/submit') && resp.status() === 200,
                         { timeout: 90000 }
@@ -157,7 +166,10 @@ export class KuaishouUploader extends BaseUploader {
                         await confirmBtn.first().click({ force: true });
                     }
                     
-                    await submitPromise;
+                    const response = await submitPromise;
+                    if (response.status() !== 200) {
+                        throw new Error(`后端返回异常状态码: ${response.status()}`);
+                    }
                     this.log(`视频 ${i + 1} 发布成功 (后端已确认)`);
                 } catch (error: any) {
                     this.log(`发布响应监听超时: ${error.message}，尝试跳转判定...`, 'warn');
@@ -176,6 +188,7 @@ export class KuaishouUploader extends BaseUploader {
 
     /**
      * 实现 BaseUploader 的 postArticle 接口
+     * @description 快手当前版本仅支持视频发布模式，文稿发布尚未实装
      */
     async postArticle(
         context: BrowserContext,
