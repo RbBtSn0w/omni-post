@@ -138,6 +138,21 @@ export class DouyinUploader extends BaseUploader {
                 onProgress(Math.floor(((i + i + 1) / (fileList.length * 2)) * 100)); // 该视频阶段完成 (占总进度的权重)
                 await page.waitForTimeout(1500);
 
+                // Set video cover (thumbnail) - Ported from Python set_thumbnail
+                if (opts.thumbnailPath) {
+                    let thumbnailFullPath: string;
+                    try {
+                        thumbnailFullPath = safeJoin(VIDEOS_DIR, opts.thumbnailPath);
+                        if (fs.existsSync(thumbnailFullPath)) {
+                            await this.setThumbnail(page, thumbnailFullPath);
+                        } else {
+                            this.log(`封面文件不存在: ${opts.thumbnailPath}`, 'warn');
+                        }
+                    } catch (error: any) {
+                        this.log(`设置封面失败: ${error.message}`, 'error');
+                    }
+                }
+
                 // Fill title
                 if (title) {
                     const { primary, fallback } = this.getDouyinTitleInput(page);
@@ -145,7 +160,7 @@ export class DouyinUploader extends BaseUploader {
                         await primary.fill(title.slice(0, 30));
                     } else {
                         await fallback.click();
-                        await page.keyboard.press('Control+KeyA');
+                        await page.keyboard.press('ControlOrMeta+a');
                         await page.keyboard.press('Delete');
                         await page.keyboard.type(title);
                         await page.keyboard.press('Enter');
@@ -169,7 +184,18 @@ export class DouyinUploader extends BaseUploader {
                         }
                     }
                 }
-
+                
+                // 3. 同步到头条/西瓜 (Ported from Python)
+                const thirdPartSwitch = page.locator('[class^="info"] > [class^="first-part"] div div.semi-switch').first();
+                if (await thirdPartSwitch.count() > 0) {
+                    const isChecked = await thirdPartSwitch.evaluate(el => el.classList.contains('semi-switch-checked'));
+                    if (!isChecked) {
+                        this.log('正在开启同步到头条/西瓜开关');
+                        await thirdPartSwitch.locator('input.semi-switch-native-control').click();
+                        await page.waitForTimeout(500);
+                    }
+                }
+                
                 // Set schedule if enabled
                 if (enableTimer && videosPerDay) {
                     const schedules = generateScheduleTimeNextDay(
@@ -178,6 +204,12 @@ export class DouyinUploader extends BaseUploader {
                     if (schedules[i]) {
                         this.log(`定时发布: ${schedules[i]}`);
                     }
+                }
+
+                // Set product link if provided
+                if (opts.productLink && opts.productTitle) {
+                    this.log(`正在设置商品链接: ${opts.productTitle}`);
+                    await this.setProductLink(page, opts.productLink, opts.productTitle);
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
@@ -212,6 +244,136 @@ export class DouyinUploader extends BaseUploader {
             throw error;
         } finally {
             await page.close();
+        }
+    }
+
+    /**
+     * 设置视频封面 (Ported from Python set_thumbnail)
+     */
+    private async setThumbnail(page: Page, thumbnailPath: string): Promise<void> {
+        this.log('正在设置视频封面...');
+        try {
+            await page.click('text="选择封面"');
+            await page.waitForSelector('div.dy-creator-content-modal', { timeout: 10000 });
+
+            // 1. 设置竖封面
+            this.log('点击设置竖封面');
+            await page.click('text="设置竖封面"');
+            await page.waitForTimeout(1000);
+
+            // 2. 上传自定义封面
+            await page.locator('div[class^="semi-upload upload"] >> input.semi-upload-hidden-input')
+                .setInputFiles(thumbnailPath);
+            await page.waitForTimeout(2000);
+
+            // 3. 设置横封面 (抖音要求横竖都点一下以触发裁剪逻辑)
+            this.log('点击设置横封面');
+            await page.click('text="设置横封面"');
+            await page.waitForTimeout(1000);
+
+            // 4. 点击完成
+            const finishBtn = page.locator('div[role="dialog"] button:visible').filter({ hasText: '完成' }).first();
+            await finishBtn.click();
+            
+            // 等待弹窗关闭
+            await page.waitForSelector('div.dy-creator-content-modal', { state: 'detached', timeout: 5000 });
+            this.log('视频封面已设置完毕');
+        } catch (error: any) {
+            this.log(`设置封面过程中出错: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * 处理商品编辑弹窗 (Ported from Python handle_product_dialog)
+     */
+    private async handleProductDialog(page: Page, productTitle: string): Promise<boolean> {
+        try {
+            await page.waitForTimeout(2000);
+            await page.waitForSelector('input[placeholder="请输入商品短标题"]', { timeout: 10000 });
+            
+            const shortTitleInput = page.locator('input[placeholder="请输入商品短标题"]');
+            if (await shortTitleInput.count() === 0) {
+                this.log('未找到商品短标题输入框', 'error');
+                return false;
+            }
+
+            const title = productTitle.slice(0, 10);
+            await shortTitleInput.fill(title);
+            await page.waitForTimeout(1000);
+
+            const finishButton = page.locator('button:has-text("完成编辑")');
+            const isDisabled = await finishButton.evaluate((el: any) => 
+                el.hasAttribute('disabled') || el.classList.contains('disabled') || el.classList.contains('semi-button-disabled')
+            );
+
+            if (!isDisabled) {
+                await finishButton.click();
+                this.log('已点击 "完成编辑" 按钮');
+                await page.waitForSelector('.semi-modal-content', { state: 'hidden', timeout: 5000 });
+                return true;
+            } else {
+                this.log('"完成编辑" 按钮处于禁用状态，尝试关闭对话框', 'warn');
+                const cancelButton = page.locator('button:has-text("取消")');
+                if (await cancelButton.count()) {
+                    await cancelButton.click();
+                } else {
+                    const closeButton = page.locator('.semi-modal-close');
+                    await closeButton.click();
+                }
+                await page.waitForSelector('.semi-modal-content', { state: 'hidden', timeout: 5000 });
+                return false;
+            }
+        } catch (error: any) {
+            this.log(`处理商品对话框出错: ${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    /**
+     * 设置商品链接 (Ported from Python set_product_link)
+     */
+    private async setProductLink(page: Page, productLink: string, productTitle: string): Promise<boolean> {
+        try {
+            await page.waitForTimeout(2000);
+            await page.waitForSelector('text=添加标签', { timeout: 10000 });
+
+            const dropdown = page.locator('.semi-select').filter({ hasText: '添加标签' }).first();
+            
+            if (await dropdown.count() === 0) {
+                this.log('未找到标签下拉框', 'error');
+                return false;
+            }
+
+            await dropdown.click();
+            await page.waitForSelector('[role="listbox"]', { timeout: 5000 });
+            await page.locator('[role="option"]:has-text("购物车")').click();
+
+            await page.waitForSelector('input[placeholder="粘贴商品链接"]', { timeout: 5000 });
+            const inputField = page.locator('input[placeholder="粘贴商品链接"]');
+            await inputField.fill(productLink);
+
+            const addButton = page.locator('span:has-text("添加链接")');
+            const buttonClass = await addButton.getAttribute('class');
+            if (buttonClass?.includes('disable')) {
+                this.log('"添加链接" 按钮不可用', 'error');
+                return false;
+            }
+
+            await addButton.click();
+            await page.waitForTimeout(2000);
+
+            const errorModal = page.locator('text=未搜索到对应商品');
+            if (await errorModal.count() > 0) {
+                const confirmButton = page.locator('button:has-text("确定")');
+                await confirmButton.click();
+                this.log('商品链接无效', 'error');
+                return false;
+            }
+
+            return await this.handleProductDialog(page, productTitle);
+        } catch (error: any) {
+            this.log(`设置商品链接出错: ${error.message}`, 'error');
+            return false;
         }
     }
 

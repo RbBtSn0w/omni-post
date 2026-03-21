@@ -129,6 +129,11 @@ export class KuaishouUploader extends BaseUploader {
 
                 if (title) {
                     const titleContainer = page.locator('.clipped-content, [placeholder*="描述"]').first();
+                    this.log('正在清空并填写标题/描述...');
+                    await titleContainer.click();
+                    await page.keyboard.press('ControlOrMeta+a');
+                    await page.keyboard.press('Backspace');
+                    await page.keyboard.press('Delete');
                     await titleContainer.fill(title);
                 }
 

@@ -25,6 +25,7 @@ export class TencentUploader extends BaseUploader {
         for (let i = 0; i < maxRetries; i++) {
             // 视频号这种高度封装的页面，物理 100% 后还需要等待后台 WASM 的解析完成和按钮激活
             const isDone = await page.evaluate(() => {
+                // @ts-expect-error: document is available in browser context during evaluate
                 const container = document.querySelector('.post-container, .upload-area, body');
                 const text = container?.textContent || '';
                 return text.includes('100%') || text.includes('分享');
@@ -156,6 +157,12 @@ export class TencentUploader extends BaseUploader {
                     await titleInput.fill(title);
                 }
 
+                // 添加短标题 (Ported from Python)
+                await this.addShortTitle(page, title);
+                
+                // 原创声明 (Ported from Python)
+                await this.addOriginal(page, opts.category ?? undefined);
+
                 if (enableTimer && videosPerDay) {
                     const schedules = generateScheduleTimeNextDay(
                         fileList.length, videosPerDay, dailyTimes || null, false, startDays
@@ -201,6 +208,112 @@ export class TencentUploader extends BaseUploader {
         onProgress: (progress: number) => void
     ): Promise<void> {
         this.log('Tencent article upload not implemented yet', 'warn');
+    }
+
+    /**
+     * 格式化短标题 (Ported from Python format_str_for_short_title)
+     */
+    private formatStrForShortTitle(originTitle: string): string {
+        const allowedSpecialChars = "《》“”:+?%°";
+        let formatted = "";
+        for (const char of originTitle) {
+            // Check if alphanumeric across languages or allowed special char or space
+            if (/[\p{L}\p{N}]/u.test(char) || allowedSpecialChars.includes(char)) {
+                formatted += char;
+            } else if (char === ',') {
+                formatted += ' ';
+            }
+        }
+        
+        if (formatted.length > 16) {
+            formatted = formatted.slice(0, 16);
+        } else if (formatted.length < 6) {
+            formatted = formatted.padEnd(6, '.'); // 使用点号填充而非空格，避免平台修剪后长度不足
+        }
+        return formatted;
+    }
+
+    /**
+     * 添加短标题 (Ported from Python add_short_title)
+     */
+    private async addShortTitle(page: Page, title: string | undefined): Promise<void> {
+        if (!title) return;
+        try {
+            const shortTitleElement = page.getByText('短标题', { exact: true })
+                .locator('..')
+                .locator('xpath=following-sibling::div')
+                .locator('span input[type="text"]');
+            
+            if (await shortTitleElement.count() > 0) {
+                const shortTitle = this.formatStrForShortTitle(title);
+                await shortTitleElement.fill(shortTitle);
+                this.log(`短标题已设置: ${shortTitle}`);
+            }
+        } catch (error: any) {
+            this.log(`设置短标题失败: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * 原创声明 (Ported from Python add_original)
+     */
+    private async addOriginal(page: Page, category: number | string | undefined | null): Promise<void> {
+        const categoryMap: Record<string, string> = {
+            '1': '生活', '2': '科技', '3': '娱乐', '4': '教育',
+            '5': '体育', '6': '职场', '7': '美食', '8': '游戏'
+        };
+        const categoryText = typeof category === 'string' ? category : (category ? categoryMap[String(category)] : '');
+        
+        try {
+            const originalCheckbox = page.getByLabel('视频为原创').first();
+            if (await originalCheckbox.count() > 0) {
+                await originalCheckbox.check();
+                this.log('已勾选原创声明');
+            }
+
+            // 检查弹窗和协议
+            const statementLabel = page.locator('label:has-text("我已阅读并同意 《视频号原创声明使用条款》")');
+            if (await statementLabel.isVisible()) {
+                await page.getByLabel('我已阅读并同意 《视频号原创声明使用条款》').check();
+                await page.getByRole('button', { name: '声明原创' }).click();
+            }
+
+            // 新版/改版账号的处理逻辑
+            const declareOriginalBtn = page.locator('div.label span:has-text("声明原创")');
+            if (await declareOriginalBtn.count() > 0 && category) {
+                const checkbox = page.locator('div.declare-original-checkbox input.ant-checkbox-input');
+                if (await checkbox.count() > 0 && !(await checkbox.isDisabled())) {
+                    await checkbox.click();
+                    
+                    // 等待弹窗并确认
+                    const modalCheckbox = page.locator('div.declare-original-dialog input.ant-checkbox-input:visible');
+                    if (await modalCheckbox.count() > 0) {
+                        await modalCheckbox.click();
+                    }
+                }
+
+                // 处理原创类型下拉
+                const typeForm = page.locator('div.original-type-form > div.form-label:has-text("原创类型"):visible');
+                if (await typeForm.count() > 0) {
+                    await page.locator('div.form-content:visible').click();
+                    // 根据映射后的分类名称进行匹配
+                    if (categoryText) {
+                        const option = page.locator(`div.form-content:visible ul.weui-desktop-dropdown__list li.weui-desktop-dropdown__list-ele:has-text("${categoryText}")`).first();
+                        if (await option.count() > 0) {
+                            await option.click();
+                        }
+                    }
+                    await page.waitForTimeout(1000);
+                }
+
+                const finalDeclareBtn = page.locator('button:has-text("声明原创"):visible');
+                if (await finalDeclareBtn.count() > 0) {
+                    await finalDeclareBtn.click();
+                }
+            }
+        } catch (error: any) {
+            this.log(`处理原创声明失败: ${error.message}`, 'error');
+        }
     }
 
     /**
