@@ -119,9 +119,32 @@ export class TencentUploader extends BaseUploader {
                 let uploadedBytes = 0;
 
                 const uploadProgressListener = (request: any) => {
-                    // 视频号/微信使用腾讯云 COS 或 finder 专有域名进行分片上传
+                    const url = request.url();
+                    // 1. 尝试监听微信官方的进度心跳包 (最准)
+                    if (url.includes('helper_mmdata') && request.method() === 'POST') {
+                        try {
+                            const postData = request.postData();
+                            if (postData) {
+                                const data = JSON.parse(postData);
+                                // 查找包含 UploadProgress 的项
+                                for (const item of (data?.body || [])) {
+                                    if (item.UploadProgress?.progress) {
+                                        const rawPercent = parseFloat(item.UploadProgress.progress);
+                                        if (!isNaN(rawPercent)) {
+                                            onProgress(Math.floor(Math.min(99, rawPercent)));
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch {
+                            // 忽略解析错误
+                        }
+                    }
+
+                    // 2. 兜底逻辑：流量分片监听
                     if (
-                        (request.url().includes('video.qq.com') || request.url().includes('myqcloud.com')) &&
+                        (url.includes('video.qq.com') || url.includes('myqcloud.com')) &&
                         (request.method() === 'POST' || request.method() === 'PUT')
                     ) {
                         const buffer = request.postDataBuffer();
