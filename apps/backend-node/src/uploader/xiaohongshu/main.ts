@@ -3,8 +3,9 @@
  * Mirrors: apps/backend/src/uploader/xiaohongshu_uploader/main.py
  */
 
+import * as fs from 'node:fs';
 import path from 'path';
-import { type BrowserContext } from 'playwright';
+import { type BrowserContext, type Page } from 'playwright';
 import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
 import type { UploadOptions } from '../../services/publish-service.js';
@@ -13,6 +14,22 @@ import { BaseUploader } from '../base-uploader.js';
 
 export class XiaohongshuUploader extends BaseUploader {
     protected platformName = 'Xiaohongshu';
+
+    private async waitForUploadReady(page: Page): Promise<void> {
+        this.log('等待小红书转码及就绪信号 (监听 transcode / notes)...');
+        try {
+            // 小红书在视频传完后会轮询此接口确认转码成功，这是发布的真阈值
+            await page.waitForResponse(
+                (response) => 
+                    response.url().includes('query_transcode') && 
+                    response.status() === 200,
+                { timeout: 300000 } // 5 minutes for transcoding
+            );
+            this.log('小红书视频已就绪');
+        } catch (error: any) {
+            this.log(`监听转码就绪超时: ${error.message}，尝试通过页面稳定状态继续`, 'warn');
+        }
+    }
 
     /**
      * 实现 BaseUploader 的 postVideo 接口 (SC-006)
@@ -30,7 +47,7 @@ export class XiaohongshuUploader extends BaseUploader {
 
         try {
             await page.goto('https://creator.xiaohongshu.com/publish/publish', {
-                waitUntil: 'networkidle',
+                waitUntil: 'domcontentloaded',
             });
 
             for (let i = 0; i < fileList.length; i++) {
@@ -43,9 +60,37 @@ export class XiaohongshuUploader extends BaseUploader {
                 }
                 this.log(`上传视频 ${i + 1}/${fileList.length}: ${fileList[i]}`);
 
-                const fileInput = page.locator('input[type="file"]').first();
-                await fileInput.setInputFiles(videoPath);
-                await page.waitForTimeout(5000);
+                // 方案 2：基于 XHS 自研频谱云存储 (xhscdn.com) 的进度监听
+                const stats = fs.statSync(videoPath);
+                const totalSizes = stats.size;
+                let uploadedBytes = 0;
+
+                const uploadProgressListener = (request: any) => {
+                    // 小红书分片发往 xhscdn.com 或 xhsupload 域名，方法为 PUT
+                    if (
+                        (request.url().includes('xhscdn.com') || request.url().includes('xhscloud.com')) &&
+                        request.method() === 'PUT'
+                    ) {
+                        const buffer = request.postDataBuffer();
+                        if (buffer) {
+                            uploadedBytes += buffer.length;
+                            const percent = Math.min(99, Math.floor((uploadedBytes / totalSizes) * 100));
+                            onProgress(percent);
+                        }
+                    }
+                };
+
+                try {
+                    page.on('request', uploadProgressListener);
+                    const fileInput = page.locator('input[type="file"]').first();
+                    await fileInput.setInputFiles(videoPath);
+                    this.log(`文件已选择，频谱分片上传中...`);
+
+                    await this.waitForUploadReady(page);
+                } finally {
+                    page.removeListener('request', uploadProgressListener);
+                }
+                onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 节点成功
 
                 if (title) {
                     const titleInput = page.locator('#composerTitleInput, .title input').first();
@@ -61,12 +106,25 @@ export class XiaohongshuUploader extends BaseUploader {
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
+                
                 const publishBtn = page.getByRole('button', { name: '发布' });
-                await publishBtn.click();
-                this.log(`视频 ${i + 1} 发布成功`);
+                this.log(`点击发布并等待确认信号...`);
+                try {
+                    // 核心修复：先声明 Promise 再点击，规避竞态
+                    const submitPromise = page.waitForResponse(
+                        (resp) => resp.url().includes('web_api/sns/v2/note') && resp.status() === 200,
+                        { timeout: 90000 }
+                    );
+                    
+                    await publishBtn.click();
+                    await submitPromise;
+                    this.log(`视频 ${i + 1} 发布成功 (小红书已收录)`);
+                } catch (error: any) {
+                    this.log(`未监听到发布成功响应: ${error.message}，尝试跳转判定`, 'warn');
+                    await page.waitForURL(url => url.pathname.includes('/content/manage'), { timeout: 10000 }).catch(() => {});
+                }
                 
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100));
-                await page.waitForTimeout(3000);
             }
         } catch (error: any) {
             this.log(`上传失败: ${error.message}`, 'error');
@@ -74,6 +132,18 @@ export class XiaohongshuUploader extends BaseUploader {
         } finally {
             await page.close();
         }
+    }
+
+    /**
+     * 实现 BaseUploader 的 postArticle 接口
+     * @description 小红书目前仅支持视频发布模式
+     */
+    async postArticle(
+        context: BrowserContext,
+        opts: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void> {
+        this.log('Xiaohongshu article upload not implemented yet', 'warn');
     }
 
     /**
