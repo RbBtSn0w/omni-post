@@ -143,16 +143,44 @@ export class KuaishouUploader extends BaseUploader {
                         content: '#preact-border-shadow-host, [id*="tours"] { display: none !important; }'
                     }).catch(() => {});
 
-                    // 2. 诊断日志：寻找所有名为 #work-description-edit 的元素并报告状态 (排查多重 ID)
-                    await page.evaluate((sel) => {
-                        const els = Array.from(document.querySelectorAll(sel));
-                        const status = els.map((el: any, i) => {
+                    // 2. 深度诊断日志：找出所有嫌疑层 (固定定位、蒙层、甚至低透明层)
+                    const auditReport = await page.evaluate((sel) => {
+                        const suspects: any[] = [];
+                        const candidates: any[] = [];
+                        
+                        // 扫描所有可能的遮挡层
+                        document.querySelectorAll('*').forEach((node: any) => {
+                            const style = window.getComputedStyle(node);
+                            const zIndex = parseInt(style.zIndex);
+                            const position = style.position;
+                            const isFixed = position === 'fixed' || position === 'absolute';
+                            const opacity = parseFloat(style.opacity);
+                            
+                            if (isFixed && style.display !== 'none' && (zIndex > 0 || opacity < 1)) {
+                                suspects.push({ 
+                                    tag: node.tagName, id: node.id, classes: node.className, 
+                                    zIndex, opacity, pos: position, rect: node.getBoundingClientRect()
+                                });
+                            }
+                        });
+
+                        // 扫描所有目标输入框候选者
+                        document.querySelectorAll(sel).forEach((el: any, i) => {
                             const style = window.getComputedStyle(el);
                             const rect = el.getBoundingClientRect();
-                            return `[#${i}] visible=${rect.width > 0 && rect.height > 0} display=${style.display} opacity=${style.opacity}`;
+                            candidates.push({
+                                index: i,
+                                visible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+                                style: { display: style.display, visibility: style.visibility, opacity: style.opacity },
+                                rect
+                            });
                         });
-                        console.log(`--- CANDIDATE ELEMENTS [${sel}] [Count: ${els.length}] ---`, status.join(' | '));
-                    }, titleSelector).catch(() => {});
+
+                        return { suspects: suspects.slice(0, 10), candidates };
+                    }, titleSelector).catch(() => ({ suspects: [], candidates: [] }));
+
+                    this.log(`[审计报告] 候选输入框: ${JSON.stringify(auditReport.candidates)}`);
+                    this.log(`[审计报告] 潜在遮挡层 (Top 10): ${JSON.stringify(auditReport.suspects)}`);
 
                     // 3. 修正后的原生填写逻辑 (使用 :visible 伪类过滤，避免击中隐藏的旧元素)
                     const titleContainer = page.locator(`${titleSelector}:visible`).first();
