@@ -117,7 +117,7 @@
                   class="video-upload"
                   drag
                   :auto-upload="true"
-                  :action="`${apiBaseUrl}/upload`"
+                  :action="`${apiBaseUrl}/uploadSave`"
                   :on-success="(response, file) => handleUploadSuccess(response, file, tab)"
                   :on-error="handleUploadError"
                   multiple
@@ -246,7 +246,7 @@
           <h3>封面图</h3>
           <el-upload
             class="thumbnail-upload"
-            :action="`${apiBaseUrl}/upload`"
+            :action="`${apiBaseUrl}/uploadSave`"
             :show-file-list="false"
             :on-success="(res) => handleThumbnailSuccess(res, tab)"
             :before-upload="beforeThumbnailUpload"
@@ -427,7 +427,7 @@
         class="video-upload"
         drag
         :auto-upload="true"
-        :action="`${apiBaseUrl}/upload`"
+        :action="`${apiBaseUrl}/uploadSave`"
         :on-success="(response, file) => handleUploadSuccess(response, file, currentUploadTab)"
         :on-error="handleUploadError"
         :before-upload="beforeUpload"
