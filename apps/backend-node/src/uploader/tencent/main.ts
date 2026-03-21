@@ -25,16 +25,23 @@ export class TencentUploader extends BaseUploader {
         for (let i = 0; i < maxRetries; i++) {
             // 视频号这种高度封装的页面，物理 100% 后还需要等待后台 WASM 的解析完成和按钮激活
             const isDone = await page.evaluate(() => {
-                const text = document.body.innerText;
-                const is100Percent = text.includes('100%') || text.includes('上传完成') || text.includes('分享');
-                return is100Percent;
+                const container = document.querySelector('.post-container, .upload-area, body');
+                const text = container?.textContent || '';
+                return text.includes('100%') || text.includes('分享');
             });
 
             if (isDone) {
-                // 发表或存草稿按钮变为可点击是「真正完成」的终极标志
-                const publishBtn = page.getByRole('button', { name: /发表|存草稿/ });
-                if (await publishBtn.count() > 0 && await publishBtn.isEnabled()) {
-                    this.log('作品解析完成，发布按钮已就绪');
+                // 核心修复：避免 Strict Mode 冲突，按优先级获取第一个可用的按钮
+                const publishBtn = page.getByRole('button', { name: '发表' }).first();
+                const draftBtn = page.getByRole('button', { name: '存草稿' }).first();
+                
+                const isReady = await Promise.any([
+                    publishBtn.isEnabled().catch(() => false),
+                    draftBtn.isEnabled().catch(() => false)
+                ]);
+
+                if (isReady) {
+                    this.log('作品解析完成并已就绪');
                     return;
                 }
             }
@@ -56,12 +63,15 @@ export class TencentUploader extends BaseUploader {
                     resp => resp.url().includes('mmfinderassistant-bin/post/publish') && resp.status() === 200,
                     { timeout: 60000 }
                 ),
+                // 拦截检测：如果弹出了侵权确认或协议确认弹窗，需要上报
+                page.waitForSelector('.ant-modal-content, .weui-desktop-dialog', { timeout: 10000 })
+                    .then(() => { throw new Error('检测到阻塞弹窗，需手动处理协议确认'); }),
                 // 兜底信号：页面跳转到了列表页
-                page.waitForURL(/\/platform\/post\/list/, { timeout: 60000 })
+                page.waitForURL(url => url.pathname.includes('/post/list'), { timeout: 60000 })
             ]);
             this.log('发布验证成功 (后端已入账)');
         } catch (error: any) {
-            this.log(`未获得明确的发表成功信号: ${error.message}，尝试通过页面稳定状态判定`, 'warn');
+            this.log(`注意: ${error.message}，尝试通过页面稳定状态判定`, 'warn');
             await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
         }
     }

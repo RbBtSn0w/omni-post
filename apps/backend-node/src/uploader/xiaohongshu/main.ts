@@ -16,18 +16,29 @@ export class XiaohongshuUploader extends BaseUploader {
     protected platformName = 'Xiaohongshu';
 
     private async waitForUploadReady(page: Page): Promise<void> {
-        this.log('等待小红书转码及就绪信号 (监听 transcode / notes)...');
+        this.log('等待小红书转码及就绪信号 (深入解析同步状态)...');
         try {
-            // 小红书在视频传完后会轮询此接口确认转码成功，这是发布的真阈值
+            // 核心修复：不仅等 HTTP 200，还要检查 Body 里的业务状态
             await page.waitForResponse(
-                (response) => 
-                    response.url().includes('query_transcode') && 
-                    response.status() === 200,
-                { timeout: 300000 } // 5 minutes for transcoding
+                async (response) => {
+                    const isMatch = response.url().includes('query_transcode') && response.status() === 200;
+                    if (isMatch) {
+                        try {
+                            const data = await response.json();
+                            // 小红书转码成功的业务逻辑判定：status 1 代表就绪
+                            const isReady = data?.data?.video?.status === 1 || data?.success === true;
+                            if (isReady) return true;
+                        } catch {
+                            return false;
+                        }
+                    }
+                    return false;
+                },
+                { timeout: 300000 }
             );
             this.log('小红书视频已就绪');
         } catch (error: any) {
-            this.log(`监听转码就绪超时: ${error.message}，尝试通过页面稳定状态继续`, 'warn');
+            this.log(`监听转码完成结果未知: ${error.message}，尝试降级继续`, 'warn');
         }
     }
 
