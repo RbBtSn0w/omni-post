@@ -21,7 +21,9 @@ Current baseline:
 - `/apps/frontend/` - Vue 3 web application
 - `/apps/backend-node/` - Primary REST API service (maintained)
 - `/apps/backend/` - Deprecated Python backend (legacy only)
-- `/packages/` - Shared config/CLI packages
+- `/packages/shared/` - **Single Source of Truth (SSOT)** for constants and types
+- `/packages/shared-config/` - Shared ESLint/TS configurations
+- `/packages/cli/` - Command-line interface tool
 - Workspace managed in root `package.json`
 
 ### Backend Service Layer Architecture (Node Primary)
@@ -40,6 +42,14 @@ Core services:
 ### Frontend State Management (Pinia)
 Stores are in `apps/frontend/src/stores/` using Composition API stores.
 Pattern: components -> store actions -> API layer (`src/api/*.js`) -> state updates.
+
+### Shared Code & SSOT (@omni-post/shared)
+This package contains code shared between frontend and backend to ensure consistency:
+1. **Constants**: `PlatformType` enum, `PLATFORM_NAMES`, `PLATFORM_LOGIN_URLS`.
+2. **Interfaces**: `Task`, `UploadOptions`, `UserInfo`, `BrowserProfile`.
+3. **Helpers**: `getPlatformName`, `getPlatformType`, `isValidPlatform`.
+
+**Rule**: Always import these from `@omni-post/shared` instead of defining local duplicates.
 
 ## Data Flow & Integration
 
@@ -70,7 +80,7 @@ Primary schema is defined in `apps/backend-node/src/db/migrations.ts`:
 - `articles`
 - `tasks` (includes `content_type`, `content_id`, `browser_profile_id`, `publish_data`)
 
-Platform type mapping is maintained in `apps/backend-node/src/core/constants.ts`:
+Platform type mapping is maintained in `@omni-post/shared` (exported via `apps/backend-node/src/core/constants.ts` for secondary support):
 - 1=Xiaohongshu, 2=WeChat Channels, 3=Douyin, 4=Kuaishou, 5=Bilibili, 6=Zhihu, 7=Juejin
 
 ## Platform Uploader Pattern
@@ -110,6 +120,7 @@ npm run lint
 npm run test
 npm run clean
 npm run check:workspace
+npm run test -w packages/shared
 ```
 
 ### Legacy Python Backend (Deprecated)
@@ -143,6 +154,7 @@ Some newer routes (e.g., browser/article/explorer) may return plain JSON objects
 **System Overview:**
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - architecture and data flow
 - [README.md](./README.md) - latest project-level setup
+- [packages/shared/src/index.ts](./packages/shared/src/index.ts) - SSOT for shared types and constants
 
 **Node Backend Core:**
 - [app.ts](./apps/backend-node/src/app.ts) - Express app factory
@@ -177,3 +189,4 @@ Some newer routes (e.g., browser/article/explorer) may return plain JSON objects
 5. **Prefer safe path helpers** (`utils/path.ts`) for filesystem operations.
 6. **Route-service-uploader boundaries** should remain clear; avoid mixing automation logic into route handlers.
 7. **When diagnosing automation regressions**, use `opencli-diagnostics` workflow to capture real network/UI behavior before patching selectors.
+8. **SSOT Compliance**: All platform IDs and shared entity interfaces MUST be imported from `@omni-post/shared`. Do not define local interfaces for `Task`, `UploadOptions`, or `PlatformType`.
