@@ -127,16 +127,26 @@ export class KuaishouUploader extends BaseUploader {
                 
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
-                if (title) {
-                    const titleContainer = page.locator('#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]').first();
-                    this.log('正在清空并填写标题/描述 (ID: #work-description-edit)...');
+                 if (title) {
+                    const titleSelector = '#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]';
+                    this.log('等待描述框进入可见状态...');
                     
                     // 彻底清除可能存在的引导层拦截器
                     await page.addStyleTag({ 
                         content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }' 
                     }).catch(() => {});
-                    
+
+                    try {
+                        // 显式等待可见性，超时则尝试强行点击
+                        await page.waitForSelector(titleSelector, { state: 'visible', timeout: 10000 });
+                    } catch (e) {
+                        this.log('描述框未在预定时间内可见，尝试强行操作', 'warn');
+                    }
+
+                    const titleContainer = page.locator(titleSelector).first();
                     await titleContainer.click({ force: true });
+                    await page.waitForTimeout(500); // 给一点点聚焦缓冲
+                    
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
                     
