@@ -111,6 +111,13 @@ export class KuaishouUploader extends BaseUploader {
                 };
 
                 try {
+                    // 将浏览器控制台日志转发到 Node 日志 (用于 DOM 审计)
+                    page.on('console', msg => {
+                        const text = msg.text();
+                        if (text.includes('---')) {
+                            this.log(`[Browser Audit] ${text}`);
+                        }
+                    });
                     page.on('request', uploadProgressListener);
 
                     // 核心修复：先创建监听 Promise，再触发文件选择动作，消除小视频秒传导致的竞态
@@ -129,74 +136,69 @@ export class KuaishouUploader extends BaseUploader {
 
                  if (title) {
                     const titleSelector = '#work-description-edit';
-                    this.log('开始深度 DOM 审计，排查遮挡层与输入框可见性...');
+                    this.log('正在执行暴力清场与输入环境诊断...');
                     
-                    // 诊断：收集并打印所有可能的遮挡层
+                    // 1. 全量隐藏气泡、蒙层和引导 (包括截图中的领取后才可添加弹窗)
+                    await page.addStyleTag({ 
+                        content: `
+                            #preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal, 
+                            .ant-popover, .ant-tooltip, .ant-modal-root, .ant-mask, ._helper_6j0c1_1,
+                            [class*="popover"], [class*="tooltip"], [class*="guide"], [class*="overlay"] { 
+                                display: none !important; 
+                                pointer-events: none !important; 
+                                visibility: hidden !important;
+                                z-index: -1 !important;
+                            }
+                        `
+                    }).catch(() => {});
+
+                    // 2. 诊断并打印
                     await page.evaluate(() => {
                         const results: any[] = [];
-                        const allNodes = document.querySelectorAll('*');
-                        allNodes.forEach((node) => {
-                            const style = window.getComputedStyle(node);
+                        (document as any).querySelectorAll('*').forEach((node: any) => {
+                            const style = (window as any).getComputedStyle(node);
                             const zIndex = parseInt(style.zIndex);
-                            const position = style.position;
-                            if ((zIndex > 500 || position === 'fixed' || position === 'absolute') && style.display !== 'none') {
-                                results.push({
-                                    tag: node.tagName,
-                                    id: node.id,
-                                    classes: node.className,
-                                    zIndex,
-                                    position,
-                                    opacity: style.opacity,
-                                    pointerEvents: style.pointerEvents,
-                                    rect: node.getBoundingClientRect()
-                                });
+                            if ((zIndex > 500 || style.position === 'fixed') && style.display !== 'none') {
+                                results.push({ tag: node.tagName, id: node.id, classes: node.className, zIndex });
                             }
                         });
-                        console.log('--- POTENTIAL BLOCKING LAYERS ---', JSON.stringify(results.slice(0, 15)));
+                        console.log('--- POTENTIAL BLOCKING LAYERS ---', JSON.stringify(results.slice(0, 5)));
                     }).catch(() => {});
 
-                    // 诊断：检查目标输入框的物理属性
-                    const boxStats = await page.evaluate((sel) => {
-                        const el = document.querySelector(sel);
-                        if (!el) return 'NOT_FOUND';
-                        const style = window.getComputedStyle(el);
-                        const rect = el.getBoundingClientRect();
-                        return { 
-                            isVisible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
-                            rect,
-                            zIndex: style.zIndex,
-                            style: { display: style.display, visibility: style.visibility, opacity: style.opacity }
-                        };
-                    }, titleSelector);
-                    this.log(`描述框审计结果: ${JSON.stringify(boxStats)}`);
-
-                    // 为了测试，依然保持清场逻辑但限制范围
-                    await page.addStyleTag({ 
-                        content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }'
-                    }).catch(() => {});
-
-                    // 使用 JS 强制聚焦
-                    await page.evaluate((sel) => {
-                        const el = document.querySelector(sel) as HTMLElement;
-                        if (el) { el.focus(); el.click(); }
-                    }, titleSelector);
+                    // 3. 强力填写逻辑：聚焦 + 校验 + 兜底灌注
+                    const titleContainer = page.locator(titleSelector).first();
+                    await titleContainer.click({ force: true });
                     
-                    await page.waitForTimeout(1000);
-                    
-                    // 清空并输入
+                    // 模拟输入
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
-                    await page.keyboard.type(title, { delay: 50 });
+                    await titleContainer.type(title, { delay: 30 });
                     
-                    // 验证输入结果
-                    const currentText = await page.locator(titleSelector).innerText();
-                    this.log(`标题描述填入验证: [${currentText.slice(0, 15)}...] 内容长度: ${currentText.length}`);
-                }
+                    // 话题处理
+                    if (tags && tags.length > 0) {
+                        for (const tag of tags) {
+                            await titleContainer.type(` #${tag} `, { delay: 30 });
+                        }
+                    }
 
-                if (tags && tags.length > 0) {
-                    const tagInput = page.locator('#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]').first();
-                    for (const tag of tags) {
-                        await tagInput.type(` #${tag} `, { delay: 50 });
+                    // 4. 内容验证与物理兜底
+                    const verifyText = await titleContainer.innerText();
+                    if (verifyText.length === 0) {
+                        this.log('模拟输入似乎被拦截（长度为0），启动 DOM 物理注入机制...', 'warn');
+                        const finalContent = `${title} ${tags?.map(t => `#${t}`).join(' ') || ''}`;
+                        await page.evaluate(({ sel, content }) => {
+                            const el = (document as any).querySelector(sel) as any;
+                            if (el) {
+                                el.innerHTML = `<div>${content}</div>`;
+                                // 手动触发所有 React 监听事件
+                                el.dispatchEvent(new (window as any).Event('input', { bubbles: true }));
+                                el.dispatchEvent(new (window as any).Event('change', { bubbles: true }));
+                                el.blur();
+                            }
+                        }, { sel: titleSelector, content: finalContent });
+                        this.log('DOM 物理注入已执行');
+                    } else {
+                        this.log(`输入成功验证: Lenne=${verifyText.length}`);
                     }
                 }
 
