@@ -2,7 +2,10 @@
 
 ## Overview
 
-OmniPost is built using a **Monorepo architecture** with separate frontend and backend applications. This document explains the overall system design, component interactions, and technical decisions.
+OmniPost is built using a **Monorepo architecture** with a Vue 3 frontend and a
+primary Node.js/TypeScript backend. The legacy Python backend remains in the
+repository for compatibility and migration reference only. This document explains
+the current system design, component interactions, and technical decisions.
 
 ## System Architecture Diagram
 
@@ -27,15 +30,15 @@ OmniPost is built using a **Monorepo architecture** with separate frontend and b
                            │ REST API calls
                            │ (http://localhost:5409)
 ┌──────────────────────────▼──────────────────────────────────┐
-│                 Backend (Flask + Python 3.10)               │
+│          Backend (Express + TypeScript, Primary)            │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │ Routes: /api/auth, /api/accounts, /api/publish        │ │
+│  │ Routes: /account, /publish, /articles, /browser       │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Services: AuthService, UploadService, TaskScheduler   │ │
+│  │ Services: TaskService, PublishService, LoginService   │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Uploaders: DouYin, Xiaohongshu, Kuaishou, Tencent    │ │
+│  │ Uploaders: Douyin, Xiaohongshu, Kuaishou, Weixin     │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Database: SQLite models (User, Account, Video, Task)  │ │
+│  │ Database: SQLite tables (tasks, articles, user_info)  │ │
 │  ├────────────────────────────────────────────────────────┤ │
 │  │ Utils: File handling, Cookie management, Encryption   │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -171,75 +174,68 @@ Child Components
 
 ## Backend Architecture
 
+The maintained backend lives in `apps/backend-node` and follows a strict
+`Routes -> Services -> Uploaders` pattern. `apps/backend` is deprecated and
+should only be consulted for compatibility work.
+
 ### Directory Structure
 
 ```
-apps/backend/
+apps/backend-node/
 ├── src/
-│   ├── app.py                   # Flask application factory
+│   ├── app.ts                   # Express application factory
 │   ├── core/                    # Core configuration
-│   │   ├── config.py
-│   │   ├── constants.py
-│   │   └── logger.py
+│   │   ├── config.ts
+│   │   ├── constants.ts
+│   │   └── logger.ts
 │   │
 │   ├── routes/                  # API endpoint definitions
-│   │   ├── account.py           # Account management
-│   │   ├── publish.py           # Publishing operations
-│   │   ├── dashboard.py         # Dashboard stats
-│   │   ├── file.py              # File management
-│   │   ├── group.py             # Group management
-│   │   └── cookie.py            # Cookie operations
+│   │   ├── account.ts
+│   │   ├── publish.ts
+│   │   ├── article.ts
+│   │   ├── browser.ts
+│   │   └── file.ts
 │   │
 │   ├── services/                # Business logic layer
-│   │   ├── auth_service.py      # Authentication logic
-│   │   ├── task_service.py      # Task scheduling
-│   │   ├── publish_service.py   # Publishing orchestration
-│   │   ├── publish_executor.py  # Task execution logic
-│   │   ├── login_service.py     # Login management
-│   │   ├── login_impl.py        # Login implementations
-│   │   └── cookie_service.py    # Cookie management
+│   │   ├── task-service.ts
+│   │   ├── publish-service.ts
+│   │   ├── publish-executor.ts
+│   │   ├── login-service.ts
+│   │   ├── cookie-service.ts
+│   │   └── article_service.ts
 │   │
 │   ├── uploader/                # Platform-specific uploaders
-│   │   ├── __init__.py
-│   │   ├── base_uploader.py     # Abstract base class
-│   │   ├── douyin_uploader/
-│   │   │   ├── __init__.py
-│   │   │   ├── main.py
-│   │   │   ├── login.py
-│   │   │   └── utils.py
-│   │   ├── xiaohongshu_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │   ├── ks_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │   └── tencent_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │
-│   ├── utils/                   # Utility functions
-│   │   ├── network.py           # Network utilities
-│   │   └── files_times.py       # File and time helpers
+│   │   ├── douyin/
+│   │   │   └── main.ts
+│   │   ├── xiaohongshu/
+│   │   │   └── main.ts
+│   │   ├── kuaishou/
+│   │   │   └── main.ts
+│   │   ├── weixin/
+│   │   │   └── main.ts
+│   │   ├── bilibili/
+│   │   │   └── main.ts
+│   │   ├── zhihu/
+│   │   │   └── main.ts
+│   │   └── juejin/
+│   │       └── main.ts
 │   │
 │   ├── db/                      # Database layer
-│   │   ├── db_manager.py        # Database connection & management
-│   │   └── createTable.py       # Database initialization
+│   │   ├── migrations.ts
+│   │   └── index.ts
 │   │
-│   └── __init__.py
+│   ├── utils/                   # Utility functions
+│   │   ├── response.ts
+│   │   └── path.ts
+│   │
+│   └── types/
 │
-├── tests/                       # Comprehensive test suite
-│   ├── conftest.py              # Pytest configuration
-│   ├── mock_services.py         # Mock services
-│   ├── test_auth.py
-│   ├── test_account.py
-│   ├── test_upload.py
-│   ├── test_database.py
+├── tests/                       # Vitest test suite
+│   ├── test_routes_publish.test.ts
+│   ├── test_publish_executor.test.ts
+│   ├── test_article_routes.test.ts
 │   └── ...
-│
-├── requirements.txt             # Python dependencies
-├── pyproject.toml               # Project metadata
-├── pytest.ini                   # Pytest configuration
-└── package.json                 # NPM scripts
+└── package.json
 ```
 
 ### API Routes Structure

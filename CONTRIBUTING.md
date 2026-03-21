@@ -51,12 +51,13 @@ This section guides you through submitting an enhancement suggestion for `OmniPo
    cd omni-post
    ```
 
-2. **Install all dependencies**
+2. **Install Node.js workspace dependencies**
    ```bash
-   npm run install:all
+   npm install
+   npx playwright install chromium
    ```
 
-3. **Install Playwright browser**
+3. **Optional: prepare the legacy Python backend**
    ```bash
    cd apps/backend
    .venv/bin/python -m playwright install chromium
@@ -64,7 +65,8 @@ This section guides you through submitting an enhancement suggestion for `OmniPo
 
 4. **Start development servers**
    ```bash
-   npm run dev
+   npm run dev:node
+   npm run dev:frontend
    ```
 
 ## Styleguides
@@ -76,8 +78,16 @@ This section guides you through submitting an enhancement suggestion for `OmniPo
 - Limit the first line to 72 characters or less
 - Reference issues and pull requests liberally after the first line
 
+### Node.js/TypeScript Styleguide
+
+- `apps/backend-node` is the default backend target for all new work.
+- Preserve the `Routes -> Services -> Uploaders` boundary.
+- Import shared platform IDs and interfaces from `@omni-post/shared` instead of redefining them locally.
+- Use existing lint and test scripts before submitting.
+
 ### Python Styleguide
 
+- Python guidance applies only when an issue explicitly targets `apps/backend`.
 - We follow [PEP 8](https://www.python.org/dev/peps/pep-0008/).
 - Use `flake8` to lint your code before submitting.
 - Use `black` for code formatting (line length: 100).
@@ -122,9 +132,10 @@ async def login_platform(account_file: Path) -> bool:
 ```
 
 **Testing:**
-- Write unit tests for new functions
-- Aim for at least 80% code coverage
-- Use `pytest` for test framework
+- Write or extend tests for new behavior
+- Aim for at least 80% code coverage on touched modules when practical
+- Use Vitest for maintained Node.js and frontend paths
+- Use `pytest` only for explicit legacy Python work
 - Mock external dependencies
 
 ### Vue.js Styleguide

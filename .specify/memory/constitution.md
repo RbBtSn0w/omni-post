@@ -1,54 +1,117 @@
 <!--
 Sync Impact Report:
-- Version change: 1.2.0 → 2.0.0
+- Version change: 2.0.0 → 2.1.0
 - List of modified principles:
-    - I. Dual-Backend Architecture Parity → I. Primary Node.js Architecture (Python Deprecated)
-    - III. Platform Uploader Isolation (Removed Python paths)
-    - IV. Comprehensive Multi-Stack Testing (Python tests now optional/deprecated)
-    - V. Concurrency & Real-Time Feedback (Removed Python threading details)
-    - VI. Monorepo Consistency & Dependency Discipline (Removed Python pip details)
-- Added sections: None.
+    - I. Primary Node.js Architecture (Python Deprecated) → I. Node.js First, Python by Exception
+    - II. Unified Three-Layer Backend Pattern → II. Route-Service-Uploader Boundaries
+    - III. Platform Uploader Isolation → III. Platform Isolation & Automation Discipline
+    - IV. Comprehensive Node.js Testing (NON-NEGOTIABLE) → VI. Test Coverage & Regression Gates (NON-NEGOTIABLE)
+    - V. Concurrency & Real-Time Feedback → V. Asynchronous Execution & Real-Time State
+    - VI. Monorepo Consistency & Dependency Discipline → IV. Shared Package SSOT & Monorepo Discipline
+- Added sections:
+    - Security & Data Integrity
+    - Development Workflow & Quality Gates
 - Removed sections: None.
 - Templates requiring updates:
-    - .specify/templates/plan-template.md: ✅ updated (Removed dual-backend parity check)
-    - .specify/templates/tasks-template.md: ✅ updated (Removed Python path conventions)
+    - .specify/templates/plan-template.md: ✅ updated
+    - .specify/templates/spec-template.md: ✅ updated
+    - .specify/templates/tasks-template.md: ✅ updated
+    - .specify/templates/commands/: ⚠ pending review target missing in repository
+    - README.md: ✅ updated
+    - README_CN.md: ✅ updated
+    - ARCHITECTURE.md: ✅ updated
+    - CONTRIBUTING.md: ✅ updated
 - Follow-up TODOs: None.
 -->
 
 # OmniPost Constitution
 
-注意: 所有回答和内容都用中文.
-
 ## Core Principles
 
-### I. Primary Node.js Architecture (Python Deprecated)
-OmniPost 正在向单一的 Node.js/TypeScript 架构演进。原有的 Python Flask 后端 (`apps/backend`) 已被标注为 **过时 (Deprecated)**，将不再获得功能更新或积极维护。所有新功能、错误修复和性能改进必须优先在 Node.js 后端 (`apps/backend-node`) 中实现。Node.js 版本必须作为项目的标准生产版本。
+### I. Node.js First, Python by Exception
+`apps/backend-node` 是 OmniPost 唯一的默认实现和维护目标。所有新功能、缺陷修复、
+性能优化和架构演进必须优先落在 Node.js/TypeScript 后端。`apps/backend`
+仅作为遗留兼容或迁移参考，除非需求明确指向遗留兼容修复，否则不得把 Python
+后端作为默认交付路径。
 
-### II. Unified Three-Layer Backend Pattern
-所有后端服务（特别是 Node.js）必须遵循 Routes → Services → Uploaders 模式。Routes 处理 HTTP 请求和响应格式；Services 编排业务逻辑和状态；Uploaders 管理平台特定的 Playwright 自动化。这种分离确保了核心业务逻辑的清晰和可维护性。
+理由：项目当前的 API、任务执行、文章发布和浏览器会话能力均以 Node.js
+实现为主，继续分散投资会直接增加回归面和维护成本。
 
-### III. Platform Uploader Isolation
-每个社交平台必须拥有其独立的上传器实现。在 Node.js 中，这位于 `apps/backend-node/src/uploader/`。上传器必须是无状态的，并负责其自身的 Playwright 上下文清理。共享的自动化逻辑必须抽象到 `utils` 或基类中，绝不允许在上传器之间直接调用。
+### II. Route-Service-Uploader Boundaries
+后端实现必须遵循 `Routes -> Services -> Uploaders` 分层。Routes 只负责 HTTP
+协议、参数校验和响应格式；Services 负责任务编排、状态流转和业务规则；
+Uploaders 只负责平台自动化。禁止在路由层写入平台自动化逻辑，禁止在上传器中
+直接处理 HTTP 请求对象。
 
-### IV. Comprehensive Node.js Testing (NON-NEGOTIABLE)
-由于 Python 后端已过时，所有新功能和平台更新**必须**包含针对 Node.js 后端的完整自动化测试（使用 `Vitest`）。Python 后端的测试不再作为强制要求，除非涉及对现有遗留代码的紧急修复。CI/CD 流体必须优先确保 Node.js 后端的所有测试通过。
+理由：清晰边界是控制发布流程复杂度、隔离平台波动、保证可测试性的前提。
 
-### V. Concurrency & Real-Time Feedback
-长运行的发布任务必须异步运行，以避免阻塞 API 请求-响应周期。Node.js 必须利用其 **异步事件循环编排**（通过 `setImmediate` 或 Promises）来处理浏览器自动化和上传等 IO 密集型任务，从而以最小的开销最大化吞吐量。实时状态更新必须通过服务器发送事件 (SSE) 交付。
+### III. Platform Isolation & Automation Discipline
+每个平台必须拥有独立上传器入口，位于
+`apps/backend-node/src/uploader/<platform>/main.ts`。上传器必须保持平台内聚、
+无跨平台直接调用，并负责自身 Playwright 资源清理。诊断自动化回归时，必须先
+基于真实页面行为、网络请求或 `opencli-diagnostics` 流程收集证据，再修改选择器
+或硬编码流程。
 
-### VI. Monorepo Consistency & Dependency Discipline
-依赖项必须严格在其各自的工作空间内管理。`apps/frontend` 和 `apps/backend-node` 使用 npm。项目结构应保持一致，并共享通用的资产（如 `stealth.min.js`）。根级别的 `package.json` 脚本应作为开发、测试和部署的主要接口。
+理由：平台 UI 变化频繁，未经诊断直接打补丁会把问题从单点失败扩大为系统性脆弱。
+
+### IV. Shared Package SSOT & Monorepo Discipline
+平台 ID、共享类型、实体接口和公共映射必须从 `@omni-post/shared` 引入，
+不得在前后端或工具链中定义本地副本。工作区依赖必须在所属 workspace 中维护，
+根级脚本必须作为标准开发入口。新增共享约束时，必须同步更新 shared 包并让消费方
+通过编译或测试验证。
+
+理由：Monorepo 的核心收益来自单一事实来源；重复定义会直接导致平台映射、
+任务结构和接口契约漂移。
+
+### V. Asynchronous Execution & Real-Time State
+登录、上传、发布和批处理任务必须以异步后台执行方式运行，不得阻塞请求响应周期。
+任务状态、进度和取消信号必须通过统一任务服务与实时反馈机制表达；登录流程必须保留
+SSE 风格的状态流能力；发布任务必须能够被轮询或查询到明确状态。
+
+理由：浏览器自动化是高延迟 IO 过程，只有异步编排和统一状态管理才能保证吞吐、
+可观测性和前端交互稳定性。
+
+### VI. Test Coverage & Regression Gates (NON-NEGOTIABLE)
+所有面向 Node 主路径的功能变更必须附带对应测试或对现有测试进行扩展，至少覆盖受影响的
+路由、服务或前端状态流之一。涉及平台分发、任务状态、共享类型、数据库迁移或自动化流程的
+变更，必须补充回归验证。只有在需求明确为遗留 Python 修复时，才可以将 Python 测试作为主质量门。
+
+理由：OmniPost 的主要风险来自跨层编排和平台回归，没有测试约束就无法稳定迭代。
 
 ## Security & Data Integrity
 
-Cookies 和敏感的账号凭据必须安全地存储在对应后端的 `data/cookies` 目录中，并必须通过 `.gitignore` 排除在版本控制之外。代码库中不允许出现硬编码的秘密或个人访问令牌。所有特定于环境的配置必须存在于 `.env` 文件中。
+Cookie、浏览器配置文件、账号凭据和本地数据文件必须存放在受控目录中，并通过
+`.gitignore` 排除。任何密钥、令牌或个人凭据都不得硬编码到仓库。文件系统操作必须优先使用
+安全路径辅助方法。任务持久化字段如 `platforms`、`file_list`、`account_list`、
+`schedule_data` 和 `publish_data` 在读写时必须保持结构稳定并与共享类型一致。
 
-## Development Workflow
+## Development Workflow & Quality Gates
 
-所有开发必须遵循 "Research -> Strategy -> Execution" 生命周期。每一项非琐碎的更改都需要一份规范 (Specification) 和一份实现计划 (Implementation Plan)。必须激活 `husky` 预提交钩子以确保符合 linting 和格式化规范。所有拉取请求必须遵守 Conventional Commits 规范。
+所有非琐碎修改必须遵循 `Research -> Strategy -> Execution` 流程。规范、计划和任务文档
+必须显式说明：
+
+- 目标是否落在 `apps/backend-node`、`apps/frontend`、`packages/shared` 或明确的遗留兼容范围。
+- 是否新增或修改了共享类型、平台映射、数据库结构、后台任务流程或自动化诊断步骤。
+- 计划中的 Constitution Check 是否验证 Node 主路径、SSOT、分层边界、异步状态流和测试义务。
+- README、架构文档或运行指南是否需要同步更新。
+
+提交前必须通过与改动范围匹配的 lint 与测试。提交说明必须遵循 Conventional Commits。
 
 ## Governance
 
-本宪法是 OmniPost 开发的基础文件，优于所有其他项目特定的实践。对本文档的修订需要 MAJOR 版本提升。所有架构决策，特别是涉及后端演进的决策，必须根据这些原则进行验证。
+本宪章优先于仓库内其他流程文档。每次规范、计划、任务拆解和代码评审都必须检查本宪章的
+六项核心原则是否被满足。
 
-**Version**: 2.0.0 | **Ratified**: 2024-05-22 | **Last Amended**: 2024-05-22
+版本策略采用语义化版本：
+
+- MAJOR：删除原则、重新定义既有强制约束，或引入会改变默认交付路径的治理变更。
+- MINOR：新增原则、增加新强制章节，或显著扩展现有原则的适用范围。
+- PATCH：仅做措辞澄清、排版修正或不改变执行含义的补充说明。
+
+修订流程必须包含：
+
+- 对变更原因、影响范围和版本升级理由的书面说明。
+- 对 `.specify/templates/` 与相关运行文档的同步检查。
+- 在宪章顶部维护 Sync Impact Report，记录已更新与待跟进项。
+
+**Version**: 2.1.0 | **Ratified**: 2024-05-22 | **Last Amended**: 2026-03-21

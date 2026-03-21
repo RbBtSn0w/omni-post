@@ -54,47 +54,45 @@
 
 ## 🔧 Tech Stack
 
-
 ### Frontend
 - **Framework**: Vue 3 + Vite
 - **UI Component Library**: Element Plus
-### Backend Options (Dual Support)
-
-#### 1. Python Backend (Default)
-- **Language**: Python 3.10
-- **Framework**: Flask (with async support)
-- **Browser Automation**: Playwright
-- **Database**: SQLite
-- **Testing Framework**: pytest + pytest-asyncio
-
-#### 2. Node.js Backend (Modern TypeScript)
-- **Language**: Node.js 20+ (TypeScript 5.x)
-- **Framework**: Express.js (ESM)
-- **Browser Automation**: Playwright (Node.js version)
-- **Database**: SQLite (Shared with Python)
-- **Testing Framework**: Vitest
 - **State Management**: Pinia
 - **Routing**: Vue Router
 - **HTTP Client**: Axios
+
+### Backend
+
+#### Primary Backend: Node.js (Maintained)
+- **Language**: Node.js 20+ (TypeScript 5.x)
+- **Framework**: Express.js (ESM)
+- **Browser Automation**: Playwright (Node.js version)
+- **Database**: SQLite
 - **Testing Framework**: Vitest
+
+#### Legacy Backend: Python (Deprecated)
+- **Language**: Python 3.10
+- **Framework**: Flask
+- **Purpose**: Compatibility and migration reference only
+- **Testing Framework**: pytest + pytest-asyncio
 
 ## 🚀 Supported Platforms
 
 This project implements video upload functionality through platform-specific `uploader` modules:
 
-| Platform Name | Uploader Module |
-|--------------|-----------------|
-| Douyin | `src/uploader/douyin_uploader/main.py` |
-| WeChat Channels | `src/uploader/tencent_uploader/main.py` |
-| Xiaohongshu | `src/uploader/xiaohongshu_uploader/main.py` |
-| Kuaishou | `src/uploader/ks_uploader/main.py` |
+| Platform Name | Primary Uploader Module |
+|--------------|--------------------------|
+| Douyin | `apps/backend-node/src/uploader/douyin/main.ts` |
+| WeChat Channels | `apps/backend-node/src/uploader/weixin/main.ts` |
+| Xiaohongshu | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
+| Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 
 ## 💾 Installation Guide
 
 ### System Requirements
 
-- Node.js >= 18.0.0
-- Python 3.10.x
+- Node.js >= 20.0.0
+- Python 3.10.x (only if you need the legacy backend)
 - npm >= 9.0.0
 - Modern browser (Chrome, Firefox, Safari, or Edge)
 
@@ -107,21 +105,22 @@ cd omni-post
 
 ### 2. Install Dependencies
 
-**Important**: We use npm workspaces. You **MUST** use the setup scripts rather than plain `npm install` inside subdirectories.
+**Important**: The maintained development path is the Node.js monorepo workspace. Use the root workspace scripts rather than ad-hoc installs inside subdirectories.
 
 ```bash
-# Recommended one-click setup for the entire monorepo
-npm run setup
+# Recommended Node.js workspace setup
+npm install
+npx playwright install chromium
 ```
 
 ### 🎯 Developer Workflow (New Monorepo Setup)
 
 Starting from v1.2.0, OmniPost uses a strict monorepo workspace configuration. Here are the core commands you should use:
 
-- **Initialize project**: `npm run setup` (Installs all Node & Python dependencies)
-- **Run dev servers**: `npm run dev` (Starts frontend and active Node backend concurrently)
-- **Run all tests**: `npm run test` (Executes Vitest/Pytest across all packages)
-- **Lint all code**: `npm run lint` (ESLint & Python formatters)
+- **Initialize project**: `npm install` (Installs workspace dependencies)
+- **Run dev servers**: `npm run dev:node` and `npm run dev:frontend`
+- **Run all tests**: `npm run test` (Primarily Vitest across maintained packages)
+- **Lint all code**: `npm run lint`
 - **Check workspace integrity**: `npm run check:workspace` (Validates package naming and scripts)
 - **Clean build artifacts**: `npm run clean` (Safely removes `dist/` and `coverage/`, preserving `data/` and `.env`)
 
@@ -145,29 +144,29 @@ time npm install
 ### 3. Install Playwright Browser Driver
 
 ```bash
-# For Python backend
+# For legacy Python backend
 cd apps/backend
 .venv/bin/python -m playwright install chromium
 
-# Or for Node.js backend
+# For maintained Node.js backend
 npx playwright install chromium
 ```
 
 ### 4. Initialize Database
 
 ```bash
-cd apps/backend
-.venv/bin/python src/db/createTable.py
+npm run db:init -w apps/backend-node
 ```
 
 ### 5. Start the Services
 
 ```bash
-# Option A: Start with Python Backend (Legacy)
-npm run dev:backend
+# Start the maintained backend and frontend
+npm run dev:node
+npm run dev:frontend
 
-# Option B: Start with Node.js TypeScript Backend
-npm run dev:node & npm run dev:frontend
+# Legacy Python backend only when explicitly needed
+npm run dev:backend
 
 # Or individually
 npm run dev:node          # Node.js Backend (http://localhost:5409)
@@ -187,7 +186,7 @@ npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask Backend (Primary)
+│   ├── backend/                 # Python Flask Backend (Legacy/Deprecated)
 │   │   ├── src/
 │   │   │   ├── app.py          # Entry point
 │   │   │   ├── core/           # Config & Logging
@@ -196,11 +195,11 @@ omni-post/
 │   │   │   └── uploader/       # Playwright Uploaders
 │   │   └── tests/              # Pytest suite
 │   │
-│   ├── backend-node/            # Node.js TypeScript Backend (New)
+│   ├── backend-node/            # Node.js TypeScript Backend (Primary)
 │   │   ├── src/
 │   │   │   ├── app.ts          # Express Application
-│   │   │   ├── routes/         # 1:1 API Parity Routes
-│   │   │   ├── services/       # Business Logic (Worker/Task)
+│   │   │   ├── routes/         # HTTP Route Layer
+│   │   │   ├── services/       # Business Logic & Task Execution
 │   │   │   └── uploader/       # TS Playwright Uploaders
 │   │   └── tests/              # Vitest suite
 │   │

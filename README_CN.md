@@ -53,21 +53,20 @@
 
 ## 🔧 技术栈
 
-### 后端选项 (双端支持)
+### 后端
 
-#### 1. Python 后端 (默认/稳定)
-- **语言**: Python 3.10
-- **框架**: Flask (异步支持)
-- **浏览器自动化**: Playwright
-- **数据库**: SQLite
-- **测试框架**: pytest + pytest-asyncio
-
-#### 2. Node.js 后端 (现代化 TypeScript)
+#### 主后端：Node.js（当前维护目标）
 - **语言**: Node.js 20+ (TypeScript 5.x)
 - **框架**: Express.js (ESM)
 - **浏览器自动化**: Playwright (Node.js 版)
-- **数据库**: SQLite (与 Python 共用)
+- **数据库**: SQLite
 - **测试框架**: Vitest
+
+#### 遗留后端：Python（已废弃，默认不作为交付路径）
+- **语言**: Python 3.10
+- **框架**: Flask
+- **用途**: 兼容与迁移参考
+- **测试框架**: pytest + pytest-asyncio
 
 ### 前端
 - **框架**: Vue 3 + Vite
@@ -80,19 +79,19 @@
 
 本项目通过各平台对应的 `uploader` 模块实现视频上传功能：
 
-| 平台名称 | 上传器模块 |
-|---------|------------|
-| 抖音 | `src/uploader/douyin_uploader/main.py` |
-| 视频号 | `src/uploader/tencent_uploader/main.py` |
-| 小红书 | `src/uploader/xiaohongshu_uploader/main.py` |
-| 快手 | `src/uploader/ks_uploader/main.py` |
+| 平台名称 | 主上传器模块 |
+|---------|--------------|
+| 抖音 | `apps/backend-node/src/uploader/douyin/main.ts` |
+| 视频号 | `apps/backend-node/src/uploader/weixin/main.ts` |
+| 小红书 | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
+| 快手 | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 
 ## 💾 安装指南
 
 ### 环境要求
 
-- Node.js >= 18.0.0
-- Python 3.10.x
+- Node.js >= 20.0.0
+- Python 3.10.x（仅在需要遗留后端时）
 - npm >= 9.0.0
 
 ### 1. 克隆项目
@@ -105,14 +104,9 @@ cd omni-post
 ### 2. 安装依赖
 
 ```bash
-# 一键安装（Node 工作空间 + 可选 Python 依赖）
-npm run setup
-
-# 仅安装 Node 工作空间依赖
-npm run install:ws
-
-# 安装 Python 后端依赖（可选）
-npm run install:python
+# 主开发路径：安装 Node.js 工作空间依赖
+npm install
+npx playwright install chromium
 ```
 
 ### 2.1 工作空间命令
@@ -135,29 +129,29 @@ time npm install
 ### 3. 安装 Playwright 浏览器驱动
 
 ```bash
-# Python 后端
+# Python 遗留后端
 cd apps/backend
 .venv/bin/python -m playwright install chromium
 
-# Node.js 后端
+# Node.js 主后端
 npx playwright install chromium
 ```
 
 ### 4. 初始化数据库
 
 ```bash
-cd apps/backend
-.venv/bin/python src/db/createTable.py
+npm run db:init -w apps/backend-node
 ```
 
 ### 5. 启动服务
 
 ```bash
-# 选项 A：启动 Python 后端 (遗留)
-npm run dev:backend
+# 启动当前维护的 Node.js 后端与前端
+npm run dev:node
+npm run dev:frontend
 
-# 选项 B：启动 Node.js TypeScript 后端
-npm run dev:node & npm run dev:frontend
+# 仅在明确需要遗留兼容时启动 Python 后端
+npm run dev:backend
 
 # 或者分别启动
 npm run dev:node       # Node.js 后端 (http://localhost:5409)
@@ -177,7 +171,7 @@ npm run dev:frontend   # 前端服务 (http://localhost:5173)
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask 后端 (核心)
+│   ├── backend/                 # Python Flask 后端 (遗留/废弃)
 │   │   ├── src/
 │   │   │   ├── app.py          # 应用入口
 │   │   │   ├── core/           # 配置与日志
@@ -186,11 +180,11 @@ omni-post/
 │   │   │   └── uploader/       # 视频上传驱动
 │   │   └── tests/              # Pytest 测试集
 │   │
-│   ├── backend-node/            # Node.js TypeScript 后端 (新)
+│   ├── backend-node/            # Node.js TypeScript 后端 (主实现)
 │   │   ├── src/
 │   │   │   ├── app.ts          # Express 应用
-│   │   │   ├── routes/         # 1:1 API 兼容路由
-│   │   │   ├── services/       # 业务逻辑与执行器
+│   │   │   ├── routes/         # HTTP 路由层
+│   │   │   ├── services/       # 业务逻辑与任务执行
 │   │   │   └── uploader/       # TS 版上传驱动
 │   │   └── tests/              # Vitest 测试集
 │   │
