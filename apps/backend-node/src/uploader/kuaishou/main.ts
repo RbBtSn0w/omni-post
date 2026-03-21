@@ -3,6 +3,7 @@
  * Mirrors: apps/backend/src/uploader/ks_uploader/main.py
  */
 
+import * as fs from 'node:fs';
 import { type BrowserContext, type Page } from 'playwright';
 import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
@@ -41,18 +42,23 @@ export class KuaishouUploader extends BaseUploader {
     }
 
     private async waitForUploadComplete(page: Page): Promise<void> {
-        const maxRetries = 90;
-        for (let i = 0; i < maxRetries; i++) {
-            const uploading = await page.locator('text=上传中').count();
-            if (uploading === 0) {
-                return;
+        this.log('等待视频上传并同步至平台 (监听 /upload/finish)...');
+        try {
+            await page.waitForResponse(
+                (response) => 
+                    response.url().includes('/rest/cp/works/v2/video/pc/upload/finish') && 
+                    response.request().method() === 'POST' &&
+                    response.status() === 200,
+                { timeout: 900_000 } // 15 minutes
+            );
+            this.log('视频上传已同步');
+        } catch (error: any) {
+            this.log(`监听上传同步超时: ${error.message}，尝试通过 UI 文字降级判定...`, 'warn');
+            const success = await page.locator('text=上传成功, 已上传').count();
+            if (success === 0) {
+                throw new Error('无法通过网络信号或 UI 文字确认上传完成');
             }
-            if (i % 5 === 0) {
-                this.log('检测到上传中，继续等待...');
-            }
-            await page.waitForTimeout(2000);
         }
-        this.log('等待上传完成超时，尝试继续发布流程', 'warn');
     }
 
     /**
@@ -83,10 +89,35 @@ export class KuaishouUploader extends BaseUploader {
                 }
                 this.log(`上传视频 ${i + 1}/${fileList.length}: ${fileList[i]}`);
 
-                const fileInput = page.locator('input[type="file"]').first();
-                await fileInput.setInputFiles(videoPath);
-                await this.waitForUploadComplete(page);
-                await page.waitForTimeout(1000);
+                // 方案 2：分片进度统计 (Kuaishou fragment based)
+                const stats = fs.statSync(videoPath);
+                const totalSizes = stats.size;
+                let uploadedBytes = 0;
+
+                const uploadProgressListener = (request: any) => {
+                    // 快手分片上传发往 upload.kuaishouzt.com/api/upload/fragment
+                    if (request.url().includes('/api/upload/fragment') && request.method() === 'POST') {
+                        const buffer = request.postDataBuffer();
+                        if (buffer) {
+                            uploadedBytes += buffer.length;
+                            const percent = Math.min(99, Math.floor((uploadedBytes / totalSizes) * 100));
+                            onProgress(percent);
+                        }
+                    }
+                };
+
+                try {
+                    page.on('request', uploadProgressListener);
+                    const fileInput = page.locator('input[type="file"]').first();
+                    await fileInput.setInputFiles(videoPath);
+                    this.log(`文件已选择，分片上传中...`);
+
+                    await this.waitForUploadComplete(page);
+                } finally {
+                    page.removeListener('request', uploadProgressListener);
+                }
+                
+                onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
                 if (title) {
                     const titleContainer = page.locator('.clipped-content, [placeholder*="描述"]').first();
@@ -102,21 +133,38 @@ export class KuaishouUploader extends BaseUploader {
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
+                
+                // Hide Joyride overlays that might block the publish button
+                await page.addStyleTag({ 
+                    content: '#react-joyride-portal, .react-joyride__overlay, .__floater { display: none !important; pointer-events: none !important; }' 
+                }).catch(() => {});
+
                 let publishBtn = page.getByRole('button', { name: '发布' }).first();
                 if (!(await publishBtn.count())) {
                     publishBtn = page.getByText('发布', { exact: true }).first();
                 }
-                await publishBtn.waitFor({ state: 'visible', timeout: 60_000 });
-                await publishBtn.click();
+                this.log(`正在点击发布并等待确认响应...`);
+                try {
+                    const submitPromise = page.waitForResponse(
+                        (resp) => resp.url().includes('/rest/cp/works/v2/video/pc/submit') && resp.status() === 200,
+                        { timeout: 90000 }
+                    );
 
-                const confirmBtn = page.getByText('确认发布');
-                if (await confirmBtn.count()) {
-                    await confirmBtn.first().click();
+                    await publishBtn.click({ force: true });
+
+                    const confirmBtn = page.getByText('确认发布');
+                    if (await confirmBtn.count()) {
+                        await confirmBtn.first().click({ force: true });
+                    }
+                    
+                    await submitPromise;
+                    this.log(`视频 ${i + 1} 发布成功 (后端已确认)`);
+                } catch (error: any) {
+                    this.log(`发布响应监听超时: ${error.message}，尝试跳转判定...`, 'warn');
+                    await page.waitForURL(url => url.pathname.includes('/content/manage'), { timeout: 10000 });
                 }
-                this.log(`视频 ${i + 1} 发布成功`);
                 
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100));
-                await page.waitForTimeout(3000);
             }
         } catch (error: any) {
             this.log(`上传失败: ${error.message}`, 'error');
@@ -124,6 +172,17 @@ export class KuaishouUploader extends BaseUploader {
         } finally {
             await page.close();
         }
+    }
+
+    /**
+     * 实现 BaseUploader 的 postArticle 接口
+     */
+    async postArticle(
+        context: BrowserContext,
+        opts: UploadOptions,
+        onProgress: (progress: number) => void
+    ): Promise<void> {
+        this.log('Kuaishou article upload not implemented yet', 'warn');
     }
 
     /**
