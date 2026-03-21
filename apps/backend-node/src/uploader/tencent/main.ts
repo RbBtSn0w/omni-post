@@ -19,32 +19,35 @@ export class TencentUploader extends BaseUploader {
     protected platformName = 'Tencent';
 
     private async waitForUploadComplete(page: Page): Promise<void> {
-        this.log('等待上传完成 (通过 Shadow DOM 穿透探测)...');
+        this.log('等待上传完成 (深度类名指纹探测)...');
         const maxRetries = (UPLOAD_TIMEOUT_MINUTES * 60) / 2;
         
-        // 核心修复：Playwright 的 locator 默认支持穿透，但 evaluate 脚本需要手动处理
         for (let i = 0; i < maxRetries; i++) {
             const status = await page.evaluate(() => {
                 const wujie = document.querySelector('wujie-app');
                 const root = wujie?.shadowRoot;
-                if (!root) return { isDone: false, text: '' };
+                if (!root) return { isReady: false, text: '' };
                 
                 const text = root.textContent || '';
-                const isDone = text.includes('100%') || text.includes('分享');
-                return { isDone, text };
+                // 寻找“发表”或者“存草稿”按钮
+                const buttons = Array.from(root.querySelectorAll('button')) as any[];
+                const publishBtn = buttons.find(b => b.textContent?.includes('发表') || b.textContent?.includes('存草稿'));
+                
+                // 核心发现：不能看 .disabled 属性，必须看类名
+                const isBtnLocked = publishBtn?.classList?.contains('weui-desktop-btn_disabled');
+                
+                // 只有当按钮存在、没有被禁用类名锁定、且上传 100% 时才算真正就绪
+                const isReady = !!publishBtn && !isBtnLocked && (text.includes('100%') || text.includes('分享') || text.includes('设置封面'));
+                return { isReady, text, isLocked: isBtnLocked };
             });
 
-            // 同时检查“发表”按钮是否已启用，这是最可靠的就绪信号
-            const publishBtn = page.locator('wujie-app >> button:has-text("发表")').first();
-            const isBtnReady = await publishBtn.isEnabled().catch(() => false);
-
-            if (status.isDone || isBtnReady) {
-                this.log('视频上传就绪 (Shadow DOM 信号确认)');
+            if (status.isReady) {
+                this.log('视频上传并解析就绪 (Shadow DOM 类名解锁确认)');
                 return;
             }
 
             if (i % 30 === 0) {
-                this.log(`正在等待上传进度 (第 ${i} 次轮询)...`);
+                this.log(`正在等待解析 (中控信号: ${status.isLocked ? '按钮锁定' : '等待文本'})...`);
             }
             await page.waitForTimeout(1000);
         }
