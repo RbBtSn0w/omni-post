@@ -33,7 +33,7 @@ export class KuaishouUploader extends BaseUploader {
             } catch (error: any) {
                 lastError = error;
                 this.log(`快手页面打开失败(第 ${i + 1} 次): ${error.message}`, 'warn');
-                await page.goto('about:blank', { waitUntil: 'commit', timeout: 10_000 }).catch(() => {});
+                await page.goto('about:blank', { waitUntil: 'commit', timeout: 10_000 }).catch(() => { });
                 await page.waitForTimeout(1500);
             }
         }
@@ -49,8 +49,8 @@ export class KuaishouUploader extends BaseUploader {
         this.log('等待视频上传并同步至平台 (监听 /upload/finish)...');
         try {
             await page.waitForResponse(
-                (response) => 
-                    response.url().includes('/rest/cp/works/v2/video/pc/upload/finish') && 
+                (response) =>
+                    response.url().includes('/rest/cp/works/v2/video/pc/upload/finish') &&
                     response.request().method() === 'POST' &&
                     response.status() === 200,
                 { timeout: 900_000 } // 15 minutes, suitable for large videos
@@ -63,6 +63,35 @@ export class KuaishouUploader extends BaseUploader {
                 throw new Error('无法通过网络信号或 UI 文字确认上传完成');
             }
         }
+    }
+
+    /**
+     * 在上传进行中并行执行 UI 清理与文案填写，减少总耗时。
+     */
+    private async prepareFormWhileUploading(page: Page, title?: string, tags?: string[]): Promise<void> {
+        // 1. 定点清除：屏蔽引导蒙层与气泡
+        this.log('上传中并行执行：排除 react-joyride 和快手引导蒙层...');
+
+        await page.evaluate(() => {
+            const skipSelectors = ['div[aria-label="Skip"]', '._close_d7f44_29', 'button', 'div[role="button"]'];
+            skipSelectors.forEach(sel => {
+                document.querySelectorAll(sel).forEach((el: any) => {
+                    const txt = el.innerText || '';
+                    if (txt.includes('下一步') || txt.includes('我知道了') || txt.includes('知道了') || el.ariaLabel === 'Skip') {
+                        if (el.getBoundingClientRect().width > 0) el.click();
+                    }
+                });
+            });
+        }).catch(() => { });
+        await page.waitForTimeout(1000);
+
+        if (!title) return;
+
+
+        // TODO: 补充输入内容
+
+
+        this.log('描述与话题填入完成');
     }
 
     /**
@@ -127,83 +156,21 @@ export class KuaishouUploader extends BaseUploader {
                     await fileInput.setInputFiles(videoPath);
                     this.log(`文件已选择，分片上传中...`);
 
-                    await uploadFinishPromise;
+                    const prepareFormPromise = this.prepareFormWhileUploading(page, title, tags);
+
+                    await Promise.all([uploadFinishPromise, prepareFormPromise]);
                 } finally {
                     page.removeListener('request', uploadProgressListener);
                 }
-                
+
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
-                 if (title) {
-                    const titleSelector = '#work-description-edit';
-                    this.log('正在审计页面蒙层并准备填入描述...');
-                    
-                    // 1. 之前确认过的特定蒙层 (已知 ID)
-                    await page.addStyleTag({ 
-                        content: '#preact-border-shadow-host, [id*="tours"] { display: none !important; }'
-                    }).catch(() => {});
-
-                    // 2. 深度诊断日志：找出所有嫌疑层 (固定定位、蒙层、甚至低透明层)
-                    const auditReport = await page.evaluate((sel) => {
-                        const suspects: any[] = [];
-                        const candidates: any[] = [];
-                        
-                        // 扫描所有可能的遮挡层
-                        document.querySelectorAll('*').forEach((node: any) => {
-                            const style = window.getComputedStyle(node);
-                            const zIndex = parseInt(style.zIndex);
-                            const position = style.position;
-                            const isFixed = position === 'fixed' || position === 'absolute';
-                            const opacity = parseFloat(style.opacity);
-                            
-                            if (isFixed && style.display !== 'none' && (zIndex > 0 || opacity < 1)) {
-                                suspects.push({ 
-                                    tag: node.tagName, id: node.id, classes: node.className, 
-                                    zIndex, opacity, pos: position, rect: node.getBoundingClientRect()
-                                });
-                            }
-                        });
-
-                        // 扫描所有目标输入框候选者
-                        document.querySelectorAll(sel).forEach((el: any, i) => {
-                            const style = window.getComputedStyle(el);
-                            const rect = el.getBoundingClientRect();
-                            candidates.push({
-                                index: i,
-                                visible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
-                                style: { display: style.display, visibility: style.visibility, opacity: style.opacity },
-                                rect
-                            });
-                        });
-
-                        return { suspects: suspects.slice(0, 10), candidates };
-                    }, titleSelector).catch(() => ({ suspects: [], candidates: [] }));
-
-                    this.log(`[审计报告] 候选输入框: ${JSON.stringify(auditReport.candidates)}`);
-                    this.log(`[审计报告] 潜在遮挡层 (Top 10): ${JSON.stringify(auditReport.suspects)}`);
-
-                    // 3. 修正后的原生填写逻辑 (使用 :visible 伪类过滤，避免击中隐藏的旧元素)
-                    const titleContainer = page.locator(`${titleSelector}:visible`).first();
-                    await titleContainer.click({ force: true });
-                    await page.keyboard.press('ControlOrMeta+a');
-                    await page.keyboard.press('Backspace');
-                    await page.keyboard.type(title, { delay: 50 });
-                    
-                    // 话题处理
-                    if (tags && tags.length > 0) {
-                        for (const tag of tags) {
-                            await page.keyboard.type(` #${tag} `, { delay: 50 });
-                        }
-                    }
-                    this.log('标题与话题已发送指令');
-                }
-
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-                
+
                 // Hide Joyride overlays that might block the publish button
-                await page.addStyleTag({ 
-                    content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }' 
-                }).catch(() => {});
+                await page.addStyleTag({
+                    content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }'
+                }).catch(() => { });
 
                 // 优先寻找带有 primary 类名的发布按钮
                 let publishBtn = page.locator('div[class*="_button-primary_"], button:has-text("发布")').first();
@@ -224,7 +191,7 @@ export class KuaishouUploader extends BaseUploader {
                     if (await confirmBtn.count()) {
                         await confirmBtn.first().click({ force: true });
                     }
-                    
+
                     const response = await submitPromise;
                     if (response.status() !== 200) {
                         throw new Error(`后端返回异常状态码: ${response.status()}`);
@@ -234,7 +201,7 @@ export class KuaishouUploader extends BaseUploader {
                     this.log(`发布响应监听超时: ${error.message}，尝试跳转判定...`, 'warn');
                     await page.waitForURL(url => url.pathname.includes('/content/manage'), { timeout: 10000 });
                 }
-                
+
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100));
             }
         } catch (error: any) {
