@@ -128,20 +128,27 @@ export class KuaishouUploader extends BaseUploader {
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
                 if (title) {
-                    const titleContainer = page.locator('.clipped-content, [placeholder*="描述"]').first();
-                    this.log('正在清空并填写标题/描述...');
-                    await titleContainer.click();
+                    const titleContainer = page.locator('#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]').first();
+                    this.log('正在清空并填写标题/描述 (ID: #work-description-edit)...');
+                    
+                    // 彻底清除可能存在的引导层拦截器
+                    await page.addStyleTag({ 
+                        content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }' 
+                    }).catch(() => {});
+                    
+                    await titleContainer.click({ force: true });
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
-                    await page.keyboard.press('Delete');
-                    await titleContainer.fill(title);
+                    
+                    // 社交平台对 contenteditable 的 fill 支持有限，改用 type 以确保触发业务逻辑
+                    await titleContainer.type(title, { delay: 50 });
+                    this.log(`标题描述已填入: ${title.slice(0, 10)}...`);
                 }
 
                 if (tags && tags.length > 0) {
-                    const tagInput = page.locator('.clipped-content, [placeholder*="描述"]').first();
+                    const tagInput = page.locator('#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]').first();
                     for (const tag of tags) {
-                        await tagInput.type(`#${tag} `);
-                        await page.waitForTimeout(500);
+                        await tagInput.type(` #${tag} `, { delay: 50 });
                     }
                 }
 
@@ -149,12 +156,13 @@ export class KuaishouUploader extends BaseUploader {
                 
                 // Hide Joyride overlays that might block the publish button
                 await page.addStyleTag({ 
-                    content: '#react-joyride-portal, .react-joyride__overlay, .__floater { display: none !important; pointer-events: none !important; }' 
+                    content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }' 
                 }).catch(() => {});
 
-                let publishBtn = page.getByRole('button', { name: '发布' }).first();
+                // 优先寻找带有 primary 类名的发布按钮
+                let publishBtn = page.locator('div[class*="_button-primary_"], button:has-text("发布")').first();
                 if (!(await publishBtn.count())) {
-                    publishBtn = page.getByText('发布', { exact: true }).first();
+                    publishBtn = page.getByRole('button', { name: '发布' }).first();
                 }
                 this.log(`正在点击发布并等待确认响应...`);
                 try {
