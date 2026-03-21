@@ -218,6 +218,11 @@ omni-post/
 │       ├── vite.config.js      # Vite configuration
 │       └── vitest.config.js    # Vitest configuration
 │
+├── packages/
+│   ├── shared/                 # Shared logic (SSOT for types/constants)
+│   ├── shared-config/          # Standardized lint/TS configs
+│   └── cli/                    # Node-based CLI automation tool
+│
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD
 │       ├── test.yml           # Automated testing
@@ -247,6 +252,10 @@ omni-post/
 - **components/**: UI components (`GroupSelector`)
 - **stores/**: Pinia stores (`user`, `account`, `task`, `group`, `app`)
 - **api/**: specific API clients (`account.js`, `task.js`, `material.js`, `user.js`)
+- **Shared Package (@omni-post/shared)**:
+  - **SSOT**: Single Source of Truth for platform IDs, task interfaces, and enum mappings.
+  - **logic/**: Common validation and transformation utilities.
+  - **tests/**: Vitest suite ensures cross-platform logic consistency.
 
 ## Development & Testing
 
