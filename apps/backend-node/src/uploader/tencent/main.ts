@@ -30,11 +30,21 @@ export class TencentUploader extends BaseUploader {
         this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
         const page = await this.createPage(context);
         const screenshotDir = createScreenshotDir('tencent');
+        const uploadUrl = 'https://channels.weixin.qq.com/platform/post/create';
 
         try {
-            await page.goto('https://channels.weixin.qq.com/platform/post/create', {
-                waitUntil: 'networkidle',
-            });
+            try {
+                await page.goto(uploadUrl, {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 90_000,
+                });
+            } catch (error: any) {
+                this.log(`页面首跳超时，降级重试: ${error.message}`, 'warn');
+                await page.goto(uploadUrl, {
+                    waitUntil: 'commit',
+                    timeout: 90_000,
+                });
+            }
             await debugScreenshot(page, screenshotDir, 'upload_page.png', '上传页面');
 
             for (let i = 0; i < fileList.length; i++) {

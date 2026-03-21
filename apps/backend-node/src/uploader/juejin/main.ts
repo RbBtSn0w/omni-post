@@ -1,6 +1,6 @@
 import { BrowserContext } from 'playwright';
 import { BaseUploader } from '../base-uploader.js';
-import { UploadOptions } from '../../../db/models.js';
+import { UploadOptions } from '../../db/models.js';
 
 export class JuejinUploader extends BaseUploader {
   protected platformName = 'Juejin';

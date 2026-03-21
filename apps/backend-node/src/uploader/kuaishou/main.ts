@@ -3,8 +3,7 @@
  * Mirrors: apps/backend/src/uploader/ks_uploader/main.py
  */
 
-import path from 'path';
-import { type BrowserContext } from 'playwright';
+import { type BrowserContext, type Page } from 'playwright';
 import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
 import type { UploadOptions } from '../../services/publish-service.js';
@@ -13,6 +12,48 @@ import { BaseUploader } from '../base-uploader.js';
 
 export class KuaishouUploader extends BaseUploader {
     protected platformName = 'Kuaishou';
+
+    private async gotoUploadPageWithRetry(page: Page, uploadUrl: string): Promise<void> {
+        const attempts = [
+            { waitUntil: 'domcontentloaded' as const, timeout: 90_000 },
+            { waitUntil: 'commit' as const, timeout: 90_000 },
+            { waitUntil: 'domcontentloaded' as const, timeout: 120_000 },
+        ];
+
+        let lastError: any;
+        for (let i = 0; i < attempts.length; i++) {
+            try {
+                await page.goto(uploadUrl, attempts[i]);
+                const currentUrl = page.url();
+                if (currentUrl.startsWith('chrome-error://')) {
+                    throw new Error(`页面进入浏览器错误页: ${currentUrl}`);
+                }
+                return;
+            } catch (error: any) {
+                lastError = error;
+                this.log(`快手页面打开失败(第 ${i + 1} 次): ${error.message}`, 'warn');
+                await page.goto('about:blank', { waitUntil: 'commit', timeout: 10_000 }).catch(() => {});
+                await page.waitForTimeout(1500);
+            }
+        }
+
+        throw new Error(`快手页面连续打开失败: ${lastError?.message || 'unknown error'}`);
+    }
+
+    private async waitForUploadComplete(page: Page): Promise<void> {
+        const maxRetries = 90;
+        for (let i = 0; i < maxRetries; i++) {
+            const uploading = await page.locator('text=上传中').count();
+            if (uploading === 0) {
+                return;
+            }
+            if (i % 5 === 0) {
+                this.log('检测到上传中，继续等待...');
+            }
+            await page.waitForTimeout(2000);
+        }
+        this.log('等待上传完成超时，尝试继续发布流程', 'warn');
+    }
 
     /**
      * 实现 BaseUploader 的 postVideo 接口 (SC-006)
@@ -27,11 +68,10 @@ export class KuaishouUploader extends BaseUploader {
         this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
         const page = await this.createPage(context);
         const screenshotDir = createScreenshotDir('kuaishou');
+        const uploadUrl = 'https://cp.kuaishou.com/article/publish/video';
 
         try {
-            await page.goto('https://cp.kuaishou.com/article/publish/video', {
-                waitUntil: 'networkidle',
-            });
+            await this.gotoUploadPageWithRetry(page, uploadUrl);
 
             for (let i = 0; i < fileList.length; i++) {
                 let videoPath: string;
@@ -45,7 +85,8 @@ export class KuaishouUploader extends BaseUploader {
 
                 const fileInput = page.locator('input[type="file"]').first();
                 await fileInput.setInputFiles(videoPath);
-                await page.waitForTimeout(5000);
+                await this.waitForUploadComplete(page);
+                await page.waitForTimeout(1000);
 
                 if (title) {
                     const titleContainer = page.locator('.clipped-content, [placeholder*="描述"]').first();
@@ -61,8 +102,17 @@ export class KuaishouUploader extends BaseUploader {
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-                const publishBtn = page.getByRole('button', { name: '发布' });
+                let publishBtn = page.getByRole('button', { name: '发布' }).first();
+                if (!(await publishBtn.count())) {
+                    publishBtn = page.getByText('发布', { exact: true }).first();
+                }
+                await publishBtn.waitFor({ state: 'visible', timeout: 60_000 });
                 await publishBtn.click();
+
+                const confirmBtn = page.getByText('确认发布');
+                if (await confirmBtn.count()) {
+                    await confirmBtn.first().click();
+                }
                 this.log(`视频 ${i + 1} 发布成功`);
                 
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100));

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dbManager } from '../db/database.js';
-import { Article, PlatformType } from '../db/models.js';
+import { Article } from '../models/article.js';
+import { PlatformType } from '../db/models.js';
 import { taskService } from './task-service.js';
 import { startPublishThread } from './publish-executor.js';
 
