@@ -26,9 +26,18 @@ export class DouyinUploader extends BaseUploader {
                         response.status() === 200,
                     { timeout: 90000 }
                 ),
-                // 兜底信号：URL 已经成功跳转到详情页
-                page.waitForURL(url => url.pathname.includes('/creator-micro/content/post/video'), { timeout: 60000 })
+                // 兜底信号：URL 已经成功跳转到详情页 (兼容新旧两种 URL 变体)
+                page.waitForURL(url => 
+                    url.pathname.includes('/creator-micro/content/post/video') || 
+                    url.pathname.includes('/creator-micro/content/publish'), 
+                    { timeout: 60000 }
+                )
             ]);
+            
+            // 二次确认：等待关键 UI 元素可见，确保非反爬拦截页面
+            await this.getDouyinTitleInput(page).primary.waitFor({ state: 'visible', timeout: 10000 })
+                .catch(() => this.log('详情页 UI 元素未完全就位，可能降级到了通用编辑器', 'warn'));
+
             this.log('发布详情页已就绪');
         } catch (error) {
             this.log('未检测到明确的就绪信号，尝试通过页面稳定状态继续...', 'warn');
@@ -97,7 +106,6 @@ export class DouyinUploader extends BaseUploader {
                 let uploadedBytes = 0;
 
                 const uploadProgressListener = (request: any) => {
-                    // 抖音/字节跳动的分片上传通常发往 summon.bytedance.com 或 vod 服务器
                     if (
                         (request.url().includes('bytedance.com') || request.url().includes('vod')) &&
                         request.method() === 'POST'
@@ -105,26 +113,29 @@ export class DouyinUploader extends BaseUploader {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;
-                            const percent = Math.floor((uploadedBytes / totalSizeBytes) * 100);
-                            // 实时回调进度 (0-99%)，由于分片可能乱序或重传，加个 Cap 确保业务流转逻辑
-                            onProgress(Math.min(99, percent));
+                            // 修正进度算法，Cap at 99%，防止重试导致超过 100%
+                            const percent = Math.min(99, Math.floor((uploadedBytes / totalSizeBytes) * 100));
+                            onProgress(percent);
                         }
                     }
                 };
-                page.on('request', uploadProgressListener);
 
-                // Upload video file
-                const fileInput = page.locator('input[type="file"]').first();
-                await fileInput.setInputFiles(videoPath);
-                this.log(`文件已选择，后台正在进行分片上传...`);
+                try {
+                    page.on('request', uploadProgressListener);
 
-                // 抖音上传后会切到发布页，先等待页面进入可编辑状态 (这代表 100% 上传完成并由后端解析)
-                await this.waitForPublishPageReady(page);
+                    // Upload video file
+                    const fileInput = page.locator('input[type="file"]').first();
+                    await fileInput.setInputFiles(videoPath);
+                    this.log(`文件已选择，后台正在进行分片上传...`);
+
+                    // 抖音上传后会切到发布页，先等待页面进入可编辑状态 (这代表 100% 上传完成并由后端解析)
+                    await this.waitForPublishPageReady(page);
+                } finally {
+                    // 核心修复：无论成功失败，必须移除监听器防止内存泄漏
+                    page.removeListener('request', uploadProgressListener);
+                }
                 
-                // 此时上传已完成，移除监听器避免干扰后续操作
-                page.removeListener('request', uploadProgressListener);
-                onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频节点完成
-
+                onProgress(Math.floor(((i + i + 1) / (fileList.length * 2)) * 100)); // 该视频阶段完成 (占总进度的权重)
                 await page.waitForTimeout(1500);
 
                 // Fill title
@@ -177,14 +188,15 @@ export class DouyinUploader extends BaseUploader {
                 
                 this.log(`正在点击发布并等待后端确认...`);
                 try {
-                    await Promise.all([
-                        // 监听创建成功的 API 响应
-                        page.waitForResponse(
-                            (resp) => (resp.url().includes('/web/api/media/aweme/create') || resp.url().includes('/item/commit')) && resp.status() === 200,
-                            { timeout: 90000 }
-                        ),
-                        publishBtn.click()
-                    ]);
+                    // 核心修复：先声明 Promise 再点击，消除竞态风险
+                    const responsePromise = page.waitForResponse(
+                        (resp) => (resp.url().includes('/web/api/media/aweme/create') || resp.url().includes('/item/commit')) && resp.status() === 200,
+                        { timeout: 90000 }
+                    );
+                    
+                    await publishBtn.click();
+                    await responsePromise;
+                    
                     this.log(`视频 ${i + 1} 发布成功 (后端已确认)`);
                 } catch (error: any) {
                     this.log(`发布响应监听超时，尝试通过页面跳转判定结果: ${error.message}`, 'warn');
