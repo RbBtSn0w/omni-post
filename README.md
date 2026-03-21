@@ -107,16 +107,23 @@ cd omni-post
 
 ### 2. Install Dependencies
 
+**Important**: We use npm workspaces. You **MUST** use the setup scripts rather than plain `npm install` inside subdirectories.
+
 ```bash
-# One command setup (Node workspaces + optional Python deps)
+# Recommended one-click setup for the entire monorepo
 npm run setup
-
-# Node workspaces only
-npm run install:ws
-
-# Python backend dependencies (optional)
-npm run install:python
 ```
+
+### 🎯 Developer Workflow (New Monorepo Setup)
+
+Starting from v1.2.0, OmniPost uses a strict monorepo workspace configuration. Here are the core commands you should use:
+
+- **Initialize project**: `npm run setup` (Installs all Node & Python dependencies)
+- **Run dev servers**: `npm run dev` (Starts frontend and active Node backend concurrently)
+- **Run all tests**: `npm run test` (Executes Vitest/Pytest across all packages)
+- **Lint all code**: `npm run lint` (ESLint & Python formatters)
+- **Check workspace integrity**: `npm run check:workspace` (Validates package naming and scripts)
+- **Clean build artifacts**: `npm run clean` (Safely removes `dist/` and `coverage/`, preserving `data/` and `.env`)
 
 ### 2.1 Workspace Commands
 

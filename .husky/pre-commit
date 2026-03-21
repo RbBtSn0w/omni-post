@@ -1,1 +1,2 @@
+node tools/scripts/check-workspace.mjs
 npx lint-staged

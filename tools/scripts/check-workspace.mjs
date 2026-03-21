@@ -76,7 +76,7 @@ const validateName = (pkgJson, pkgDirName, type) => {
       return `${pkgDirName}: apps must be private`;
     }
   } else {
-    const expected = pkgDirName.startsWith('shared-')
+    const expected = (pkgDirName.startsWith('shared-') || pkgDirName === 'shared')
       ? `@omni-post/${pkgDirName}`
       : `@omni-post/shared-${pkgDirName}`;
     if (pkgJson.name !== expected) {
