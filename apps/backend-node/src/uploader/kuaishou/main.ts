@@ -136,70 +136,40 @@ export class KuaishouUploader extends BaseUploader {
 
                  if (title) {
                     const titleSelector = '#work-description-edit';
-                    this.log('正在执行暴力清场与输入环境诊断...');
+                    this.log('正在审计页面蒙层并准备填入描述...');
                     
-                    // 1. 全量隐藏气泡、蒙层和引导 (包括截图中的领取后才可添加弹窗)
+                    // 1. 之前确认过的特定蒙层 (已知 ID)
                     await page.addStyleTag({ 
-                        content: `
-                            #preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal, 
-                            .ant-popover, .ant-tooltip, .ant-modal-root, .ant-mask, ._helper_6j0c1_1,
-                            [class*="popover"], [class*="tooltip"], [class*="guide"], [class*="overlay"] { 
-                                display: none !important; 
-                                pointer-events: none !important; 
-                                visibility: hidden !important;
-                                z-index: -1 !important;
-                            }
-                        `
+                        content: '#preact-border-shadow-host, [id*="tours"] { display: none !important; }'
                     }).catch(() => {});
 
-                    // 2. 诊断并打印
+                    // 2. 诊断日志：打印所有覆盖在描述框周围的高层级元素
                     await page.evaluate(() => {
                         const results: any[] = [];
-                        (document as any).querySelectorAll('*').forEach((node: any) => {
-                            const style = (window as any).getComputedStyle(node);
+                        document.querySelectorAll('*').forEach((node: any) => {
+                            const style = window.getComputedStyle(node);
                             const zIndex = parseInt(style.zIndex);
-                            if ((zIndex > 500 || style.position === 'fixed') && style.display !== 'none') {
+                            if (zIndex > 500 && style.display !== 'none') {
                                 results.push({ tag: node.tagName, id: node.id, classes: node.className, zIndex });
                             }
                         });
                         console.log('--- POTENTIAL BLOCKING LAYERS ---', JSON.stringify(results.slice(0, 5)));
                     }).catch(() => {});
 
-                    // 3. 强力填写逻辑：聚焦 + 校验 + 兜底灌注
+                    // 3. 原生填写逻辑
                     const titleContainer = page.locator(titleSelector).first();
                     await titleContainer.click({ force: true });
-                    
-                    // 模拟输入
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
-                    await titleContainer.type(title, { delay: 30 });
+                    await page.keyboard.type(title, { delay: 50 });
                     
                     // 话题处理
                     if (tags && tags.length > 0) {
                         for (const tag of tags) {
-                            await titleContainer.type(` #${tag} `, { delay: 30 });
+                            await page.keyboard.type(` #${tag} `, { delay: 50 });
                         }
                     }
-
-                    // 4. 内容验证与物理兜底
-                    const verifyText = await titleContainer.innerText();
-                    if (verifyText.length === 0) {
-                        this.log('模拟输入似乎被拦截（长度为0），启动 DOM 物理注入机制...', 'warn');
-                        const finalContent = `${title} ${tags?.map(t => `#${t}`).join(' ') || ''}`;
-                        await page.evaluate(({ sel, content }) => {
-                            const el = (document as any).querySelector(sel) as any;
-                            if (el) {
-                                el.innerHTML = `<div>${content}</div>`;
-                                // 手动触发所有 React 监听事件
-                                el.dispatchEvent(new (window as any).Event('input', { bubbles: true }));
-                                el.dispatchEvent(new (window as any).Event('change', { bubbles: true }));
-                                el.blur();
-                            }
-                        }, { sel: titleSelector, content: finalContent });
-                        this.log('DOM 物理注入已执行');
-                    } else {
-                        this.log(`输入成功验证: Lenne=${verifyText.length}`);
-                    }
+                    this.log('标题与话题已发送指令');
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
