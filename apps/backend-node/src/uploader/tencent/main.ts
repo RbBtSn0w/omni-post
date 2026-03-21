@@ -19,39 +19,43 @@ export class TencentUploader extends BaseUploader {
     protected platformName = 'Tencent';
 
     private async waitForUploadComplete(page: Page): Promise<void> {
-        this.log('等待上传完成 (深度类名指纹探测)...');
+        this.log('等待上传解析 (Shadow DOM 类名与物理特征探测)...');
         const maxRetries = (UPLOAD_TIMEOUT_MINUTES * 60) / 2;
         
         for (let i = 0; i < maxRetries; i++) {
             const status = await page.evaluate(() => {
                 const wujie = document.querySelector('wujie-app');
                 const root = wujie?.shadowRoot;
-                if (!root) return { isReady: false, text: '' };
+                if (!root) return { isReady: false, msg: 'Wujie Not Ready' };
                 
-                const text = root.textContent || '';
-                // 寻找“发表”或者“存草稿”按钮
+                // 1. 查找发表按钮
                 const buttons = Array.from(root.querySelectorAll('button')) as any[];
                 const publishBtn = buttons.find(b => b.textContent?.includes('发表') || b.textContent?.includes('存草稿'));
                 
-                // 核心发现：不能看 .disabled 属性，必须看类名
-                const isBtnLocked = publishBtn?.classList?.contains('weui-desktop-btn_disabled');
+                // 2. 查找物理特征：上传成功后通常会出现“删除”或“重新上传”按钮
+                const hasDeleteBtn = buttons.some(b => b.textContent?.includes('删除') || b.id === '删除');
                 
-                // 只有当按钮存在、没有被禁用类名锁定、且上传 100% 时才算真正就绪
-                const isReady = !!publishBtn && !isBtnLocked && (text.includes('100%') || text.includes('分享') || text.includes('设置封面'));
-                return { isReady, text, isLocked: isBtnLocked };
+                // 3. 检查锁定类名
+                const classes = publishBtn?.className || '';
+                const isLocked = classes.includes('weui-desktop-btn_disabled');
+                
+                // 真正就绪的判定：按钮存在、锁定类名消失、且物理删除按钮已渲染
+                const isReady = !!publishBtn && !isLocked && hasDeleteBtn;
+                
+                return { isReady, isLocked, hasDeleteBtn, classes, msg: `Locked: ${isLocked}, Delete: ${hasDeleteBtn}` };
             });
 
             if (status.isReady) {
-                this.log('视频上传并解析就绪 (Shadow DOM 类名解锁确认)');
+                this.log('视频号组件解析完全就绪');
                 return;
             }
 
-            if (i % 30 === 0) {
-                this.log(`正在等待解析 (中控信号: ${status.isLocked ? '按钮锁定' : '等待文本'})...`);
+            if (i % 20 === 0) {
+                this.log(`正在同步组件状态: ${status.msg}`);
             }
             await page.waitForTimeout(1000);
         }
-        this.log('等待上传解析完成超时，尝试强行继续', 'warn');
+        this.log('等待组件就绪超时，尝试强行继续', 'warn');
     }
 
     private async waitForPublishSuccess(page: Page): Promise<void> {
@@ -125,7 +129,13 @@ export class TencentUploader extends BaseUploader {
 
                 const uploadProgressListener = (request: any) => {
                     const url = request.url();
-                    // 1. 尝试监听微信官方的进度心跳包 (最准)
+                    // 1. 拦截分片完成信号 -> 立即标记为 99% (让用户知道网传完了)
+                    if (url.includes('completepartuploaddfs') && request.method() === 'POST') {
+                        onProgress(99);
+                        this.log('所有分片已传输系统，正在等待云端最终合包与解析...');
+                    }
+
+                    // 2. 尝试监听微信官方的进度心跳包 (最准)
                     if (url.includes('helper_mmdata') && request.method() === 'POST') {
                         try {
                             const postData = request.postData();
