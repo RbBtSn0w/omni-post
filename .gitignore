@@ -241,3 +241,7 @@ apps/backend/installed_deps.txt
 logs/
 playwright-report/
 test-results/
+
+
+
+.codex/
