@@ -143,21 +143,19 @@ export class KuaishouUploader extends BaseUploader {
                         content: '#preact-border-shadow-host, [id*="tours"] { display: none !important; }'
                     }).catch(() => {});
 
-                    // 2. 诊断日志：打印所有覆盖在描述框周围的高层级元素
-                    await page.evaluate(() => {
-                        const results: any[] = [];
-                        document.querySelectorAll('*').forEach((node: any) => {
-                            const style = window.getComputedStyle(node);
-                            const zIndex = parseInt(style.zIndex);
-                            if (zIndex > 500 && style.display !== 'none') {
-                                results.push({ tag: node.tagName, id: node.id, classes: node.className, zIndex });
-                            }
+                    // 2. 诊断日志：寻找所有名为 #work-description-edit 的元素并报告状态 (排查多重 ID)
+                    await page.evaluate((sel) => {
+                        const els = Array.from(document.querySelectorAll(sel));
+                        const status = els.map((el: any, i) => {
+                            const style = window.getComputedStyle(el);
+                            const rect = el.getBoundingClientRect();
+                            return `[#${i}] visible=${rect.width > 0 && rect.height > 0} display=${style.display} opacity=${style.opacity}`;
                         });
-                        console.log('--- POTENTIAL BLOCKING LAYERS ---', JSON.stringify(results.slice(0, 5)));
-                    }).catch(() => {});
+                        console.log(`--- CANDIDATE ELEMENTS [${sel}] [Count: ${els.length}] ---`, status.join(' | '));
+                    }, titleSelector).catch(() => {});
 
-                    // 3. 原生填写逻辑
-                    const titleContainer = page.locator(titleSelector).first();
+                    // 3. 修正后的原生填写逻辑 (使用 :visible 伪类过滤，避免击中隐藏的旧元素)
+                    const titleContainer = page.locator(`${titleSelector}:visible`).first();
                     await titleContainer.click({ force: true });
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
