@@ -129,38 +129,68 @@ export class KuaishouUploader extends BaseUploader {
 
                  if (title) {
                     const titleSelector = '#work-description-edit';
-                    this.log('正在执行暴力清场并强行聚焦描述框...');
+                    this.log('开始深度 DOM 审计，排查遮挡层与输入框可见性...');
                     
-                    // 彻底清除所有可能的拦截层 (气泡、弹窗、活动引导、蒙层)
-                    await page.addStyleTag({ 
-                        content: `
-                            #preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal, 
-                            .ant-popover, .ant-tooltip, .ant-modal-root, .ant-mask,
-                            [class*="popover"], [class*="tooltip"], [class*="guide"], [class*="overlay"] { 
-                                display: none !important; 
-                                pointer-events: none !important; 
-                                visibility: hidden !important;
-                                z-index: -1 !important;
+                    // 诊断：收集并打印所有可能的遮挡层
+                    await page.evaluate(() => {
+                        const results: any[] = [];
+                        const allNodes = document.querySelectorAll('*');
+                        allNodes.forEach((node) => {
+                            const style = window.getComputedStyle(node);
+                            const zIndex = parseInt(style.zIndex);
+                            const position = style.position;
+                            if ((zIndex > 500 || position === 'fixed' || position === 'absolute') && style.display !== 'none') {
+                                results.push({
+                                    tag: node.tagName,
+                                    id: node.id,
+                                    classes: node.className,
+                                    zIndex,
+                                    position,
+                                    opacity: style.opacity,
+                                    pointerEvents: style.pointerEvents,
+                                    rect: node.getBoundingClientRect()
+                                });
                             }
-                        `
+                        });
+                        console.log('--- POTENTIAL BLOCKING LAYERS ---', JSON.stringify(results.slice(0, 15)));
                     }).catch(() => {});
 
-                    // 使用 JS 强行夺取焦点，绕过 Playwright 的可见性检测逻辑
-                    await page.evaluate((selector) => {
-                        const el = document.querySelector(selector) as HTMLElement;
-                        if (el) {
-                            el.focus();
-                            el.click();
-                        }
+                    // 诊断：检查目标输入框的物理属性
+                    const boxStats = await page.evaluate((sel) => {
+                        const el = document.querySelector(sel);
+                        if (!el) return 'NOT_FOUND';
+                        const style = window.getComputedStyle(el);
+                        const rect = el.getBoundingClientRect();
+                        return { 
+                            isVisible: rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none',
+                            rect,
+                            zIndex: style.zIndex,
+                            style: { display: style.display, visibility: style.visibility, opacity: style.opacity }
+                        };
+                    }, titleSelector);
+                    this.log(`描述框审计结果: ${JSON.stringify(boxStats)}`);
+
+                    // 为了测试，依然保持清场逻辑但限制范围
+                    await page.addStyleTag({ 
+                        content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }'
+                    }).catch(() => {});
+
+                    // 使用 JS 强制聚焦
+                    await page.evaluate((sel) => {
+                        const el = document.querySelector(sel) as HTMLElement;
+                        if (el) { el.focus(); el.click(); }
                     }, titleSelector);
                     
-                    await page.waitForTimeout(1000); // 确保焦点状态稳定
+                    await page.waitForTimeout(1000);
                     
                     // 清空并输入
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
                     await page.keyboard.type(title, { delay: 50 });
-                    this.log(`标题描述已强行填入`);
+                    
+                    // 验证输入结果
+                    const currentText = await page.locator(titleSelector).innerText();
+                    this.log(`标题描述填入验证: [${currentText.slice(0, 15)}...] 内容长度: ${currentText.length}`);
                 }
 
                 if (tags && tags.length > 0) {
