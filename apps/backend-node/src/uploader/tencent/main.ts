@@ -55,14 +55,16 @@ export class TencentUploader extends BaseUploader {
         this.log('验证发布结果 (监听微信号助手后端响应)...');
         try {
             await Promise.any([
+                // 核心信号：新版视频号发布接口 (post_create)
                 page.waitForResponse(
-                    resp => resp.url().includes('mmfinderassistant-bin/post/publish') && resp.status() === 200,
+                    resp => (resp.url().includes('post/publish') || resp.url().includes('post/post_create')) && resp.status() === 200,
                     { timeout: 60000 }
                 ),
                 // 监听包含 wujie-app 穿透的弹窗
-                page.waitForSelector('wujie-app >> .ant-modal-content, wujie-app >> .weui-desktop-dialog', { timeout: 10000 })
+                page.waitForSelector('wujie-app >> .ant-modal-content, wujie-app >> .weui-desktop-dialog', { timeout: 15000 })
                     .then(() => { throw new Error('检测到阻塞弹窗 (Shadow DOM)'); }),
-                page.waitForURL(url => url.pathname.includes('/post/list'), { timeout: 60000 })
+                // 兜底信号：页面跳转
+                page.waitForURL(url => url.pathname.includes('/post/list'), { timeout: 60 * 1000 })
             ]);
             this.log('发布验证成功 (后端已入账)');
         } catch (error: any) {
@@ -210,7 +212,7 @@ export class TencentUploader extends BaseUploader {
                 try {
                     // 核心修复：先声明 Promise 再点击，消除竞态风险
                     const publishPromise = this.waitForPublishSuccess(page);
-                    await publishBtn.click();
+                    await publishBtn.click({ force: true });
                     await publishPromise;
                 } catch (error: any) {
                     this.log(`发布流程异常: ${error.message}`, 'error');
