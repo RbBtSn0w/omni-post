@@ -46,7 +46,8 @@ export class TencentUploader extends BaseUploader {
             });
 
             if (status.isReady) {
-                this.log('视频号组件解析完全就绪');
+                this.log('视频号组件解析完全就绪，等待 UI 状态沉降...');
+                await page.waitForTimeout(500); // 关键：给 Wujie 一点点渲染缓冲时间
                 return;
             }
 
@@ -321,6 +322,24 @@ export class TencentUploader extends BaseUploader {
             if (await statementLabel.isVisible()) {
                 await statementLabel.click();
                 await page.locator('wujie-app >> button:has-text("声明原创")').click();
+                await page.waitForTimeout(1000);
+
+                // --- 补全缺失的类别选择逻辑 ---
+                if (categoryText) {
+                    this.log(`正在选择原创分类: ${categoryText}`);
+                    // 找到类型下拉框并点击
+                    const typeSelect = page.locator('wujie-app >> .weui-desktop-dropdown__label:has-text("请选择类型"), wujie-app >> .weui-desktop-dropdown__label').first();
+                    if (await typeSelect.isVisible()) {
+                        await typeSelect.click();
+                        await page.waitForTimeout(500);
+                        // 在展开的列表中寻找对应的分类文字
+                        const option = page.locator(`wujie-app >> .weui-desktop-dropdown__list-ele:has-text("${categoryText}")`).first();
+                        if (await option.isVisible()) {
+                            await option.click();
+                            this.log(`原创分类已选定: ${categoryText}`);
+                        }
+                    }
+                }
             }
         } catch (error: any) {
             this.log(`处理原创声明失败: ${error.message}`, 'error');
