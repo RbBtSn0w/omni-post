@@ -177,9 +177,9 @@
                   配置管理
                 </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -252,9 +252,9 @@
                   配置管理
                 </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -327,9 +327,9 @@
                   配置管理
                 </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -402,9 +402,9 @@
                   配置管理
                 </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -477,9 +477,9 @@
                   配置管理
                 </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -800,7 +800,7 @@ const handleRefreshSingleAccount = async (row) => {
     accountStore.updateAccountStatus(row.id, '验证中', true)
 
     // 调用API刷新单个账号
-    const res = await accountApi.getValidAccounts(row.id)
+    const res = await accountApi.getValidAccounts(row.id, true)
 
     if (res.code === 200 && res.data && res.data.length > 0) {
       // 更新单个账号信息

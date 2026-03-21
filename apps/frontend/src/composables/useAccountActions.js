@@ -322,7 +322,7 @@ export function useAccountActions() {
             const refreshPromises = selectedAccounts.map(async (account) => {
                 try {
                     accountStore.updateAccountStatus(account.id, '验证中', true)
-                    const res = await accountApi.getValidAccounts(account.id)
+                    const res = await accountApi.getValidAccounts(account.id, true)
 
                     if (res.code === 200 && res.data && res.data.length > 0) {
                         const updatedAccount = res.data[0]
@@ -393,10 +393,11 @@ export function useAccountActions() {
         accountStore.setAllAccountsRefreshing(true)
 
         try {
-            const res = await accountApi.getValidAccounts()
+            const res = await accountApi.getValidAccounts(null, true)
             if (res.code === 200 && res.data) {
                 dataCache.set('/account-management/valid', res.data)
                 accountStore.setAccounts(res.data)
+                accountStore.setValidationCompleted()
                 lastRefreshTime.value = Date.now()
                 return { success: true }
             } else {
