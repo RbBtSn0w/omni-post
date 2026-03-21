@@ -1,40 +1,24 @@
 /**
- * Platform type constants - Single source of truth for all platform definitions
+ * Platform type constants - Thin re-export shim
  *
- * This module centralizes all platform-related constants to avoid scattered
- * definitions across multiple files.
+ * Shared definitions (PlatformType, PLATFORM_NAMES, helpers) are now sourced
+ * from @omni-post/shared (SSOT). Frontend-only constants (PLATFORM_TAG_TYPES,
+ * PLATFORM_LIST, etc.) remain defined here.
  */
 
-// Platform type enum-like object (matches backend PlatformType)
-export const PlatformType = Object.freeze({
-    XIAOHONGSHU: 1,
-    TENCENT: 2,      // 视频号
-    DOUYIN: 3,
-    KUAISHOU: 4,
-    BILIBILI: 5,
-    ZHIHU: 6,
-    JUEJIN: 7,
-})
+// ─── Re-exports from @omni-post/shared ──────────────────────────────
+export {
+    PlatformType,
+    PLATFORM_NAMES,
+    PLATFORM_NAME_TO_TYPE,
+    getPlatformName,
+    getPlatformType,
+    isValidPlatform,
+} from '@omni-post/shared'
 
-// Platform display names (ID -> Chinese name)
-export const PLATFORM_NAMES = Object.freeze({
-    [PlatformType.XIAOHONGSHU]: '小红书',
-    [PlatformType.TENCENT]: '视频号',
-    [PlatformType.DOUYIN]: '抖音',
-    [PlatformType.KUAISHOU]: '快手',
-    [PlatformType.BILIBILI]: 'Bilibili',
-    [PlatformType.ZHIHU]: '知乎',
-    [PlatformType.JUEJIN]: '掘金',
-})
+import { PlatformType, PLATFORM_NAMES } from '@omni-post/shared'
 
-// Reverse mapping (Chinese name -> ID)
-export const PLATFORM_NAME_TO_TYPE = Object.freeze(
-    Object.fromEntries(
-        Object.entries(PLATFORM_NAMES).map(([k, v]) => [v, Number(k)])
-    )
-)
-
-// Platform tag types for Element Plus (name -> tag type)
+// ─── Frontend-Only: Element Plus Tag Types ──────────────────────────
 export const PLATFORM_TAG_TYPES = Object.freeze({
     '小红书': 'info',
     '视频号': 'warning',
@@ -45,7 +29,7 @@ export const PLATFORM_TAG_TYPES = Object.freeze({
     '掘金': 'success',
 })
 
-// Platform list for UI dropdowns (with display order)
+// ─── Frontend-Only: UI Dropdown List ────────────────────────────────
 export const PLATFORM_LIST = Object.freeze([
     { key: PlatformType.DOUYIN, name: '抖音' },
     { key: PlatformType.KUAISHOU, name: '快手' },
@@ -54,28 +38,10 @@ export const PLATFORM_LIST = Object.freeze([
     { key: PlatformType.BILIBILI, name: 'Bilibili' },
 ])
 
-// All platform names as array (for filters/dropdowns)
+// ─── Frontend-Only: All Platform Names Array ────────────────────────
 export const ALL_PLATFORM_NAMES = Object.freeze(
     Object.values(PLATFORM_NAMES)
 )
-
-/**
- * Get platform display name by type ID
- * @param {number} typeId - Platform type ID (1-5)
- * @returns {string} Platform Chinese name or "未知" if not found
- */
-export function getPlatformName(typeId) {
-    return PLATFORM_NAMES[typeId] || '未知'
-}
-
-/**
- * Get platform type ID by name
- * @param {string} name - Platform display name (Chinese)
- * @returns {number} Platform type ID or 0 if not found
- */
-export function getPlatformType(name) {
-    return PLATFORM_NAME_TO_TYPE[name] || 0
-}
 
 /**
  * Get Element Plus tag type for a platform
@@ -84,13 +50,4 @@ export function getPlatformType(name) {
  */
 export function getPlatformTagType(platformName) {
     return PLATFORM_TAG_TYPES[platformName] || 'info'
-}
-
-/**
- * Check if a platform type ID is valid
- * @param {number} typeId - Platform type ID to check
- * @returns {boolean} True if valid, false otherwise
- */
-export function isValidPlatform(typeId) {
-    return Object.values(PlatformType).includes(typeId)
 }

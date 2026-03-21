@@ -11,9 +11,12 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --fix",
-    "clean": "rm -rf node_modules dist coverage"
+    "clean": "rm -rf node_modules dist coverage",
+    "predev": "npm run build -w @omni-post/shared",
+    "prebuild": "npm run build -w @omni-post/shared"
   },
   "dependencies": {
+    "@omni-post/shared": "workspace:*",
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.13.6",
     "echarts": "^6.0.0",
