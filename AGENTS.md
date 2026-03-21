@@ -159,3 +159,4 @@ Backend mixes sync Flask handlers with async worker threads:
 5. **JSON serialization** in database: platform, file_list, account_list, schedule_data are stored as JSON strings
 6. **Logging** includes platform-specific loggers; use `logger_name.info()` for structured output
 7. **Mock imports** in tests use module paths matching actual imports to enable `@patch()`
+8. **Fault Diagnosis**: When encountering automation issues (e.g., upload timeouts, UI changes), use the `opencli-diagnostics` skill to perform deep analysis and self-healing.
