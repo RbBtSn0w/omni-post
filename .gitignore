@@ -38,11 +38,13 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
+coverage/
 .tox/
 .nox/
 .coverage
 .coverage.*
 .cache
+.eslintcache
 nosetests.xml
 coverage.xml
 *.cover
@@ -50,6 +52,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+*.tsbuildinfo
 
 # Translations
 *.mo
@@ -182,6 +185,7 @@ apps/backend/src/cookiesFile/
 # 数据库文件
 # ==========================================
 apps/backend/data/
+apps/backend-node/data/
 *.db
 *.sqlite
 *.sqlite3
@@ -235,4 +239,5 @@ apps/backend/installed_deps.txt
 # 日志和测试结果
 # ==========================================
 logs/
+playwright-report/
 test-results/
