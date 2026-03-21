@@ -128,31 +128,39 @@ export class KuaishouUploader extends BaseUploader {
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
                  if (title) {
-                    const titleSelector = '#work-description-edit, div._description_17g9x_24, [placeholder*="描述"]';
-                    this.log('等待描述框进入可见状态...');
+                    const titleSelector = '#work-description-edit';
+                    this.log('正在执行暴力清场并强行聚焦描述框...');
                     
-                    // 彻底清除可能存在的引导层拦截器
+                    // 彻底清除所有可能的拦截层 (气泡、弹窗、活动引导、蒙层)
                     await page.addStyleTag({ 
-                        content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }' 
+                        content: `
+                            #preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal, 
+                            .ant-popover, .ant-tooltip, .ant-modal-root, .ant-mask,
+                            [class*="popover"], [class*="tooltip"], [class*="guide"], [class*="overlay"] { 
+                                display: none !important; 
+                                pointer-events: none !important; 
+                                visibility: hidden !important;
+                                z-index: -1 !important;
+                            }
+                        `
                     }).catch(() => {});
 
-                    try {
-                        // 显式等待可见性，超时则尝试强行点击
-                        await page.waitForSelector(titleSelector, { state: 'visible', timeout: 10000 });
-                    } catch (e) {
-                        this.log('描述框未在预定时间内可见，尝试强行操作', 'warn');
-                    }
-
-                    const titleContainer = page.locator(titleSelector).first();
-                    await titleContainer.click({ force: true });
-                    await page.waitForTimeout(500); // 给一点点聚焦缓冲
+                    // 使用 JS 强行夺取焦点，绕过 Playwright 的可见性检测逻辑
+                    await page.evaluate((selector) => {
+                        const el = document.querySelector(selector) as HTMLElement;
+                        if (el) {
+                            el.focus();
+                            el.click();
+                        }
+                    }, titleSelector);
                     
+                    await page.waitForTimeout(1000); // 确保焦点状态稳定
+                    
+                    // 清空并输入
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
-                    
-                    // 社交平台对 contenteditable 的 fill 支持有限，改用 type 以确保触发业务逻辑
-                    await titleContainer.type(title, { delay: 50 });
-                    this.log(`标题描述已填入: ${title.slice(0, 10)}...`);
+                    await page.keyboard.type(title, { delay: 50 });
+                    this.log(`标题描述已强行填入`);
                 }
 
                 if (tags && tags.length > 0) {
