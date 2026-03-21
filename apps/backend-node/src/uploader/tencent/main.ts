@@ -19,36 +19,32 @@ export class TencentUploader extends BaseUploader {
     protected platformName = 'Tencent';
 
     private async waitForUploadComplete(page: Page): Promise<void> {
-        this.log('等待上传完成 (监听 UI 状态及信号同步)...');
+        this.log('等待上传完成 (通过 Shadow DOM 穿透探测)...');
         const maxRetries = (UPLOAD_TIMEOUT_MINUTES * 60) / 2;
         
+        // 核心修复：Playwright 的 locator 默认支持穿透，但 evaluate 脚本需要手动处理
         for (let i = 0; i < maxRetries; i++) {
-            // 视频号这种高度封装的页面，物理 100% 后还需要等待后台 WASM 的解析完成和按钮激活
-            const isDone = await page.evaluate(() => {
-                // @ts-expect-error: document is available in browser context during evaluate
-                const container = document.querySelector('.post-container, .upload-area, body');
-                const text = container?.textContent || '';
-                return text.includes('100%') || text.includes('分享');
+            const status = await page.evaluate(() => {
+                const wujie = document.querySelector('wujie-app');
+                const root = wujie?.shadowRoot;
+                if (!root) return { isDone: false, text: '' };
+                
+                const text = root.textContent || '';
+                const isDone = text.includes('100%') || text.includes('分享');
+                return { isDone, text };
             });
 
-            if (isDone) {
-                // 核心修复：避免 Strict Mode 冲突，按优先级获取第一个可用的按钮
-                const publishBtn = page.getByRole('button', { name: '发表' }).first();
-                const draftBtn = page.getByRole('button', { name: '存草稿' }).first();
-                
-                const isReady = await Promise.any([
-                    publishBtn.isEnabled().catch(() => false),
-                    draftBtn.isEnabled().catch(() => false)
-                ]);
+            // 同时检查“发表”按钮是否已启用，这是最可靠的就绪信号
+            const publishBtn = page.locator('wujie-app >> button:has-text("发表")').first();
+            const isBtnReady = await publishBtn.isEnabled().catch(() => false);
 
-                if (isReady) {
-                    this.log('作品解析完成并已就绪');
-                    return;
-                }
+            if (status.isDone || isBtnReady) {
+                this.log('视频上传就绪 (Shadow DOM 信号确认)');
+                return;
             }
 
             if (i % 30 === 0) {
-                this.log(`正在等待后台解析 (第 ${i} 次轮询)...`);
+                this.log(`正在等待上传进度 (第 ${i} 次轮询)...`);
             }
             await page.waitForTimeout(1000);
         }
@@ -59,20 +55,18 @@ export class TencentUploader extends BaseUploader {
         this.log('验证发布结果 (监听微信号助手后端响应)...');
         try {
             await Promise.any([
-                // 核心信号：视频号后台发布的正式确认接口
                 page.waitForResponse(
                     resp => resp.url().includes('mmfinderassistant-bin/post/publish') && resp.status() === 200,
                     { timeout: 60000 }
                 ),
-                // 拦截检测：如果弹出了侵权确认或协议确认弹窗，需要上报
-                page.waitForSelector('.ant-modal-content, .weui-desktop-dialog', { timeout: 10000 })
-                    .then(() => { throw new Error('检测到阻塞弹窗，需手动处理协议确认'); }),
-                // 兜底信号：页面跳转到了列表页
+                // 监听包含 wujie-app 穿透的弹窗
+                page.waitForSelector('wujie-app >> .ant-modal-content, wujie-app >> .weui-desktop-dialog', { timeout: 10000 })
+                    .then(() => { throw new Error('检测到阻塞弹窗 (Shadow DOM)'); }),
                 page.waitForURL(url => url.pathname.includes('/post/list'), { timeout: 60000 })
             ]);
             this.log('发布验证成功 (后端已入账)');
         } catch (error: any) {
-            this.log(`注意: ${error.message}，尝试通过页面稳定状态判定`, 'warn');
+            this.log(`注意: ${error.message}，尝试通过列表状态判定`, 'warn');
             await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
         }
     }
@@ -141,9 +135,9 @@ export class TencentUploader extends BaseUploader {
 
                 try {
                     page.on('request', uploadProgressListener);
-                    const fileInput = page.locator('input[type="file"]').first();
-                    await fileInput.setInputFiles(videoPath);
-                    this.log(`文件已选择，COS 分片上传中...`);
+                    const fileInput = page.locator('wujie-app >> input[type="file"]').first();
+                await fileInput.setInputFiles(videoPath);
+                this.log(`文件已选择，COS 分片上传中...`);
 
                     // 等待 UI 文字 100% + 发送按钮启用 (SC-006 fix)
                     await this.waitForUploadComplete(page);
@@ -153,14 +147,27 @@ export class TencentUploader extends BaseUploader {
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 节点成功
 
                 if (title) {
-                    const titleInput = page.locator('.input-editor').first();
-                    await titleInput.fill(title);
+                    const titleInput = page.locator('wujie-app >> .input-editor').first();
+                    await titleInput.click();
+                    // 清空原有内容
+                    await page.keyboard.press('ControlOrMeta+a');
+                    await page.keyboard.press('Backspace');
+                    
+                    // 话题处理：输入话题后必须跟空格，且一次性填入
+                    let finalTitle = title;
+                    if (opts.tags && opts.tags.length > 0) {
+                        for (const tag of opts.tags) {
+                            finalTitle += ` #${tag} `; 
+                        }
+                    }
+                    await titleInput.fill(finalTitle);
+                    this.log(`标题描述已填入 (Shadow DOM 注入成功)`);
                 }
 
-                // 添加短标题 (Ported from Python)
+                // 添加短标题
                 await this.addShortTitle(page, title);
                 
-                // 原创声明 (Ported from Python)
+                // 原创声明
                 await this.addOriginal(page, opts.category ?? undefined);
 
                 if (enableTimer && videosPerDay) {
@@ -174,7 +181,7 @@ export class TencentUploader extends BaseUploader {
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
                 
-                const publishBtn = page.getByRole('button', { name: isDraft ? '存草稿' : '发表' });
+                const publishBtn = page.locator('wujie-app').getByRole('button', { name: isDraft ? '存草稿' : '发表' }).first();
                 this.log(`正在点击${isDraft ? '存草稿' : '发表'}并等待后端确认...`);
 
                 try {
@@ -239,15 +246,15 @@ export class TencentUploader extends BaseUploader {
     private async addShortTitle(page: Page, title: string | undefined): Promise<void> {
         if (!title) return;
         try {
-            const shortTitleElement = page.getByText('短标题', { exact: true })
-                .locator('..')
-                .locator('xpath=following-sibling::div')
-                .locator('span input[type="text"]');
+            // 穿透 Shadow DOM 寻找短标题输入框 (Placeholder: 概括视频主要内容...)
+            const shortTitleElement = page.locator('wujie-app >> input.weui-desktop-form__input[placeholder*="概括视频"]').first();
             
             if (await shortTitleElement.count() > 0) {
                 const shortTitle = this.formatStrForShortTitle(title);
                 await shortTitleElement.fill(shortTitle);
                 this.log(`短标题已设置: ${shortTitle}`);
+            } else {
+                this.log('未找到短标题输入框 (Shadow DOM)', 'warn');
             }
         } catch (error: any) {
             this.log(`设置短标题失败: ${error.message}`, 'error');
@@ -265,51 +272,17 @@ export class TencentUploader extends BaseUploader {
         const categoryText = typeof category === 'string' ? category : (category ? categoryMap[String(category)] : '');
         
         try {
-            const originalCheckbox = page.getByLabel('视频为原创').first();
+            const originalCheckbox = page.locator('wujie-app >> label:has-text("视频为原创")').first();
             if (await originalCheckbox.count() > 0) {
-                await originalCheckbox.check();
+                await originalCheckbox.click(); // Ant Design checkbox 通常点击 label 触发
                 this.log('已勾选原创声明');
             }
 
             // 检查弹窗和协议
-            const statementLabel = page.locator('label:has-text("我已阅读并同意 《视频号原创声明使用条款》")');
+            const statementLabel = page.locator('wujie-app >> label:has-text("我已阅读并同意 《视频号原创声明使用条款》")');
             if (await statementLabel.isVisible()) {
-                await page.getByLabel('我已阅读并同意 《视频号原创声明使用条款》').check();
-                await page.getByRole('button', { name: '声明原创' }).click();
-            }
-
-            // 新版/改版账号的处理逻辑
-            const declareOriginalBtn = page.locator('div.label span:has-text("声明原创")');
-            if (await declareOriginalBtn.count() > 0 && category) {
-                const checkbox = page.locator('div.declare-original-checkbox input.ant-checkbox-input');
-                if (await checkbox.count() > 0 && !(await checkbox.isDisabled())) {
-                    await checkbox.click();
-                    
-                    // 等待弹窗并确认
-                    const modalCheckbox = page.locator('div.declare-original-dialog input.ant-checkbox-input:visible');
-                    if (await modalCheckbox.count() > 0) {
-                        await modalCheckbox.click();
-                    }
-                }
-
-                // 处理原创类型下拉
-                const typeForm = page.locator('div.original-type-form > div.form-label:has-text("原创类型"):visible');
-                if (await typeForm.count() > 0) {
-                    await page.locator('div.form-content:visible').click();
-                    // 根据映射后的分类名称进行匹配
-                    if (categoryText) {
-                        const option = page.locator(`div.form-content:visible ul.weui-desktop-dropdown__list li.weui-desktop-dropdown__list-ele:has-text("${categoryText}")`).first();
-                        if (await option.count() > 0) {
-                            await option.click();
-                        }
-                    }
-                    await page.waitForTimeout(1000);
-                }
-
-                const finalDeclareBtn = page.locator('button:has-text("声明原创"):visible');
-                if (await finalDeclareBtn.count() > 0) {
-                    await finalDeclareBtn.click();
-                }
+                await statementLabel.click();
+                await page.locator('wujie-app >> button:has-text("声明原创")').click();
             }
         } catch (error: any) {
             this.log(`处理原创声明失败: ${error.message}`, 'error');
