@@ -133,8 +133,16 @@ export class KuaishouUploader extends BaseUploader {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;
-                            const percent = Math.min(99, Math.floor((uploadedBytes / totalSizes) * 100));
-                            onProgress(percent);
+                            // 计算全局总进度并做边界保护，避免 >100 / Infinity / NaN
+                            const rawFilePercent = totalSizes > 0 ? (uploadedBytes / totalSizes) : 0;
+                            const safeFilePercent = Number.isFinite(rawFilePercent)
+                                ? Math.max(0, Math.min(1, rawFilePercent))
+                                : 0;
+                            const rawGlobalPercent = ((i + safeFilePercent * 0.99) / fileList.length) * 100;
+                            const safeGlobalPercent = Number.isFinite(rawGlobalPercent)
+                                ? Math.max(0, Math.min(99, Math.floor(rawGlobalPercent)))
+                                : 0;
+                            onProgress(safeGlobalPercent);
                         }
                     }
                 };
