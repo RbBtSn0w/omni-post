@@ -1,0 +1,5 @@
+interface:
+  display_name: "Fail Fast Loud"
+  short_description: "Strict fail-fast coding, testing, and review rules"
+  default_prompt: "Use $fail-fast-loud to implement or review code with strict fail-fast-and-loud rules."
+
