@@ -69,29 +69,68 @@ export class KuaishouUploader extends BaseUploader {
      * 在上传进行中并行执行 UI 清理与文案填写，减少总耗时。
      */
     private async prepareFormWhileUploading(page: Page, title?: string, tags?: string[]): Promise<void> {
-        // 1. 定点清除：屏蔽引导蒙层与气泡
-        this.log('上传中并行执行：排除 react-joyride 和快手引导蒙层...');
+        // 1. 定点清除：持续探测并屏蔽引导蒙层与气泡
+        this.log('上传中并行执行：持续探测并排除 react-joyride 和快手引导蒙层...');
 
-        await page.evaluate(() => {
+        await page.evaluate(async () => {
             const skipSelectors = ['div[aria-label="Skip"]', '._close_d7f44_29', 'button', 'div[role="button"]'];
-            skipSelectors.forEach(sel => {
-                document.querySelectorAll(sel).forEach((el: any) => {
-                    const txt = el.innerText || '';
-                    if (txt.includes('下一步') || txt.includes('我知道了') || txt.includes('知道了') || el.ariaLabel === 'Skip') {
-                        if (el.getBoundingClientRect().width > 0) el.click();
-                    }
+            // 持续探测 3 次，每次间隔 1 秒，以捕捉在上传过程中动态弹出的多个引导
+            for (let i = 0; i < 3; i++) {
+                skipSelectors.forEach(sel => {
+                    document.querySelectorAll(sel).forEach((el: any) => {
+                        const txt = el.innerText || '';
+                        if (
+                            txt.includes('下一步') || 
+                            txt.includes('我知道了') || 
+                            txt.includes('知道了') || 
+                            el.ariaLabel === 'Skip' ||
+                            el.getAttribute('data-action') === 'skip'
+                        ) {
+                            if (el.getBoundingClientRect().width > 0) {
+                                (el as HTMLElement).click();
+                            }
+                        }
+                    });
                 });
-            });
+                // 简单的异步等待
+                if (i < 2) await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         }).catch(() => { });
-        await page.waitForTimeout(1000);
 
         if (!title) return;
 
+        try {
+            this.log('正在填入描述与话题...');
+            // 聚焦输入框 (富文本框必须先点击获取焦点)
+            const descInput = page.locator('#work-description-edit').first();
+            await descInput.waitFor({ state: 'visible', timeout: 10000 });
+            await descInput.click({ force: true });
+            await page.waitForTimeout(500);
 
-        // TODO: 补充输入内容
+            // 清空已有内容 (适配 Mac 和 Win)
+            await page.keyboard.press('ControlOrMeta+a');
+            await page.keyboard.press('Backspace');
+            await page.keyboard.press('Delete');
+            
+            // 逐字输入标题
+            await page.keyboard.type(title, { delay: 50 });
+            await page.keyboard.press('Enter');
+            await page.waitForTimeout(500);
 
-
-        this.log('描述与话题填入完成');
+            // 处理话题标签 (最多4个)
+            if (tags && tags.length > 0) {
+                for (const tag of tags.slice(0, 4)) {
+                    // 输入 #标签名 并加空格触发解析
+                    await page.keyboard.type(`#${tag} `, { delay: 100 });
+                    // 必须等待足够时间让快手的 React 组件将纯文本解析为蓝色话题块
+                    await page.waitForTimeout(1500); 
+                }
+            }
+            this.log('描述与话题填入完成');
+        } catch (error: any) {
+            this.log(`填入描述与话题失败: ${error.message}`, 'error');
+            // 失败不阻断上传流程
+        }
     }
 
     /**
@@ -174,11 +213,6 @@ export class KuaishouUploader extends BaseUploader {
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100)); // 该视频成功
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-
-                // Hide Joyride overlays that might block the publish button
-                await page.addStyleTag({
-                    content: '#preact-border-shadow-host, [id*="tours"], ._helper_1kfmm_1, #joyride-portal { display: none !important; pointer-events: none !important; }'
-                }).catch(() => { });
 
                 // 优先寻找带有 primary 类名的发布按钮
                 let publishBtn = page.locator('div[class*="_button-primary_"], button:has-text("发布")').first();
