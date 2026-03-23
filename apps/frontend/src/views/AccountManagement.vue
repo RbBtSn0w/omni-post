@@ -68,7 +68,7 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item @click="handleBatchRefresh">批量刷新</el-dropdown-item>
+                      <el-dropdown-item @click="handleBatchRefreshClick">批量刷新</el-dropdown-item>
                       <el-dropdown-item @click="handleBatchReLogin">批量重新登录</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -756,6 +756,7 @@ const {
   fetchAccountsQuick,
   fetchAccounts,
   forceRefreshAccounts,
+  refreshAccountsAfterMutation,
   validateAllAccountsInBackground,
   refreshExceptionAccounts,
   handleBatchRefresh,
@@ -876,6 +877,10 @@ const handleSelectionChange = (selection) => {
   selectedAccounts.value = selection
 }
 
+const handleBatchRefreshClick = async () => {
+  await handleBatchRefresh(selectedAccounts.value)
+}
+
 
 
 // 批量重新登录选中账号
@@ -904,7 +909,7 @@ const handleBatchReLogin = async () => {
 
     // 这里可以根据实际需求实现批量重新登录逻辑
     // 目前暂时只实现批量刷新
-    await handleBatchRefresh()
+    await handleBatchRefresh(exceptionAccounts)
 
     ElMessage.closeAll()
     ElMessage.success(`批量重新登录完成`)
@@ -1227,9 +1232,9 @@ const handleUploadCookie = (row) => {
       const result = await response.json()
 
       if (result.code === 200) {
-        ElMessage.success('Cookie文件上传成功')
-        // 刷新账号列表以显示更新
-        fetchAccounts()
+        ElMessage.success('Cookie文件上传成功，正在同步账号信息...')
+        await refreshAccountsAfterMutation('cookie_upload')
+        ElMessage.success('账号信息已更新')
       } else {
         ElMessage.error(result.msg || 'Cookie文件上传失败')
       }
@@ -1438,11 +1443,12 @@ const submitAccountForm = () => {
               status: accountForm.status // Keep the existing status
             };
             accountStore.updateAccount(accountForm.id, updatedAccount)
-            ElMessage.success('更新成功')
+            ElMessage.success('更新成功，正在同步账号信息...')
             dialogVisible.value = false
-            // 刷新账号和组列表，确保新添加的组可见
-            fetchAccounts()
+            // 刷新账号和组列表，确保新添加的组可见且账号状态为已验证新鲜状态
+            await refreshAccountsAfterMutation('account_edit')
             groupStore.fetchGroups()
+            ElMessage.success('账号信息已更新')
           } else {
             ElMessage.error(res.msg || '更新账号失败')
           }

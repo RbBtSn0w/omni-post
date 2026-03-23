@@ -53,5 +53,38 @@ describe('BilibiliUploader submit helpers', () => {
             text: '立即投稿',
             pointerEvents: 'auto',
         })).toBe(true);
+
+        expect(uploader.isPublishButtonReadyState({
+            disabled: false,
+            ariaDisabled: null,
+            className: 'submit-btn ready',
+            text: '刷新中',
+            pointerEvents: 'auto',
+        })).toBe(false);
+
+        expect(uploader.isPublishButtonReadyState({
+            disabled: false,
+            ariaDisabled: null,
+            className: 'submit-btn ready',
+            text: '加载中...',
+            pointerEvents: 'auto',
+        })).toBe(false);
+    });
+
+    it('classifies timeout and runtime probe failures distinctly', async () => {
+        const { BilibiliUploader } = await import('../src/uploader/bilibili/main.js');
+        const uploader = new BilibiliUploader() as any;
+
+        const timeoutResult = uploader.probeTimeoutResult(new Error('Timeout 10000ms exceeded'), 'file_chooser_injection', 'video_a.mp4');
+        expect(timeoutResult).toEqual({ kind: 'timeout' });
+
+        const runtimeResult = uploader.probeRuntimeFailureResult(new Error('Execution context was destroyed'), 'input_file_injection', 'video_b.mp4');
+        expect(runtimeResult.kind).toBe('runtime_failure');
+        expect(runtimeResult.diagnostic).toMatchObject({
+            phase: 'input_file_injection',
+            errorType: 'Error',
+            accountOrTaskId: 'video_b.mp4',
+        });
+        expect(runtimeResult.diagnostic.message).toContain('Execution context was destroyed');
     });
 });

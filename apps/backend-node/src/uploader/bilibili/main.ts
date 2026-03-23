@@ -11,8 +11,23 @@ import type { UploadOptions } from '../../services/publish-service.js';
 import { safeJoin } from '../../utils/path.js';
 import { BaseUploader } from '../base-uploader.js';
 
+type UploadStartProbeKind = 'started' | 'timeout' | 'runtime_failure';
+
+interface RuntimeFailureDiagnostic {
+    phase: string;
+    errorType: string;
+    message: string;
+    accountOrTaskId: string;
+}
+
+interface UploadStartProbeResult {
+    kind: UploadStartProbeKind;
+    diagnostic?: RuntimeFailureDiagnostic;
+}
+
 export class BilibiliUploader extends BaseUploader {
     protected platformName = 'Bilibili';
+    private readonly blockedPublishTextPattern = /上传中|处理中|转码中|请稍候|不可投稿|暂不可用|刷新中|加载中|准备中|提交中/i;
 
     /**
      * Bilibili 目前暂未实现文章发布
@@ -138,26 +153,67 @@ export class BilibiliUploader extends BaseUploader {
     /**
      * 文件注入后验证上传是否真的启动，避免 FileChooser 假成功
      */
-    private async waitForUploadStartSignal(page: Page, timeout = 8000): Promise<boolean> {
-        try {
-            const titleReadyPromise = page
-                .getByRole('textbox', { name: /请输入稿件标题/ })
-                .or(page.locator('input[placeholder*="标题"]'))
-                .first()
-                .waitFor({ state: 'visible', timeout })
-                .then(() => true)
-                .catch(() => false);
+    private isTimeoutError(error: unknown): boolean {
+        const message = (error as Error | undefined)?.message ?? '';
+        return /timeout|timed out|Timeout \d+ms exceeded/i.test(message);
+    }
 
-            const requestReadyPromise = page
-                .waitForRequest(req => this.isUploadStartRequest(req.url()), { timeout })
-                .then(() => true)
-                .catch(() => false);
+    private toRuntimeFailureDiagnostic(error: unknown, phase: string, accountOrTaskId: string): RuntimeFailureDiagnostic {
+        const err = error as Error | undefined;
+        return {
+            phase,
+            errorType: err?.name || 'Error',
+            message: err?.message || String(error),
+            accountOrTaskId,
+        };
+    }
 
-            const started = await Promise.race([requestReadyPromise, titleReadyPromise]);
-            return Boolean(started);
-        } catch {
-            return false;
+    private probeRuntimeFailureResult(error: unknown, phase: string, accountOrTaskId: string): UploadStartProbeResult {
+        const diagnostic = this.toRuntimeFailureDiagnostic(error, phase, accountOrTaskId);
+        this.log(`[UploadProbe][runtime_failure] ${JSON.stringify(diagnostic)}`, 'error');
+        return { kind: 'runtime_failure', diagnostic };
+    }
+
+    private probeTimeoutResult(error: unknown, phase: string, accountOrTaskId: string): UploadStartProbeResult {
+        const diagnostic = this.toRuntimeFailureDiagnostic(error, phase, accountOrTaskId);
+        this.log(`[UploadProbe][timeout] phase=${phase} accountOrTaskId=${accountOrTaskId} detail=${diagnostic.message}`, 'warn');
+        return { kind: 'timeout' };
+    }
+
+    private async waitForUploadStartSignal(
+        page: Page,
+        timeout = 8000,
+        phase = 'upload_probe',
+        accountOrTaskId = 'unknown'
+    ): Promise<UploadStartProbeResult> {
+        const titleReadyPromise = page
+            .getByRole('textbox', { name: /请输入稿件标题/ })
+            .or(page.locator('input[placeholder*="标题"]'))
+            .first()
+            .waitFor({ state: 'visible', timeout })
+            .then((): UploadStartProbeResult => ({ kind: 'started' }))
+            .catch((error: unknown): UploadStartProbeResult => {
+                if (this.isTimeoutError(error)) {
+                    return this.probeTimeoutResult(error, phase, accountOrTaskId);
+                }
+                return this.probeRuntimeFailureResult(error, phase, accountOrTaskId);
+            });
+
+        const requestReadyPromise = page
+            .waitForRequest(req => this.isUploadStartRequest(req.url()), { timeout })
+            .then((): UploadStartProbeResult => ({ kind: 'started' }))
+            .catch((error: unknown): UploadStartProbeResult => {
+                if (this.isTimeoutError(error)) {
+                    return this.probeTimeoutResult(error, phase, accountOrTaskId);
+                }
+                return this.probeRuntimeFailureResult(error, phase, accountOrTaskId);
+            });
+
+        const started = await Promise.race([requestReadyPromise, titleReadyPromise]);
+        if (started.kind === 'runtime_failure') {
+            return started;
         }
+        return started.kind === 'started' ? started : { kind: 'timeout' };
     }
 
     /**
@@ -171,7 +227,7 @@ export class BilibiliUploader extends BaseUploader {
         pointerEvents: string;
     }): boolean {
         const disabledByClass = /disabled|is-disabled|btn-disabled|forbid|ban|gray|grey/i.test(state.className);
-        const blockedByText = /上传中|处理中|转码中|请稍候|不可投稿|暂不可用/i.test(state.text);
+        const blockedByText = this.blockedPublishTextPattern.test(state.text);
         return !state.disabled && state.ariaDisabled !== 'true' && !disabledByClass && state.pointerEvents !== 'none' && !blockedByText;
     }
 
@@ -686,8 +742,11 @@ export class BilibiliUploader extends BaseUploader {
                             ]);
                             if (fileChooser) {
                                 await fileChooser.setFiles(videoPath);
-                                const started = await this.waitForUploadStartSignal(page, 10000);
-                                if (started) {
+                                const started = await this.waitForUploadStartSignal(page, 10000, 'file_chooser_injection', videoFile);
+                                if (started.kind === 'runtime_failure') {
+                                    throw new Error(`[UPLOAD_START_RUNTIME_FAILURE] ${JSON.stringify(started.diagnostic)}`);
+                                }
+                                if (started.kind === 'started') {
                                     injected = true;
                                     this.log('通过 FileChooser 拦截注入文件成功，且已观测到上传启动信号！');
                                 } else {
@@ -715,8 +774,11 @@ export class BilibiliUploader extends BaseUploader {
                                     await fileInputs[n].setInputFiles(videoPath);
                                     // 关键：强制触发 change 事件，防止 B 站代码未侦听到变更
                                     await fileInputs[n].evaluate(el => el.dispatchEvent(new Event('change', { bubbles: true })));
-                                    const started = await this.waitForUploadStartSignal(page, 10000);
-                                    if (started) {
+                                    const started = await this.waitForUploadStartSignal(page, 10000, 'input_file_injection', videoFile);
+                                    if (started.kind === 'runtime_failure') {
+                                        throw new Error(`[UPLOAD_START_RUNTIME_FAILURE] ${JSON.stringify(started.diagnostic)}`);
+                                    }
+                                    if (started.kind === 'started') {
                                         injected = true;
                                         this.log(`第 ${n + 1} 个 input 注入并手动触发 Change 后，已观测到上传启动信号。`);
                                         break;
