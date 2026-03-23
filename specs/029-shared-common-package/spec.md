@@ -1,8 +1,8 @@
 # Feature Specification: Shared Common Package Refactoring
 
-**Feature Branch**: `029-shared-common-package`  
-**Created**: 2026-03-21  
-**Status**: Clarified  
+**Feature Branch**: `029-shared-common-package`
+**Created**: 2026-03-21
+**Status**: completed
 **Input**: User description: "现在的node版本, 前后端存在相同的代码和一些逻辑, 为了更好服务前后端. 现在重构下代码, 提供一个公共成, 支持前后端公共使用的区域代码, 减少维护的成本."
 
 ## User Scenarios & Testing *(mandatory)*

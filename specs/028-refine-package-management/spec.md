@@ -1,8 +1,8 @@
 # 功能规范：优化与完善工作空间及 Package 管理
 
-**特性分支**: `028-refine-package-management`  
-**创建日期**: 2024-05-22  
-**当前状态**: 草案  
+**特性分支**: `028-refine-package-management`
+**创建日期**: 2024-05-22
+**当前状态**: completed
 **输入**: 用户描述: "现在项目空间有些混乱，特别是package的管理多种场景， 更新和完善当前工作空间。"
 
 ## 用户场景与测试 *(必填)*
@@ -89,7 +89,7 @@
 - CI：批量 lint/test/build 的工作空间命令
 
 #### 4. 清理范围
-`clean` 必须删除：`node_modules/`, `dist/`, `build/`, `coverage/`, `.cache/`, `.vite/`。  
+`clean` 必须删除：`node_modules/`, `dist/`, `build/`, `coverage/`, `.cache/`, `.vite/`。
 `clean` 必须保留：`.env*`, `data/`, `logs/`。
 
 ### 核心实体
