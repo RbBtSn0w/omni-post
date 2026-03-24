@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/RbBtSn0w/omni-post/compare/v1.3.0...v1.3.1) (2026-03-24)
+
+### 🐛 Bug Fixes
+
+* **any:** eliminate explicit any usages in services and routes to stabilize CI ([e93ac2a](https://github.com/RbBtSn0w/omni-post/commit/e93ac2a8a40cbea4cef4c2b4e056e90cbe22b7f2))
+
 ## [1.3.0](https://github.com/RbBtSn0w/omni-post/compare/v1.2.1...v1.3.0) (2026-03-24)
 
 ### ✨ Features
