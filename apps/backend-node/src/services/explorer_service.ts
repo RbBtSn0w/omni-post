@@ -11,7 +11,7 @@ class ExplorerService {
       throw new Error('Invalid protocol. Only http/https are allowed.');
     }
     const hostname = urlObj.hostname.toLowerCase();
-    const privateIps = /^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+    const privateIps = /^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.|100\.6[4-9]\.|100\.7[0-9]\.)/;
     if (privateIps.test(hostname) || hostname === 'localhost' || hostname === '::1') {
       throw new Error('Private network access is restricted for security.');
     }
@@ -50,8 +50,8 @@ class ExplorerService {
           });
         });
 
-        // Find buttons
-        const buttons = doc.querySelectorAll('button');
+        // Find buttons and interactive roles
+        const buttons = doc.querySelectorAll('button, [role="button"], [role="link"]');
         buttons.forEach((btn: any) => {
           results.buttons.push({
             text: btn.innerText,

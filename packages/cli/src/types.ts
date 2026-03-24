@@ -1,14 +1,11 @@
+import type { BrowserProfile } from '@omni-post/shared';
+
+export type { BrowserProfile };
+
 export interface ApiEnvelope<T> {
   code: number;
   msg: string | null;
   data: T | null;
-}
-
-export interface BrowserProfile {
-  id: string | number;
-  name: string;
-  browser_type: string;
-  user_data_dir: string;
 }
 
 export interface LinkProfileRequest {

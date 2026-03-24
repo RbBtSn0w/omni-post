@@ -1,6 +1,6 @@
 # omni-post Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-16
+Auto-generated from all feature plans. Last updated: 2026-03-24
 
 ## Active Technologies
 - TypeScript 5.x, Node.js 20+ LTS + Playwright, Express.js, better-sqlite3, commander, unified/remark (Markdown processing) (027-opencli-automation-upgrade)
