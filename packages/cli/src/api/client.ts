@@ -38,6 +38,22 @@ function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return typeof obj.code === 'number' && 'data' in obj;
 }
 
+function parseTasksResponse(payload: PublishTask[] | ApiEnvelope<PublishTask[]>): PublishTask[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload.data === null) {
+    throw new Error('Invalid tasks response: data is null');
+  }
+
+  if (!Array.isArray(payload.data)) {
+    throw new Error('Invalid tasks response: data is not an array');
+  }
+
+  return payload.data;
+}
+
 export const api = {
   // Browser Profiles
   getProfiles: () =>
@@ -59,5 +75,10 @@ export const api = {
   getTasks: () =>
     apiClient
       .get<PublishTask[] | ApiEnvelope<PublishTask[]>>('/api/publish/tasks')
-      .then((res) => (isApiEnvelope<PublishTask[]>(res.data) ? (res.data.data ?? []) : res.data)),
+      .then((res) => {
+        if (!Array.isArray(res.data) && !isApiEnvelope<PublishTask[]>(res.data)) {
+          throw new Error('Invalid tasks response: unsupported payload shape');
+        }
+        return parseTasksResponse(res.data);
+      }),
 };

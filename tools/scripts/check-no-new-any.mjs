@@ -40,8 +40,9 @@ const shouldCheckFile = (file) => {
 const runGit = (gitArgs) => {
   try {
     return execFileSync('git', gitArgs, { encoding: 'utf8' });
-  } catch {
-    return '';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to execute git ${gitArgs.join(' ')}: ${message}`);
   }
 };
 
@@ -100,8 +101,9 @@ const findAnyInUntrackedFile = (filePath) => {
     return lines
       .map((line, index) => ({ line: index + 1, content: line }))
       .filter((entry) => hasExplicitAny(entry.content));
-  } catch {
-    return [];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to read file "${filePath}" while checking explicit any: ${message}`);
   }
 };
 
