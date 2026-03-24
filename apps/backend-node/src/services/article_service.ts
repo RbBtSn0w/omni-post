@@ -78,7 +78,7 @@ class ArticleService {
    */
   async publishArticle(
     articleId: string,
-    accountId: string,
+    accountId: string | undefined,
     platform: string,
     browserProfileId?: string,
     scheduleTime?: string
@@ -87,7 +87,11 @@ class ArticleService {
     if (!article) throw new Error('Article not found');
     const platformType = this._getPlatformType(platform);
     if (!platformType) throw new Error(`Unsupported platform: ${platform}`);
-    const accountFilePath = this.resolveAccountFilePath(accountId, platformType);
+    
+    const accountList: string[] = [];
+    if (accountId) {
+      accountList.push(this.resolveAccountFilePath(accountId, platformType));
+    }
 
     // Create a task
     const publishData = {
@@ -95,7 +99,7 @@ class ArticleService {
       type: platformType,
       content_type: 'article',
       content_id: articleId,
-      accountList: [accountFilePath],
+      accountList: accountList,
       browser_profile_id: browserProfileId,
       schedule_time: scheduleTime,
       article: article // Pass full article data for the uploader

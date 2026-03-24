@@ -7,7 +7,7 @@ import {
   getPlatformName,
   getPlatformType,
   isValidPlatform,
-} from '../src/index.js';
+} from '../src/index';
 
 describe('PlatformType enum', () => {
   it('should have correct integer IDs for all platforms', () => {

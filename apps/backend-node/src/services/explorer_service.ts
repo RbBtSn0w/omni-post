@@ -14,8 +14,8 @@ class ExplorerService {
     const { lookup } = await import('node:dns/promises');
     const hostname = urlObj.hostname.toLowerCase();
     
-    // Preliminary regex check for literals
-    const privateIps = /^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.|100\.6[4-9]\.|100\.7[0-9]\.)/;
+    // Preliminary regex check for literals (v4 private, v6 localhost/private/link-local)
+    const privateIps = /^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.|100\.6[4-9]\.|100\.7[0-9]\.|::1|fc00:|fe80:)/i;
     if (privateIps.test(hostname) || hostname === 'localhost' || hostname === '::1') {
       throw new Error('Private network access is restricted for security.');
     }
@@ -44,9 +44,28 @@ class ExplorerService {
     
     const browser = await chromium.launch({ headless: true });
     try {
-      const page = await browser.newPage();
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      
+      // Prevent redirects/requests to private networks
+      await page.route('**/*', async (route) => {
+        try {
+          const reqUrl = route.request().url();
+          await this.validateUrl(reqUrl);
+          await route.continue();
+        } catch (error: unknown) {
+          logger.warn(`[Explorer] SSRF BLOCKED: ${route.request().url()}`);
+          await route.abort('accessdenied');
+        }
+      });
+
       logger.info(`[Explorer] Probing URL: ${url}`);
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      
+      if (response) {
+        // Fallback: validate final URL after redirects if they somehow bypassed route (should not happen in Playwright)
+        await this.validateUrl(response.url());
+      }
 
       // Inject probe script
       const analysis = await page.evaluate(() => {

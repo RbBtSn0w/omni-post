@@ -1,6 +1,6 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
-import type { UserInfo, Task, UploadOptions, BrowserProfile } from '../src/index.js';
-import { PlatformType } from '../src/index.js';
+import type { UserInfo, Task, UploadOptions, BrowserProfile } from '../src/index';
+import { PlatformType } from '../src/index';
 
 /**
  * Compile-time type validation tests.
