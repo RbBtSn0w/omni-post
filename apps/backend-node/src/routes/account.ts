@@ -23,6 +23,8 @@ interface AccountRecord {
   userName: string;
   status: number;
   group_id: number | null;
+  session_source: string;
+  browser_profile_id: string | null;
   created_at: string;
   last_validated_at: string | null;
 }
@@ -72,6 +74,8 @@ router.get('/getAccounts', (_req: Request, res: Response) => {
             account.userName,
             account.status,
             account.group_id,
+            account.session_source,
+            account.browser_profile_id,
             account.created_at,
             account.last_validated_at
         ]);
@@ -113,6 +117,8 @@ router.get('/getValidAccounts', async (req: Request, res: Response) => {
             account.userName,
             account.status,
             account.group_id,
+            account.session_source,
+            account.browser_profile_id,
             account.created_at,
             account.last_validated_at,
         ]);
