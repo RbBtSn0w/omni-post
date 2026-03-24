@@ -1,13 +1,31 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import Database from 'better-sqlite3';
 import { browserService } from '../../src/services/browser_service.js';
 import { dbManager } from '../../src/db/database.js';
 import { createTables } from '../../src/db/migrations.js';
 
+// Mock dbManager to use in-memory DB for isolation
+vi.mock('../../src/db/database.js', async () => {
+  const actual = await vi.importActual('../../src/db/database.js') as any;
+  const memDb = new Database(':memory:');
+  return {
+    ...actual,
+    dbManager: {
+      ...actual.dbManager,
+      getDb: () => memDb,
+      close: () => memDb.close()
+    }
+  };
+});
+
 describe('BrowserService', () => {
   beforeEach(() => {
     createTables();
-    // Clear database or mock properly if needed
-    // For now, let's assume we can run real SQLite in-memory or a test file
+  });
+
+  afterEach(() => {
+    // Current vitest mock uses the same memDb for all tests in this file
+    // But since createTables uses IF NOT EXISTS and we might want fresh state:
     const db = dbManager.getDb();
     db.prepare('DELETE FROM browser_profiles').run();
   });

@@ -31,7 +31,7 @@ class ExplorerService {
 
       // Inject probe script
       const analysis = await page.evaluate(() => {
-        const doc = document as any;
+        const doc = (globalThis as any).document;
         const results: any = {
           inputs: [],
           buttons: [],
