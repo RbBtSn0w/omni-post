@@ -160,8 +160,20 @@ export class TencentUploader extends BaseUploader {
                     }
 
                     // 2. 兜底逻辑：流量分片监听
+                    let hostname = '';
+                    try {
+                        hostname = new URL(url).hostname.toLowerCase();
+                    } catch {
+                        return;
+                    }
+
+                    const isTrustedUploadHost = hostname === 'video.qq.com'
+                        || hostname.endsWith('.video.qq.com')
+                        || hostname === 'myqcloud.com'
+                        || hostname.endsWith('.myqcloud.com');
+
                     if (
-                        (url.includes('video.qq.com') || url.includes('myqcloud.com')) &&
+                        isTrustedUploadHost &&
                         (request.method() === 'POST' || request.method() === 'PUT')
                     ) {
                         const buffer = request.postDataBuffer();

@@ -77,9 +77,21 @@ export class XiaohongshuUploader extends BaseUploader {
                 let uploadedBytes = 0;
 
                 const uploadProgressListener = (request: any) => {
+                    let hostname = '';
+                    try {
+                        hostname = new URL(request.url()).hostname.toLowerCase();
+                    } catch {
+                        return;
+                    }
+
+                    const isTrustedUploadHost = hostname === 'xhscdn.com'
+                        || hostname.endsWith('.xhscdn.com')
+                        || hostname === 'xhscloud.com'
+                        || hostname.endsWith('.xhscloud.com');
+
                     // 小红书分片发往 xhscdn.com 或 xhsupload 域名，方法为 PUT
                     if (
-                        (request.url().includes('xhscdn.com') || request.url().includes('xhscloud.com')) &&
+                        isTrustedUploadHost &&
                         request.method() === 'PUT'
                     ) {
                         const buffer = request.postDataBuffer();

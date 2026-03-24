@@ -186,7 +186,20 @@ export class DouyinUploader extends BaseUploader {
                 let uploadedBytes = 0;
 
                 const uploadProgressListener = (request: any) => {
-                    if ((request.url().includes('bytedance.com') || request.url().includes('vod')) && request.method() === 'POST') {
+                    const rawUrl = request.url();
+                    let hostname = '';
+                    try {
+                        hostname = new URL(rawUrl).hostname.toLowerCase();
+                    } catch {
+                        return;
+                    }
+
+                    const hostLabels = hostname.split('.');
+                    const isTrustedUploadHost = hostname === 'bytedance.com'
+                        || hostname.endsWith('.bytedance.com')
+                        || hostLabels.some((label) => label === 'vod' || label.startsWith('vod-'));
+
+                    if (isTrustedUploadHost && request.method() === 'POST') {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;
