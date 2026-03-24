@@ -27,8 +27,8 @@ class ExplorerService {
       if (privateIps.test(address) || address === '127.0.0.1' || address === '::1') {
         throw new Error('Hostname resolved to a restricted private IP address.');
       }
-    } catch (error: any) {
-      if (error.code !== 'ENOTFOUND') {
+    } catch (error: unknown) {
+      if (error instanceof Error && (error as { code?: string }).code !== 'ENOTFOUND') {
         throw error;
       }
     }

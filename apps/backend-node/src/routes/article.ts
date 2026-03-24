@@ -11,8 +11,8 @@ router.get('/articles', async (req: Request, res: Response) => {
   try {
     const articles = articleService.getAllArticles();
     sendSuccess(res, articles);
-  } catch (error: any) {
-    sendError(res, 500, error.message);
+  } catch (error: unknown) {
+    sendError(res, 500, error instanceof Error ? error.message : String(error));
   }
 });
 
@@ -27,8 +27,8 @@ router.get('/articles/:id', async (req: Request, res: Response) => {
       return;
     }
     sendSuccess(res, article);
-  } catch (error: any) {
-    sendError(res, 500, error.message);
+  } catch (error: unknown) {
+    sendError(res, 500, error instanceof Error ? error.message : String(error));
   }
 });
 
@@ -39,8 +39,8 @@ router.post('/articles', async (req: Request, res: Response) => {
   try {
     const id = articleService.createArticle(req.body);
     sendSuccess(res, { id }, 'Create success');
-  } catch (error: any) {
-    sendError(res, 500, error.message);
+  } catch (error: unknown) {
+    sendError(res, 500, error instanceof Error ? error.message : String(error));
   }
 });
 
@@ -79,8 +79,8 @@ router.post('/publish/article', async (req: Request, res: Response) => {
       schedule_time
     );
     sendSuccess(res, { task_id: taskId }, 'Publish task submitted');
-  } catch (error: any) {
-    sendError(res, 500, error.message);
+  } catch (error: unknown) {
+    sendError(res, 500, error instanceof Error ? error.message : String(error));
   }
 });
 
