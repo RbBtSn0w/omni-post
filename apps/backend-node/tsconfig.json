@@ -11,7 +11,9 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@omni-post/shared": ["../packages/shared/src/index.ts"],
+      "@omni-post/shared-config": ["../packages/shared-config/package.json"]
     },
     "types": ["node"]
   },

@@ -27,12 +27,15 @@ runs:
         restore-keys: |
           ${{ runner.os }}-node-
 
-    - name: Install Dependencies
+    - name: Install dependencies
       shell: bash
-      run: npm ci
+      run: |
+        echo "📦 Upgrading npm and installing dependencies..."
+        npm install -g npm@latest
+        npm ci
       env:
         HUSKY: 0
- 
-    - name: Build Shared Package
+
+    - name: Build All Workspaces
       shell: bash
-      run: npm run build -w @omni-post/shared
+      run: npm run build --workspaces --if-present
