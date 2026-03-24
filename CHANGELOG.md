@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/RbBtSn0w/omni-post/compare/v1.2.1...v1.3.0) (2026-03-24)
+
+### ✨ Features
+
+* **backend:** refactor backend and  update uploader. ([f182379](https://github.com/RbBtSn0w/omni-post/commit/f1823791609824e075731a78f03d2d3db5c35fd6)), closes [#145](https://github.com/RbBtSn0w/omni-post/issues/145) [#149](https://github.com/RbBtSn0w/omni-post/issues/149) [#153](https://github.com/RbBtSn0w/omni-post/issues/153) [#150](https://github.com/RbBtSn0w/omni-post/issues/150) [#148](https://github.com/RbBtSn0w/omni-post/issues/148) [#151](https://github.com/RbBtSn0w/omni-post/issues/151) [#152](https://github.com/RbBtSn0w/omni-post/issues/152) [#147](https://github.com/RbBtSn0w/omni-post/issues/147) [#146](https://github.com/RbBtSn0w/omni-post/issues/146) [#144](https://github.com/RbBtSn0w/omni-post/issues/144) [#164](https://github.com/RbBtSn0w/omni-post/issues/164) [#164](https://github.com/RbBtSn0w/omni-post/issues/164) [#164](https://github.com/RbBtSn0w/omni-post/issues/164)
+
 ## [1.2.1](https://github.com/RbBtSn0w/omni-post/compare/v1.2.0...v1.2.1) (2026-03-13)
 
 ### 🐛 Bug Fixes
