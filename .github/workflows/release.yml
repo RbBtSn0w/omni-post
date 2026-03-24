@@ -9,6 +9,9 @@ on:
       - "**.md"
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 permissions:
   contents: write
   issues: write
@@ -30,7 +33,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24.x"
 
       - name: Semantic Release
         env:
@@ -38,4 +41,3 @@ jobs:
         run: |
           npm install -g semantic-release@24 @semantic-release/changelog@6.0.3 @semantic-release/git@10.0.1 conventional-changelog-conventionalcommits@8.0.0
           npx semantic-release
-
