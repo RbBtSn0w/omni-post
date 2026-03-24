@@ -26,9 +26,9 @@ export abstract class BaseUploader {
     ): Promise<void>;
 
     /**
-     * 执行文章发布的核心流程
+     * 执行文章发布的核心流程 (可选实现)
      */
-    public abstract postArticle?(
+    public postArticle?(
         context: BrowserContext,
         options: UploadOptions,
         onProgress: (progress: number) => void

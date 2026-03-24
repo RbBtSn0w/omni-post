@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * Tencent Video (WeChat Channels) video uploader.
  * Mirrors: apps/backend/src/uploader/tencent_uploader/main.py
@@ -24,8 +25,8 @@ export class TencentUploader extends BaseUploader {
         
         for (let i = 0; i < maxRetries; i++) {
             const status = await page.evaluate(() => {
-                const wujie = document.querySelector('wujie-app');
-                const root = wujie?.shadowRoot;
+                const wujie = (document as any).querySelector('wujie-app');
+                const root = (wujie as any)?.shadowRoot;
                 if (!root) return { isReady: false, msg: 'Wujie Not Ready' };
                 
                 // 1. 查找发表按钮

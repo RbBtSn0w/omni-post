@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * Kuaishou video uploader.
  * Mirrors: apps/backend/src/uploader/ks_uploader/main.py
@@ -77,7 +78,7 @@ export class KuaishouUploader extends BaseUploader {
             // 持续探测 3 次，每次间隔 1 秒，以捕捉在上传过程中动态弹出的多个引导
             for (let i = 0; i < 3; i++) {
                 skipSelectors.forEach(sel => {
-                    document.querySelectorAll(sel).forEach((el: any) => {
+                    (document as any).querySelectorAll(sel).forEach((el: any) => {
                         const txt = el.innerText || '';
                         if (
                             txt.includes('下一步') || 
@@ -87,7 +88,7 @@ export class KuaishouUploader extends BaseUploader {
                             el.getAttribute('data-action') === 'skip'
                         ) {
                             if (el.getBoundingClientRect().width > 0) {
-                                (el as HTMLElement).click();
+                                (el as any).click();
                             }
                         }
                     });

@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * Douyin (TikTok China) video uploader.
  * Mirrors: apps/backend/src/uploader/douyin_uploader/main.py
@@ -36,7 +37,7 @@ export class DouyinUploader extends BaseUploader {
                 ];
 
                 blockerSelectors.forEach(sel => {
-                    document.querySelectorAll(sel).forEach((el: any) => {
+                    (document as any).querySelectorAll(sel).forEach((el: any) => {
                         // 智能判定：如果是引导类内容，直接物理移除
                         const text = el.innerText || '';
                         if (
@@ -69,7 +70,7 @@ export class DouyinUploader extends BaseUploader {
         } catch (error: any) {
             this.log(`${desc} 受到严重干扰，尝试 JS 原生点击回退...`, 'warn');
             // 终极方案：直接在浏览器环境执行 click()，无视任何遮挡
-            await locator.evaluate(el => (el as HTMLElement).click()).catch(e => {
+            await locator.evaluate(el => (el as any).click()).catch(e => {
                 throw new Error(`${desc} 彻底失败: ${e.message}`);
             });
         }
@@ -281,7 +282,7 @@ export class DouyinUploader extends BaseUploader {
                 await this.cleanGuidingOverlays(page);
 
                 await page.waitForTimeout(1000);
-                await finishBtn.evaluate(el => (el as HTMLElement).click());
+                await finishBtn.evaluate(el => (el as any).click());
 
                 // 关键点：必须等待当前弹窗彻底从 DOM 树中消失，才能进行下一轮循环
                 await page.waitForSelector('div[role="dialog"], .semi-modal-content', { state: 'detached', timeout: 15000 }).catch(() => { });
@@ -301,7 +302,7 @@ export class DouyinUploader extends BaseUploader {
             const shortTitleInput = page.locator('input[placeholder="请输入商品短标题"]');
             await shortTitleInput.fill(productTitle.slice(0, 10));
             const finishButton = page.locator('button:has-text("完成编辑")');
-            await finishButton.evaluate(el => (el as HTMLElement).click());
+            await finishButton.evaluate(el => (el as any).click());
             return true;
         } catch (error: any) {
             return false;

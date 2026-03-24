@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { chromium } from 'playwright';
 import { logger } from '../core/logger.js';
 
@@ -22,7 +23,7 @@ class ExplorerService {
 
       // Find inputs
       const inputs = document.querySelectorAll('input, textarea');
-      inputs.forEach(input => {
+      inputs.forEach((input: Element) => {
         const el = input as HTMLInputElement;
         results.inputs.push({
           id: el.id,
@@ -35,7 +36,7 @@ class ExplorerService {
 
       // Find buttons
       const buttons = document.querySelectorAll('button');
-      buttons.forEach(btn => {
+      buttons.forEach((btn: any) => {
         results.buttons.push({
           text: btn.innerText,
           classes: btn.className,
