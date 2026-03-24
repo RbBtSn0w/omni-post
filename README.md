@@ -33,6 +33,9 @@
 ## 💡 Features
 
 - ✅ **Multi-Platform Support**: Covers major Chinese social media platforms
+- ✅ **Article Publishing**: Support for Markdown publishing to Zhihu and Juejin (New!)
+- ✅ **Browser Session Reuse**: Direct use of local Chrome sessions for zero-friction login (New!)
+- ✅ **Unified CLI**: Powerful command-line tool for developers (New!)
 - ✅ **Scheduled Publishing**: Support for precise publication timing
 - ✅ **Separated Frontend & Backend**: Intuitive web management interface
 - ✅ **API Encapsulation**: Support for integration with other systems
@@ -51,47 +54,46 @@
 
 ## 🔧 Tech Stack
 
-
 ### Frontend
 - **Framework**: Vue 3 + Vite
 - **UI Component Library**: Element Plus
-### Backend Options (Dual Support)
-
-#### 1. Python Backend (Default)
-- **Language**: Python 3.10
-- **Framework**: Flask (with async support)
-- **Browser Automation**: Playwright
-- **Database**: SQLite
-- **Testing Framework**: pytest + pytest-asyncio
-
-#### 2. Node.js Backend (Modern TypeScript)
-- **Language**: Node.js 20+ (TypeScript 5.x)
-- **Framework**: Express.js (ESM)
-- **Browser Automation**: Playwright (Node.js version)
-- **Database**: SQLite (Shared with Python)
-- **Testing Framework**: Vitest
 - **State Management**: Pinia
 - **Routing**: Vue Router
 - **HTTP Client**: Axios
+
+### Backend
+
+#### Primary Backend: Node.js (Maintained)
+- **Language**: Node.js 20+ (TypeScript 5.x)
+- **Framework**: Express.js (ESM)
+- **Browser Automation**: Playwright (Node.js version)
+- **Database**: SQLite
 - **Testing Framework**: Vitest
+
+#### Legacy Backend: Python (Deprecated)
+- **Language**: Python 3.10
+- **Framework**: Flask
+- **Purpose**: Compatibility and migration reference only
+- **Testing Framework**: pytest + pytest-asyncio
 
 ## 🚀 Supported Platforms
 
 This project implements video upload functionality through platform-specific `uploader` modules:
 
-| Platform Name | Uploader Module |
-|--------------|-----------------|
-| Douyin | `src/uploader/douyin_uploader/main.py` |
-| WeChat Channels | `src/uploader/tencent_uploader/main.py` |
-| Xiaohongshu | `src/uploader/xiaohongshu_uploader/main.py` |
-| Kuaishou | `src/uploader/ks_uploader/main.py` |
+| Platform Name | Primary Uploader Module |
+|--------------|--------------------------|
+| Douyin | `apps/backend-node/src/uploader/douyin/main.ts` |
+| WeChat Channels | `apps/backend-node/src/uploader/weixin/main.ts` |
+| Xiaohongshu | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
+| Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
+| Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
 
 ## 💾 Installation Guide
 
 ### System Requirements
 
-- Node.js >= 18.0.0
-- Python 3.10.x
+- Node.js >= 20.0.0
+- Python 3.10.x (only if you need the legacy backend)
 - npm >= 9.0.0
 - Modern browser (Chrome, Firefox, Safari, or Edge)
 
@@ -104,46 +106,70 @@ cd omni-post
 
 ### 2. Install Dependencies
 
+**Important**: The maintained development path is the Node.js monorepo workspace. Use the root workspace scripts rather than ad-hoc installs inside subdirectories.
+
 ```bash
-# Install monorepo dependencies
+# Recommended Node.js workspace setup
 npm install
+npx playwright install chromium
+```
 
-# Install Python backend dependencies (requires Python 3.10)
-npm run install:backend
+### 🎯 Developer Workflow (New Monorepo Setup)
 
-# Install Frontend dependencies (Vue 3)
-npm run install:frontend
+Starting from v1.2.0, OmniPost uses a strict monorepo workspace configuration. Here are the core commands you should use:
+
+- **Initialize project**: `npm install` (Installs workspace dependencies)
+- **Run dev servers**: `npm run dev:node` and `npm run dev:frontend`
+- **Run all tests**: `npm run test` (Primarily Vitest across maintained packages)
+- **Lint all code**: `npm run lint`
+- **Check workspace integrity**: `npm run check:workspace` (Validates package naming and scripts)
+- **Clean build artifacts**: `npm run clean` (Safely removes `dist/` and `coverage/`, preserving `data/` and `.env`)
+
+### 2.1 Workspace Commands
+
+```bash
+# Run lint/test across all workspaces
+npm run lint
+npm run test
+
+# Clean workspace artifacts
+npm run clean
+
+# Validate workspace contract
+npm run check:workspace
+
+# Measure install time (SC-001 baseline)
+time npm install
 ```
 
 ### 3. Install Playwright Browser Driver
 
 ```bash
-# For Python backend
+# For legacy Python backend
 cd apps/backend
 .venv/bin/python -m playwright install chromium
 
-# Or for Node.js backend
+# For maintained Node.js backend
 npx playwright install chromium
 ```
 
 ### 4. Initialize Database
 
 ```bash
-cd apps/backend
-.venv/bin/python src/db/createTable.py
+npm run db:init -w apps/backend-node
 ```
 
 ### 5. Start the Services
 
 ```bash
-# Option A: Start with Python Backend (Default)
-npm run dev
+# Start the maintained backend and frontend
+npm run dev:node
+npm run dev:frontend
 
-# Option B: Start with Node.js TypeScript Backend
-npm run dev:node & npm run dev:frontend
+# Legacy Python backend only when explicitly needed
+npm run dev:backend
 
 # Or individually
-npm run dev:backend       # Python Backend (http://localhost:5409)
 npm run dev:node          # Node.js Backend (http://localhost:5409)
 npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
@@ -161,7 +187,7 @@ npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask Backend (Primary)
+│   ├── backend/                 # Python Flask Backend (Legacy/Deprecated)
 │   │   ├── src/
 │   │   │   ├── app.py          # Entry point
 │   │   │   ├── core/           # Config & Logging
@@ -170,11 +196,11 @@ omni-post/
 │   │   │   └── uploader/       # Playwright Uploaders
 │   │   └── tests/              # Pytest suite
 │   │
-│   ├── backend-node/            # Node.js TypeScript Backend (New)
+│   ├── backend-node/            # Node.js TypeScript Backend (Primary)
 │   │   ├── src/
 │   │   │   ├── app.ts          # Express Application
-│   │   │   ├── routes/         # 1:1 API Parity Routes
-│   │   │   ├── services/       # Business Logic (Worker/Task)
+│   │   │   ├── routes/         # HTTP Route Layer
+│   │   │   ├── services/       # Business Logic & Task Execution
 │   │   │   └── uploader/       # TS Playwright Uploaders
 │   │   └── tests/              # Vitest suite
 │   │
@@ -192,6 +218,11 @@ omni-post/
 │       ├── vite.config.js      # Vite configuration
 │       └── vitest.config.js    # Vitest configuration
 │
+├── packages/
+│   ├── shared/                 # Shared logic (SSOT for types/constants)
+│   ├── shared-config/          # Standardized lint/TS configs
+│   └── cli/                    # Node-based CLI automation tool
+│
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD
 │       ├── test.yml           # Automated testing
@@ -207,13 +238,13 @@ omni-post/
 
 ## Key Directories
 
-### Backend Structure
+### Backend Structure (Node.js Primary)
 
-- **routes/**: API endpoint definitions (`account.py`, `publish.py`, `dashboard.py`, `group.py`)
-- **services/**: Business logic layers (`auth_service.py`, `task_service.py`, `publish_service.py`, `login_service.py`)
-- **uploader/**: Platform-specific upload implementations (`main.py` entry points)
-- **utils/**: Network utilities and time helpers
-- **db/**: Database management and table creation
+- **routes/**: API endpoint definitions (`account.ts`, `publish.ts`, `article.ts`, `browser.ts`, `file.ts`)
+- **services/**: Business logic layers (`task-service.ts`, `publish-service.ts`, `publish-executor.ts`, `login-service.ts`, `cookie-service.ts`)
+- **uploader/**: Platform-specific upload implementations (`main.ts` entry points)
+- **utils/**: Network utilities and file helpers (`path.ts`, `response.ts`)
+- **db/**: Database management and migrations (`migrations.ts`)
 
 ### Frontend Structure
 
@@ -221,6 +252,10 @@ omni-post/
 - **components/**: UI components (`GroupSelector`)
 - **stores/**: Pinia stores (`user`, `account`, `task`, `group`, `app`)
 - **api/**: specific API clients (`account.js`, `task.js`, `material.js`, `user.js`)
+- **Shared Package (@omni-post/shared)**:
+  - **SSOT**: Single Source of Truth for platform IDs, task interfaces, and enum mappings.
+  - **logic/**: Common validation and transformation utilities.
+  - **tests/**: Vitest suite ensures cross-platform logic consistency.
 
 ## Development & Testing
 
@@ -317,4 +352,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 > If this project has been helpful to you, please give it a ⭐ Star to show your support!
 
-Last Updated: January 2026
+Last Updated: March 2026

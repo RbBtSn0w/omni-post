@@ -1,51 +1,56 @@
 {
-    "name": "omni-post-backend-node",
-    "version": "2.0.0",
-    "description": "OmniPost Backend - Multi-platform content publishing service powered by Express and Playwright (TypeScript)",
-    "type": "module",
-    "main": "dist/index.js",
-    "scripts": {
-        "dev": "tsx watch src/index.ts",
-        "build": "tsc",
-        "start": "node dist/index.js",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage",
-        "db:init": "tsx src/db/migrations.ts",
-        "lint": "eslint src/ tests/",
-        "typecheck": "tsc --noEmit"
-    },
-    "dependencies": {
-        "better-sqlite3": "^11.7.0",
-        "cors": "^2.8.5",
-        "express": "^4.21.0",
-        "express-rate-limit": "^8.3.1",
-        "multer": "^2.1.1",
-        "playwright": "^1.50.0",
-        "uuid": "^11.0.0",
-        "winston": "^3.17.0",
-        "winston-daily-rotate-file": "^5.0.0"
-    },
-    "devDependencies": {
-        "@eslint/js": "^10.0.1",
-        "@types/better-sqlite3": "^7.6.12",
-        "@types/cors": "^2.8.17",
-        "@types/express": "^5.0.0",
-        "@types/multer": "^1.4.12",
-        "@types/node": "^22.10.0",
-        "@types/supertest": "^7.2.0",
-        "@types/uuid": "^10.0.0",
-        "@vitest/coverage-v8": "^4.1.0",
-        "eslint": "^9.39.2",
-        "eslint-plugin-import": "^2.32.0",
-        "globals": "^14.0.0",
-        "supertest": "^7.0.0",
-        "tsx": "^4.19.0",
-        "typescript": "^5.7.0",
-        "typescript-eslint": "^8.57.0",
-        "vitest": "^4.1.0"
-    },
-    "engines": {
-        "node": ">=18.0.0"
-    }
+  "name": "@omni-post/backend-node",
+  "private": true,
+  "version": "2.0.0",
+  "description": "OmniPost Backend - Multi-platform content publishing service powered by Express and Playwright (TypeScript)",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "db:init": "tsx src/db/migrations.ts",
+    "lint": "eslint src/ tests/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules dist coverage",
+    "predev": "npm run build -w @omni-post/shared",
+    "prebuild": "npm run build -w @omni-post/shared"
+  },
+  "dependencies": {
+    "@omni-post/shared": "*",
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.3.1",
+    "multer": "^2.1.1",
+    "playwright": "^1.50.0",
+    "rehype-stringify": "^10.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.0.0",
+    "unified": "^11.0.0",
+    "uuid": "^11.0.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "@omni-post/shared-config": "*",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.0",
+    "@types/supertest": "^6.0.2",
+    "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint-plugin-import": "^2.32.0",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

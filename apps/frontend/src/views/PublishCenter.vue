@@ -117,7 +117,7 @@
                   class="video-upload"
                   drag
                   :auto-upload="true"
-                  :action="`${apiBaseUrl}/upload`"
+                  :action="`${apiBaseUrl}/uploadSave`"
                   :on-success="(response, file) => handleUploadSuccess(response, file, tab)"
                   :on-error="handleUploadError"
                   multiple
@@ -246,7 +246,7 @@
           <h3>封面图</h3>
           <el-upload
             class="thumbnail-upload"
-            :action="`${apiBaseUrl}/upload`"
+            :action="`${apiBaseUrl}/uploadSave`"
             :show-file-list="false"
             :on-success="(res) => handleThumbnailSuccess(res, tab)"
             :before-upload="beforeThumbnailUpload"
@@ -427,7 +427,7 @@
         class="video-upload"
         drag
         :auto-upload="true"
-        :action="`${apiBaseUrl}/upload`"
+        :action="`${apiBaseUrl}/uploadSave`"
         :on-success="(response, file) => handleUploadSuccess(response, file, currentUploadTab)"
         :on-error="handleUploadError"
         :before-upload="beforeUpload"
@@ -1126,16 +1126,23 @@ const beforeUpload = (file) => {
   return validateFileType(file);
 };
 
+// 兼容不同后端返回格式，统一提取已上传文件路径
+const resolveUploadedFilePath = (response) => {
+  if (typeof response?.data === 'string') return response.data
+  return response?.data?.file_path || response?.data?.path || response?.data?.filename || ''
+}
+
 // 处理文件上传成功
 const handleUploadSuccess = (response, file, tab) => {
   if (response.code === 200) {
     // 使用原始文件名作为显示名称，避免UUID前缀导致的乱码
     const displayName = file.name
-    // Backend returns data as string (filename with UUID prefix)
-    // Handle both object format {path: "..."} and string format "..."
-    const filePath = typeof response.data === 'string'
-      ? response.data
-      : (response.data?.path || response.data?.filename || '')
+    const filePath = resolveUploadedFilePath(response)
+
+    if (!filePath) {
+      ElMessage.error('上传返回文件路径为空')
+      return
+    }
 
     const fileInfo = {
       name: displayName,
@@ -1423,7 +1430,11 @@ const addInlineTopic = (tab) => {
 // 处理封面上传成功
 const handleThumbnailSuccess = (response, tab) => {
   if (response.code === 200) {
-    const filePath = response.data.path || response.data
+    const filePath = resolveUploadedFilePath(response)
+    if (!filePath) {
+      ElMessage.error('封面上传返回文件路径为空')
+      return
+    }
     tab.thumbnail = filePath
     tab.thumbnailUrl = materialApi.getMaterialPreviewUrl(filePath.split('/').pop())
     ElMessage.success('封面上传成功')

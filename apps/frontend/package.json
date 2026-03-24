@@ -1,5 +1,5 @@
 {
-  "name": "omni-post-frontend",
+  "name": "@omni-post/frontend",
   "private": true,
   "version": "2.0.0",
   "author": "rbbtsn0w <hamiltonsnow@gmail.com>",
@@ -11,9 +11,12 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --fix",
-    "clean": "rm -rf node_modules dist coverage"
+    "clean": "rm -rf node_modules dist coverage",
+    "predev": "npm run build -w @omni-post/shared",
+    "prebuild": "npm run build -w @omni-post/shared"
   },
   "dependencies": {
+    "@omni-post/shared": "*",
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.13.6",
     "echarts": "^6.0.0",
@@ -25,6 +28,7 @@
     "vue-router": "^5.0.3"
   },
   "devDependencies": {
+    "@omni-post/shared-config": "*",
     "@pinia/testing": "^1.0.3",
     "@rushstack/eslint-patch": "^1.16.1",
     "@vitejs/plugin-vue": "^6.0.5",
@@ -33,9 +37,7 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/test-utils": "^2.4.6",
     "c8": "^11.0.0",
-    "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.8.0",
-    "globals": "^17.3.0",
     "jsdom": "^28.0.0",
     "vite": "^6.3.5",
     "vitest": "^4.1.0"

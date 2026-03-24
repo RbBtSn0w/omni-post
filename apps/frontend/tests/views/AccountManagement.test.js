@@ -18,6 +18,7 @@ vi.mock('@/composables/useAccountActions', async () => {
       fetchAccountsQuick: vi.fn(),
       fetchAccounts: vi.fn(),
       forceRefreshAccounts: mockForceRefreshAccounts,
+      refreshAccountsAfterMutation: vi.fn().mockResolvedValue({ success: true }),
       validateAllAccountsInBackground: vi.fn(),
       refreshExceptionAccounts: vi.fn(),
       handleBatchRefresh: vi.fn(),

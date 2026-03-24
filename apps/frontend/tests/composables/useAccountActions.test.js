@@ -255,10 +255,22 @@ describe('useAccountActions', () => {
     })
 
     describe('handleBatchRefresh', () => {
+        it('should reject invalid selectedAccounts parameter', async () => {
+            const { handleBatchRefresh } = useAccountActions()
+            const result = await handleBatchRefresh(undefined)
+            expect(result.success).toBe(false)
+            expect(result.error).toBe('invalid_selected_accounts')
+            expect(ElMessage.error).toHaveBeenCalledWith('批量刷新参数无效')
+            expect(mocks.accountApi.getValidAccounts).not.toHaveBeenCalled()
+        })
+
         it('should warn if no accounts selected', async () => {
             const { handleBatchRefresh } = useAccountActions()
-            await handleBatchRefresh([])
+            const result = await handleBatchRefresh([])
+            expect(result.success).toBe(false)
+            expect(result.error).toBe('empty_selected_accounts')
             expect(ElMessage.warning).toHaveBeenCalledWith('请先选择要刷新的账号')
+            expect(mocks.accountApi.getValidAccounts).not.toHaveBeenCalled()
         })
 
         it('should refresh selected accounts', async () => {
@@ -270,6 +282,25 @@ describe('useAccountActions', () => {
 
             expect(mocks.accountApi.getValidAccounts).toHaveBeenCalledTimes(2)
             expect(ElMessage.success).toHaveBeenCalled()
+        })
+    })
+
+    describe('refreshAccountsAfterMutation', () => {
+        it('should complete only after force refresh succeeds', async () => {
+            const { refreshAccountsAfterMutation } = useAccountActions()
+            mocks.accountApi.getValidAccounts.mockResolvedValue({ code: 200, data: [[1]] })
+
+            const result = await refreshAccountsAfterMutation('account_edit')
+            expect(result.success).toBe(true)
+            expect(mocks.accountApi.getValidAccounts).toHaveBeenCalledWith(null, true)
+            expect(mockAccountStore.setAccounts).toHaveBeenCalled()
+        })
+
+        it('should throw when force refresh fails', async () => {
+            const { refreshAccountsAfterMutation } = useAccountActions()
+            mocks.accountApi.getValidAccounts.mockResolvedValue({ code: 500, data: null })
+
+            await expect(refreshAccountsAfterMutation('cookie_upload')).rejects.toThrow('账号变更后同步失败')
         })
     })
 })

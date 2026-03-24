@@ -1,5 +1,5 @@
 {
-  "name": "omni-post-backend",
+  "name": "@omni-post/backend",
   "version": "2.0.0",
   "private": true,
   "description": "OmniPost Backend Service - Multi-platform content publishing automation",
@@ -7,6 +7,7 @@
     "setup": "npm run env:create && npm run env:install && npm run db:init",
     "env:create": "python3 -m venv .venv",
     "env:install": ".venv/bin/pip install -e . && .venv/bin/pip install -r requirements.txt",
+    "build": "echo \"No build step for legacy backend\"",
     "dev": ".venv/bin/python -m src.app",
     "db:init": ".venv/bin/python -m src.db.createTable",
     "clean": "rm -rf .venv test-results htmlcov dist build *.egg-info __pycache__ data",

@@ -13,19 +13,71 @@ on:
       - 'docs/**'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend_node: ${{ steps.filter.outputs.backend_node }}
+      shared: ${{ steps.filter.outputs.shared }}
+      cli: ${{ steps.filter.outputs.cli }}
+      node_infra: ${{ steps.filter.outputs.node_infra }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Filter Paths
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+            frontend:
+              - 'apps/frontend/**'
+            backend_node:
+              - 'apps/backend-node/**'
+            shared:
+              - 'packages/shared/**'
+            cli:
+              - 'packages/cli/**'
+            node_infra:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'packages/shared-config/**'
+            ci:
+              - '.github/workflows/**'
+              - '.github/actions/**'
+
   backend-ci:
     name: Backend (Lint, Test & Security)
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: ./.github/actions/setup-python-backend
@@ -70,20 +122,103 @@ jobs:
           name: backend-coverage
           fail_ci_if_error: false
 
-  frontend-ci:
-    name: Frontend (Lint, Test & Build)
+  shared-ci:
+    name: Shared Package (Lint, Test & Build)
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node-backend
+
+      - name: Lint
+        run: npm run lint -w @omni-post/shared
+
+      - name: Run Tests
+        run: npm run test -w @omni-post/shared
+
+      - name: Build
+        run: npm run build -w @omni-post/shared
+
+  cli-ci:
+    name: CLI Package (Lint & Build)
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.cli == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node-backend
+
+      - name: Lint
+        run: npm run lint -w @omni-post/shared-cli
+
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
+
+      - name: Build
+        run: npm run build -w @omni-post/shared-cli
+
+  frontend-ci:
+    name: Frontend (Lint, Test & Build)
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node
         uses: ./.github/actions/setup-node-frontend
 
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
+
       - name: Security (NPM Audit)
-        run: npm audit --audit-level=high --omit=dev || echo "NPM Audit met warnings but continuing..."
+        run: npm audit --audit-level=high --omit=dev
 
       - name: Lint
         working-directory: apps/frontend
@@ -103,22 +238,38 @@ jobs:
         uses: codecov/codecov-action@v5
         if: always()
         with:
-          files: ./apps/frontend/coverage/coverage-final.json
+          files: ./apps/frontend/test-results/coverage/coverage-final.json
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
 
   backend-node-ci:
     name: Backend Node (Lint, Typecheck & Test)
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend_node == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node Backend
         uses: ./.github/actions/setup-node-backend
+
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
 
       - name: Install Playwright
         working-directory: apps/backend-node

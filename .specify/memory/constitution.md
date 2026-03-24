@@ -1,13 +1,26 @@
 <!--
 Sync Impact Report:
-- Version change: v1.1.0 → v1.2.0
+- Version change: 2.0.0 → 2.1.0
 - List of modified principles:
-    - V. Concurrency & Real-Time Feedback (Redefined for IO-bound efficiency)
-- Added sections: None.
+    - I. Primary Node.js Architecture (Python Deprecated) → I. Node.js First, Python by Exception
+    - II. Unified Three-Layer Backend Pattern → II. Route-Service-Uploader Boundaries
+    - III. Platform Uploader Isolation → III. Platform Isolation & Automation Discipline
+    - IV. Comprehensive Node.js Testing (NON-NEGOTIABLE) → VI. Test Coverage & Regression Gates (NON-NEGOTIABLE)
+    - V. Concurrency & Real-Time Feedback → V. Asynchronous Execution & Real-Time State
+    - VI. Monorepo Consistency & Dependency Discipline → IV. Shared Package SSOT & Monorepo Discipline
+- Added sections:
+    - Security & Data Integrity
+    - Development Workflow & Quality Gates
 - Removed sections: None.
 - Templates requiring updates:
-    - .specify/templates/plan-template.md: ✅ updated (Clarified Dual-Stack concurrency expectations)
-    - .specify/templates/tasks-template.md: ✅ updated (Aligned with Async Event Loop terminology)
+    - .specify/templates/plan-template.md: ✅ updated
+    - .specify/templates/spec-template.md: ✅ updated
+    - .specify/templates/tasks-template.md: ✅ updated
+    - .specify/templates/commands/: ⚠ pending review target missing in repository
+    - README.md: ✅ updated
+    - README_CN.md: ✅ updated
+    - ARCHITECTURE.md: ✅ updated
+    - CONTRIBUTING.md: ✅ updated
 - Follow-up TODOs: None.
 -->
 
@@ -15,34 +28,90 @@ Sync Impact Report:
 
 ## Core Principles
 
-### I. Dual-Backend Architecture Parity
-OmniPost maintains a dual-stack architecture (Python Flask and Node.js/TypeScript). Both backends MUST maintain 1:1 functional and API parity. The Node.js rewrite (`apps/backend-node`) MUST be a drop-in replacement for the original Python backend (`apps/backend`), ensuring that the frontend and data storage remain compatible across both implementations.
+### I. Node.js First, Python by Exception
+`apps/backend-node` 是 OmniPost 唯一的默认实现和维护目标。所有新功能、缺陷修复、
+性能优化和架构演进必须优先落在 Node.js/TypeScript 后端。`apps/backend`
+仅作为遗留兼容或迁移参考，除非需求明确指向遗留兼容修复，否则不得把 Python
+后端作为默认交付路径。
 
-### II. Unified Three-Layer Backend Pattern
-All backend services MUST follow the Routes → Services → Uploaders pattern. Routes handle HTTP requests and response formatting; Services orchestrate business logic and state; Uploaders manage platform-specific Playwright automation. This separation ensures that core business logic (e.g., scheduling algorithms) is identical regardless of the underlying programming language.
+理由：项目当前的 API、任务执行、文章发布和浏览器会话能力均以 Node.js
+实现为主，继续分散投资会直接增加回归面和维护成本。
 
-### III. Platform Uploader Isolation
-Each social platform MUST have its own isolated uploader implementation. For Python, this is in `apps/backend/src/uploader/`; for Node.js, this is in `apps/backend-node/src/uploader/`. Uploaders MUST be stateless and handle their own Playwright context cleanup. Shared automation logic MUST be abstracted into `utils` or base classes, never directly between uploaders.
+### II. Route-Service-Uploader Boundaries
+后端实现必须遵循 `Routes -> Services -> Uploaders` 分层。Routes 只负责 HTTP
+协议、参数校验和响应格式；Services 负责任务编排、状态流转和业务规则；
+Uploaders 只负责平台自动化。禁止在路由层写入平台自动化逻辑，禁止在上传器中
+直接处理 HTTP 请求对象。
 
-### IV. Comprehensive Multi-Stack Testing (NON-NEGOTIABLE)
-Every new feature, bug fix, or platform uploader update MUST include automated tests for BOTH backends if both are maintained. Python changes require `pytest` suites; Node.js changes require `Vitest` suites. Functional parity MUST be verified by running equivalent test cases across both stacks. CI/CD pipelines MUST pass all tests for all active backends before merging.
+理由：清晰边界是控制发布流程复杂度、隔离平台波动、保证可测试性的前提。
 
-### V. Concurrency & Real-Time Feedback
-Long-running publishing tasks MUST run asynchronously to avoid blocking the API request-response cycle. Python uses `threading.Thread` (daemon threads) to bridge sync/async gaps. Node.js MUST use its **Asynchronous Event Loop orchestration** (via `setImmediate` or Promises) for IO-bound tasks like browser automation and uploading to maximize throughput with minimal overhead. `worker_threads` are reserved strictly for future CPU-intensive tasks (e.g., video processing). Real-time status updates MUST be delivered via Server-Sent Events (SSE).
+### III. Platform Isolation & Automation Discipline
+每个平台必须拥有独立上传器入口，位于
+`apps/backend-node/src/uploader/<platform>/main.ts`。上传器必须保持平台内聚、
+无跨平台直接调用，并负责自身 Playwright 资源清理。诊断自动化回归时，必须先
+基于真实页面行为、网络请求或 `opencli-diagnostics` 流程收集证据，再修改选择器
+或硬编码流程。
 
-### VI. Monorepo Consistency & Dependency Discipline
-Dependencies MUST be managed strictly within their respective workspace. `apps/frontend` and `apps/backend-node` use npm; `apps/backend` uses pip. All backends MUST use consistent directory structures and share common assets like `stealth.min.js`. Root-level scripts in `package.json` MUST be the primary interface for multi-stack development and testing.
+理由：平台 UI 变化频繁，未经诊断直接打补丁会把问题从单点失败扩大为系统性脆弱。
+
+### IV. Shared Package SSOT & Monorepo Discipline
+平台 ID、共享类型、实体接口和公共映射必须从 `@omni-post/shared` 引入，
+不得在前后端或工具链中定义本地副本。工作区依赖必须在所属 workspace 中维护，
+根级脚本必须作为标准开发入口。新增共享约束时，必须同步更新 shared 包并让消费方
+通过编译或测试验证。
+
+理由：Monorepo 的核心收益来自单一事实来源；重复定义会直接导致平台映射、
+任务结构和接口契约漂移。
+
+### V. Asynchronous Execution & Real-Time State
+登录、上传、发布和批处理任务必须以异步后台执行方式运行，不得阻塞请求响应周期。
+任务状态、进度和取消信号必须通过统一任务服务与实时反馈机制表达；登录流程必须保留
+SSE 风格的状态流能力；发布任务必须能够被轮询或查询到明确状态。
+
+理由：浏览器自动化是高延迟 IO 过程，只有异步编排和统一状态管理才能保证吞吐、
+可观测性和前端交互稳定性。
+
+### VI. Test Coverage & Regression Gates (NON-NEGOTIABLE)
+所有面向 Node 主路径的功能变更必须附带对应测试或对现有测试进行扩展，至少覆盖受影响的
+路由、服务或前端状态流之一。涉及平台分发、任务状态、共享类型、数据库迁移或自动化流程的
+变更，必须补充回归验证。只有在需求明确为遗留 Python 修复时，才可以将 Python 测试作为主质量门。
+
+理由：OmniPost 的主要风险来自跨层编排和平台回归，没有测试约束就无法稳定迭代。
 
 ## Security & Data Integrity
 
-Cookies and sensitive account credentials MUST be stored securely in the `data/cookies` directory of the respective backend and MUST be excluded from version control via `.gitignore`. No hardcoded secrets or personal access tokens are permitted in the codebase. All environment-specific configuration MUST reside in `.env` files.
+Cookie、浏览器配置文件、账号凭据和本地数据文件必须存放在受控目录中，并通过
+`.gitignore` 排除。任何密钥、令牌或个人凭据都不得硬编码到仓库。文件系统操作必须优先使用
+安全路径辅助方法。任务持久化字段如 `platforms`、`file_list`、`account_list`、
+`schedule_data` 和 `publish_data` 在读写时必须保持结构稳定并与共享类型一致。
 
-## Development Workflow
+## Development Workflow & Quality Gates
 
-All development MUST follow the "Research -> Strategy -> Execution" lifecycle. Every non-trivial change requires a Specification and an Implementation Plan. `husky` pre-commit hooks MUST be active to ensure linting and formatting compliance. All pull requests MUST adhere to the Conventional Commits specification.
+所有非琐碎修改必须遵循 `Research -> Strategy -> Execution` 流程。规范、计划和任务文档
+必须显式说明：
+
+- 目标是否落在 `apps/backend-node`、`apps/frontend`、`packages/shared` 或明确的遗留兼容范围。
+- 是否新增或修改了共享类型、平台映射、数据库结构、后台任务流程或自动化诊断步骤。
+- 计划中的 Constitution Check 是否验证 Node 主路径、SSOT、分层边界、异步状态流和测试义务。
+- README、架构文档或运行指南是否需要同步更新。
+
+提交前必须通过与改动范围匹配的 lint 与测试。提交说明必须遵循 Conventional Commits。
 
 ## Governance
 
-This Constitution is the foundational document for OmniPost development and supersedes all other project-specific practices. Amendments to this document require a MINOR or MAJOR version bump. All architectural decisions, especially those involving cross-backend parity, MUST be validated against these principles.
+本宪章优先于仓库内其他流程文档。每次规范、计划、任务拆解和代码评审都必须检查本宪章的
+六项核心原则是否被满足。
 
-**Version**: 1.2.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-09
+版本策略采用语义化版本：
+
+- MAJOR：删除原则、重新定义既有强制约束，或引入会改变默认交付路径的治理变更。
+- MINOR：新增原则、增加新强制章节，或显著扩展现有原则的适用范围。
+- PATCH：仅做措辞澄清、排版修正或不改变执行含义的补充说明。
+
+修订流程必须包含：
+
+- 对变更原因、影响范围和版本升级理由的书面说明。
+- 对 `.specify/templates/` 与相关运行文档的同步检查。
+- 在宪章顶部维护 Sync Impact Report，记录已更新与待跟进项。
+
+**Version**: 2.1.0 | **Ratified**: 2024-05-22 | **Last Amended**: 2026-03-21

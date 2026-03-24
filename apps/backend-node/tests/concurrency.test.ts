@@ -67,7 +67,7 @@ describe('Concurrency: Account Locking (SC-003)', () => {
             taskId, 
             'failed', 
             undefined, 
-            '账号正在使用中，请稍后再试'
+            '账号或浏览器配置正在使用中，请稍后再试'
         );
 
         // Clean up

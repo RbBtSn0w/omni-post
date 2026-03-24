@@ -5,21 +5,17 @@
  * Orchestrates video publishing to each platform by calling uploaders.
  */
 
-import path from 'path';
 import { COOKIES_DIR } from '../core/config.js';
-import { launchBrowser, setInitScript } from '../core/browser.js';
+import { launchBrowser, launchPersistentContext, setInitScript } from '../core/browser.js';
 import type { UploadOptions } from '../db/models.js';
 import { generateScheduleTimeNextDay } from '../utils/files-times.js';
 import { safeJoin } from '../utils/path.js';
+import { browserService } from './browser_service.js';
 
 export type { UploadOptions };
 
-// ─── Upload Interface ────────────────────────────────────────────────
-// Interface moved to src/db/models.ts
-
 /**
  * Compute publish datetimes for scheduled publishing.
- * Mirrors Python's DefaultPublishService._get_publish_datetimes()
  */
 function getPublishDatetimes(
     fileCount: number,
@@ -50,18 +46,54 @@ function enrichOpts(opts: UploadOptions): UploadOptions {
     return { ...opts, publishDatetimes };
 }
 
+async function dispatchUploader(uploader: any, context: any, opts: UploadOptions, browser: any): Promise<void> {
+    if (typeof uploader.postArticle === 'function' && opts.article) {
+        await uploader.postArticle(context, opts, (_progress: number) => {});
+        return;
+    }
+    if (typeof uploader.postVideo === 'function') {
+        await uploader.postVideo(context, opts, (_progress: number) => {});
+        return;
+    }
+    if (typeof uploader.upload === 'function') {
+        await uploader.upload(opts, context, browser);
+        return;
+    }
+    throw new Error('Uploader does not implement a supported publish method');
+}
+
 // ─── Platform Publish Functions ──────────────────────────────────────
 
 async function runWithOptimizedBrowser(
     opts: UploadOptions,
     uploaderFactory: () => Promise<any>
 ): Promise<void> {
-    const browser = await launchBrowser();
     const enrichedOpts = enrichOpts(opts);
-    
+    const uploader = await uploaderFactory();
+
+    // Strategy 1: Local Session Reuse
+    if (opts.browser_profile_id) {
+        const profile = browserService.getProfile(opts.browser_profile_id);
+        if (!profile) {
+            throw new Error(`Browser profile not found for id: ${opts.browser_profile_id}`);
+        }
+
+        console.log(`[PublishService] Using local browser profile: ${profile.name}`);
+        const context = await launchPersistentContext(
+            profile.user_data_dir,
+            profile.profile_name
+        );
+        try {
+            await dispatchUploader(uploader, context, enrichedOpts, null);
+        } finally {
+            await context.close();
+        }
+        return;
+    }
+
+    // Strategy 2: Managed Cookies (Fallback)
+    const browser = await launchBrowser();
     try {
-        const uploader = await uploaderFactory();
-        
         for (const accountFile of opts.accountList) {
             let cookiePath: string;
             try {
@@ -76,15 +108,12 @@ async function runWithOptimizedBrowser(
             );
             
             try {
-                // Use the standardized postVideo method if available, fallback to upload
-                if (typeof uploader.postVideo === 'function') {
-                    await uploader.postVideo(context, enrichedOpts, (_progress: number) => {
-                        // Progress logging can be added here
-                    });
-                } else if (typeof uploader.upload === 'function') {
-                    // Fallback for non-refactored uploaders
-                    await uploader.upload({ ...enrichedOpts, accountList: [accountFile] }, context, browser);
-                }
+                await dispatchUploader(
+                    uploader,
+                    context,
+                    { ...enrichedOpts, accountList: [accountFile] },
+                    browser
+                );
             } finally {
                 await context.close();
             }
@@ -117,4 +146,14 @@ export async function postVideoKs(opts: UploadOptions): Promise<void> {
 export async function postVideoBilibili(opts: UploadOptions): Promise<void> {
     const { BilibiliUploader } = await import('../uploader/bilibili/main.js');
     await runWithOptimizedBrowser(opts, async () => new BilibiliUploader());
+}
+
+export async function postArticleZhihu(opts: UploadOptions): Promise<void> {
+    const { ZhihuUploader } = await import('../uploader/zhihu/main.js');
+    await runWithOptimizedBrowser(opts, async () => new ZhihuUploader());
+}
+
+export async function postArticleJuejin(opts: UploadOptions): Promise<void> {
+    const { JuejinUploader } = await import('../uploader/juejin/main.js');
+    await runWithOptimizedBrowser(opts, async () => new JuejinUploader());
 }

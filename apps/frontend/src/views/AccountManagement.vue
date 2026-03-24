@@ -51,6 +51,10 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
                 <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
                   <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
@@ -64,7 +68,7 @@
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu>
-                      <el-dropdown-item @click="handleBatchRefresh">批量刷新</el-dropdown-item>
+                      <el-dropdown-item @click="handleBatchRefreshClick">批量刷新</el-dropdown-item>
                       <el-dropdown-item @click="handleBatchReLogin">批量重新登录</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -168,10 +172,14 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -239,10 +247,14 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -310,10 +322,14 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -381,10 +397,14 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -452,10 +472,14 @@
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
               <div class="action-buttons">
+                <el-button type="info" @click="openBrowserDialog">
+                  <el-icon><Setting /></el-icon>
+                  配置管理
+                </el-button>
                 <el-button type="primary" @click="handleAddAccount">添加账号</el-button>
-                <el-button type="info" @click="handleForceRefresh" :loading="false">
-                  <el-icon :class="{ 'is-loading': appStore.isAccountRefreshing }"><Refresh /></el-icon>
-                  <span v-if="appStore.isAccountRefreshing">刷新中</span>
+                <el-button type="info" @click="handleForceRefresh" :loading="accountStore.refreshStatus.isRefreshing">
+                  <el-icon :class="{ 'is-loading': accountStore.refreshStatus.isRefreshing }"><Refresh /></el-icon>
+                  <span v-if="accountStore.refreshStatus.isRefreshing">刷新中</span>
                 </el-button>
               </div>
             </div>
@@ -544,6 +568,33 @@
             <el-option label="Bilibili" value="Bilibili" />
           </el-select>
         </el-form-item>
+        <el-form-item label="登录模式" prop="session_source">
+          <el-radio-group v-model="accountForm.session_source" :disabled="sseConnecting">
+            <el-radio label="managed">托管模式</el-radio>
+            <el-radio label="local">本地会话</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item 
+          v-if="accountForm.session_source === 'local'" 
+          label="配置" 
+          prop="browser_profile_id"
+        >
+          <el-select
+            v-model="accountForm.browser_profile_id"
+            placeholder="请选择浏览器配置"
+            style="width: 100%"
+            :disabled="sseConnecting"
+          >
+            <el-option
+              v-for="item in browserStore.profiles"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="名称" prop="groupName">
           <el-select
             v-model="accountForm.groupName"
@@ -597,6 +648,69 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 浏览器配置管理对话框 -->
+    <el-dialog
+      v-model="browserDialogVisible"
+      title="浏览器配置管理"
+      width="800px"
+    >
+      <div class="browser-profile-manage">
+        <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+          <el-button type="primary" @click="handleAddBrowserProfile">添加配置</el-button>
+        </div>
+
+        <el-table :data="browserStore.profiles" style="width: 100%" v-loading="browserStore.loading">
+          <el-table-column prop="name" label="名称" width="150" />
+          <el-table-column prop="browser_type" label="类型" width="100" />
+          <el-table-column prop="user_data_dir" label="用户数据目录" show-overflow-tooltip />
+          <el-table-column prop="profile_name" label="配置文件" width="120" />
+          <el-table-column label="操作" width="150">
+            <template #default="scope">
+              <el-button size="small" @click="handleEditBrowserProfile(scope.row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="handleDeleteBrowserProfile(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
+
+    <!-- 添加/编辑浏览器配置对话框 -->
+    <el-dialog
+      v-model="browserFormVisible"
+      :title="browserFormType === 'add' ? '添加浏览器配置' : '编辑浏览器配置'"
+      width="500px"
+      append-to-body
+    >
+      <el-form :model="browserForm" label-width="100px" ref="browserFormRef">
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="browserForm.name" placeholder="例如: 个人Chrome" />
+        </el-form-item>
+        <el-form-item label="浏览器类型" prop="browser_type">
+          <el-select v-model="browserForm.browser_type" style="width: 100%">
+            <el-option label="Chrome" value="chrome" />
+            <el-option label="Edge" value="edge" />
+            <el-option label="Brave" value="brave" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户数据目录" prop="user_data_dir">
+          <el-input v-model="browserForm.user_data_dir" placeholder="绝对路径" />
+          <div style="font-size: 12px; color: #909399; margin-top: 4px;">
+            提示: macOS 通常为 ~/Library/Application Support/Google/Chrome
+          </div>
+        </el-form-item>
+        <el-form-item label="配置文件名" prop="profile_name">
+          <el-input v-model="browserForm.profile_name" placeholder="Default" />
+        </el-form-item>
+        <el-form-item label="默认配置" prop="is_default">
+          <el-switch v-model="browserForm.is_default" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="browserFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitBrowserForm">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -606,7 +720,8 @@ import GroupSelector from '@/components/GroupSelector.vue'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
-import { ArrowDown, CircleCheckFilled, CircleCloseFilled, Download, Loading, Refresh, Upload } from '@element-plus/icons-vue'
+import { useBrowserStore } from '@/stores/browser'
+import { ArrowDown, CircleCheckFilled, CircleCloseFilled, Download, Loading, Refresh, Setting, Upload } from '@element-plus/icons-vue'
 import { ElAlert, ElCard, ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 // 导入全局数据缓存服务
@@ -621,6 +736,8 @@ const accountStore = useAccountStore()
 const appStore = useAppStore()
 // 获取组状态管理
 const groupStore = useGroupStore()
+// 获取浏览器配置管理
+const browserStore = useBrowserStore()
 
 const {
   activeTab,
@@ -639,6 +756,7 @@ const {
   fetchAccountsQuick,
   fetchAccounts,
   forceRefreshAccounts,
+  refreshAccountsAfterMutation,
   validateAllAccountsInBackground,
   refreshExceptionAccounts,
   handleBatchRefresh,
@@ -683,7 +801,7 @@ const handleRefreshSingleAccount = async (row) => {
     accountStore.updateAccountStatus(row.id, '验证中', true)
 
     // 调用API刷新单个账号
-    const res = await accountApi.getValidAccounts(row.id)
+    const res = await accountApi.getValidAccounts(row.id, true)
 
     if (res.code === 200 && res.data && res.data.length > 0) {
       // 更新单个账号信息
@@ -759,6 +877,10 @@ const handleSelectionChange = (selection) => {
   selectedAccounts.value = selection
 }
 
+const handleBatchRefreshClick = async () => {
+  await handleBatchRefresh(selectedAccounts.value)
+}
+
 
 
 // 批量重新登录选中账号
@@ -787,7 +909,7 @@ const handleBatchReLogin = async () => {
 
     // 这里可以根据实际需求实现批量重新登录逻辑
     // 目前暂时只实现批量刷新
-    await handleBatchRefresh()
+    await handleBatchRefresh(exceptionAccounts)
 
     ElMessage.closeAll()
     ElMessage.success(`批量重新登录完成`)
@@ -937,13 +1059,77 @@ const dialogVisible = ref(false)
 const dialogType = ref('add') // 'add' 或 'edit'
 const accountFormRef = ref(null)
 
+// 浏览器配置相关
+const browserDialogVisible = ref(false)
+const browserFormVisible = ref(false)
+const browserFormType = ref('add')
+const browserFormRef = ref(null)
+const browserForm = reactive({
+  id: null,
+  name: '',
+  browser_type: 'chrome',
+  user_data_dir: '',
+  profile_name: 'Default',
+  is_default: false
+})
+
+const openBrowserDialog = async () => {
+  await browserStore.fetchProfiles()
+  browserDialogVisible.value = true
+}
+
+const handleAddBrowserProfile = () => {
+  browserFormType.value = 'add'
+  Object.assign(browserForm, {
+    id: null,
+    name: '',
+    browser_type: 'chrome',
+    user_data_dir: '',
+    profile_name: 'Default',
+    is_default: false
+  })
+  browserFormVisible.value = true
+}
+
+const handleEditBrowserProfile = (row) => {
+  browserFormType.value = 'edit'
+  Object.assign(browserForm, { ...row })
+  browserFormVisible.value = true
+}
+
+const handleDeleteBrowserProfile = (row) => {
+  ElMessageBox.confirm(`确定删除配置 "${row.name}" 吗？`, '提示', {
+    type: 'warning'
+  }).then(async () => {
+    await browserStore.deleteProfile(row.id)
+    ElMessage.success('删除成功')
+  })
+}
+
+const submitBrowserForm = async () => {
+  try {
+    if (browserFormType.value === 'add') {
+      await browserStore.createProfile({ ...browserForm })
+      ElMessage.success('添加成功')
+    } else {
+      await browserStore.updateProfile(browserForm.id, { ...browserForm })
+      ElMessage.success('更新成功')
+    }
+    browserFormVisible.value = false
+  } catch {
+    ElMessage.error('操作失败')
+  }
+}
+
 // 账号表单
 const accountForm = reactive({
   id: null,
   name: '',
   groupName: '',
   platform: '',
-  status: '正常'
+  status: '正常',
+  session_source: 'managed',
+  browser_profile_id: null
 })
 
 // 表单验证规则
@@ -985,7 +1171,9 @@ const handleEdit = (row) => {
     name: row.name,
     groupName: group ? group.name : '',
     platform: row.platform,
-    status: row.status
+    status: row.status,
+    session_source: row.session_source || 'managed',
+    browser_profile_id: row.browser_profile_id || null
   })
   dialogVisible.value = true
 }
@@ -1044,9 +1232,9 @@ const handleUploadCookie = (row) => {
       const result = await response.json()
 
       if (result.code === 200) {
-        ElMessage.success('Cookie文件上传成功')
-        // 刷新账号列表以显示更新
-        fetchAccounts()
+        ElMessage.success('Cookie文件上传成功，正在同步账号信息...')
+        await refreshAccountsAfterMutation('cookie_upload')
+        ElMessage.success('账号信息已更新')
       } else {
         ElMessage.error(result.msg || 'Cookie文件上传失败')
       }
@@ -1255,11 +1443,12 @@ const submitAccountForm = () => {
               status: accountForm.status // Keep the existing status
             };
             accountStore.updateAccount(accountForm.id, updatedAccount)
-            ElMessage.success('更新成功')
+            ElMessage.success('更新成功，正在同步账号信息...')
             dialogVisible.value = false
-            // 刷新账号和组列表，确保新添加的组可见
-            fetchAccounts()
+            // 刷新账号和组列表，确保新添加的组可见且账号状态为已验证新鲜状态
+            await refreshAccountsAfterMutation('account_edit')
             groupStore.fetchGroups()
+            ElMessage.success('账号信息已更新')
           } else {
             ElMessage.error(res.msg || '更新账号失败')
           }

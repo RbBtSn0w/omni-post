@@ -1,26 +1,19 @@
-import js from '@eslint/js'
+import { sharedBrowserConfig } from '@omni-post/shared-config/eslint.config.js'
 import pluginVue from 'eslint-plugin-vue'
 import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
-import globals from 'globals'
 
 export default [
     {
         name: 'app/files-to-lint',
         files: ['**/*.{js,mjs,jsx,vue}'],
-        languageOptions: {
-            globals: {
-                ...globals.browser,
-                ...globals.node,
-            }
-        }
     },
 
     {
         name: 'app/ignores',
-        ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/test-results/**'],
+        ignores: ['**/dist-ssr/**'],
     },
 
-    js.configs.recommended,
+    ...sharedBrowserConfig,
     ...pluginVue.configs['flat/essential'],
     skipFormatting,
 

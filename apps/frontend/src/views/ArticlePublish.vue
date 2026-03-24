@@ -1,0 +1,214 @@
+<template>
+  <div class="article-publish">
+    <el-card class="publish-card">
+      <template #header>
+        <div class="card-header">
+          <span>发布文章</span>
+        </div>
+      </template>
+
+      <el-form :model="form" label-width="80px" ref="articleFormRef">
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="form.title" placeholder="请输入文章标题" />
+        </el-form-item>
+
+        <el-form-item label="正文" prop="content">
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            :rows="15"
+            placeholder="请输入 Markdown 内容"
+          />
+        </el-form-item>
+
+        <el-form-item label="标签" prop="tags">
+          <el-select
+            v-model="form.tags"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请输入标签"
+          >
+            <el-option
+              v-for="item in existingTags"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="发布平台">
+          <el-checkbox-group v-model="form.platforms">
+            <el-checkbox label="ZHIHU">知乎</el-checkbox>
+            <el-checkbox label="JUEJIN">掘金</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+
+        <el-form-item label="账号选择">
+          <div class="platform-account-list">
+            <div
+              v-for="platform in form.platforms"
+              :key="platform"
+              class="platform-account-item"
+            >
+              <div class="platform-account-label">{{ platformLabel(platform) }}</div>
+              <el-select
+                v-model="form.account_ids[platform]"
+                placeholder="请选择发布账号"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="acc in getAccountsForPlatform(platform)"
+                  :key="`${platform}-${acc.id}`"
+                  :label="`${acc.name} (${acc.platform})`"
+                  :value="acc.id"
+                />
+              </el-select>
+            </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="浏览器配置">
+          <el-select v-model="form.browser_profile_id" placeholder="选择本地配置 (可选)" clearable style="width: 100%">
+            <el-option
+              v-for="item in browserStore.profiles"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="handlePublish" :loading="publishing">立即发布</el-button>
+          <el-button @click="handleSave">存为草稿</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { reactive, ref, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useAccountStore } from '@/stores/account'
+import { useBrowserStore } from '@/stores/browser'
+import { http } from '@/utils/request'
+
+const accountStore = useAccountStore()
+const browserStore = useBrowserStore()
+
+const form = reactive({
+  title: '',
+  content: '',
+  tags: [],
+  platforms: ['ZHIHU'],
+  account_ids: {
+    ZHIHU: '',
+    JUEJIN: ''
+  },
+  browser_profile_id: null
+})
+
+const publishing = ref(false)
+const existingTags = ref(['技术', '自动化', '工具'])
+const PLATFORM_LABELS = {
+  ZHIHU: '知乎',
+  JUEJIN: '掘金'
+}
+
+const normalizePlatformCode = (platformName) => {
+  const raw = String(platformName || '').toUpperCase()
+  if (raw === '知乎'.toUpperCase() || raw === 'ZHIHU') return 'ZHIHU'
+  if (raw === '掘金'.toUpperCase() || raw === 'JUEJIN') return 'JUEJIN'
+  return ''
+}
+
+const platformLabel = (platform) => PLATFORM_LABELS[platform] || platform
+const getAccountsForPlatform = (platform) => {
+  return accountStore.accounts.filter(acc => normalizePlatformCode(acc.platform) === platform)
+}
+
+onMounted(async () => {
+  await browserStore.fetchProfiles()
+})
+
+watch(
+  () => [...form.platforms],
+  (selectedPlatforms) => {
+    for (const platform of Object.keys(form.account_ids)) {
+      if (!selectedPlatforms.includes(platform)) {
+        form.account_ids[platform] = ''
+      }
+    }
+  }
+)
+
+const handlePublish = async () => {
+  if (!form.title || !form.content || form.platforms.length === 0) {
+    ElMessage.error('请填写完整信息')
+    return
+  }
+  for (const platform of form.platforms) {
+    if (!form.account_ids[platform]) {
+      ElMessage.error(`请选择${platformLabel(platform)}账号`)
+      return
+    }
+  }
+
+  publishing.value = true
+  try {
+    // 1. Create Article
+    const articleRes = await http.post('/articles', {
+      title: form.title,
+      content: form.content,
+      tags: form.tags
+    })
+    const articleId = articleRes.data.id
+
+    // 2. Publish to selected platforms
+    for (const platform of form.platforms) {
+      await http.post('/publish/article', {
+        article_id: articleId,
+        account_id: form.account_ids[platform],
+        platform: platform,
+        browser_profile_id: form.browser_profile_id
+      })
+    }
+
+    ElMessage.success('发布任务已提交')
+  } catch (error) {
+    console.error('Publish failed:', error)
+    ElMessage.error('发布失败')
+  } finally {
+    publishing.value = false
+  }
+}
+
+const handleSave = () => {
+  ElMessage.success('已保存草稿 (模拟)')
+}
+</script>
+
+<style scoped>
+.article-publish {
+  padding: 20px;
+}
+.publish-card {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.platform-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.platform-account-label {
+  margin-bottom: 6px;
+  color: #606266;
+  font-size: 13px;
+}
+</style>

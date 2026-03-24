@@ -15,6 +15,11 @@
           @input="handleSearch"
         />
         <div class="action-buttons">
+          <el-button type="warning" @click="handleSyncMaterials" :loading="isSyncing">
+            <el-icon :class="{ 'is-loading': isSyncing }"><RefreshRight /></el-icon>
+            <span v-if="isSyncing">同步中</span>
+            <span v-else>同步本地文件</span>
+          </el-button>
           <el-button type="primary" @click="handleUploadMaterial">上传素材</el-button>
           <el-button type="info" @click="fetchMaterials" :loading="false">
             <el-icon :class="{ 'is-loading': isRefreshing }"><Refresh /></el-icon>
@@ -25,7 +30,7 @@
 
       <div v-if="filteredMaterials.length > 0" class="material-list">
         <el-table :data="filteredMaterials" style="width: 100%">
-          <el-table-column prop="uuid" label="UUID" width="180" />
+          <el-table-column prop="id" label="ID" width="100" />
           <el-table-column prop="filename" label="文件名" width="300" />
           <el-table-column prop="filesize" label="文件大小" width="120">
           <template #default="scope">
@@ -33,9 +38,16 @@
           </template>
         </el-table-column>
           <el-table-column prop="upload_time" label="上传时间" width="180" />
+          <el-table-column label="状态" width="100">
+            <template #default="scope">
+              <el-tag :type="scope.row.is_missing ? 'danger' : 'success'">
+                {{ scope.row.is_missing ? '缺失' : '正常' }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="操作">
             <template #default="scope">
-              <el-button size="small" @click="handlePreview(scope.row)">预览</el-button>
+              <el-button size="small" @click="handlePreview(scope.row)" :disabled="scope.row.is_missing">预览</el-button>
               <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
             </template>
           </el-table-column>
@@ -144,7 +156,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Refresh, Upload } from '@element-plus/icons-vue'
+import { Refresh, Upload, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { materialApi } from '@/api/material'
 import { useAppStore } from '@/stores/app'
@@ -157,6 +169,7 @@ const appStore = useAppStore()
 const searchKeyword = ref('')
 const isRefreshing = ref(false)
 const isUploading = ref(false)
+const isSyncing = ref(false)
 
 // 对话框控制
 const uploadDialogVisible = ref(false)
@@ -195,6 +208,25 @@ const fetchMaterials = async () => {
     ElMessage.error('获取素材列表失败')
   } finally {
     isRefreshing.value = false
+  }
+}
+
+// 同步本地素材
+const handleSyncMaterials = async () => {
+  isSyncing.value = true
+  try {
+    const response = await materialApi.syncLocalMaterials()
+    if (response.code === 200) {
+      ElMessage.success(response.msg || '同步成功')
+      await fetchMaterials() // 触发刷新列表
+    } else {
+      ElMessage.error(response.msg || '同步失败')
+    }
+  } catch (error) {
+    console.error('同步请求出错:', error)
+    ElMessage.error('同步请求失败')
+  } finally {
+    isSyncing.value = false
   }
 }
 

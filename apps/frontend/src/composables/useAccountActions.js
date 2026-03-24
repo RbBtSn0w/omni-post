@@ -305,9 +305,15 @@ export function useAccountActions() {
 
     // 批量刷新
     const handleBatchRefresh = async (selectedAccounts) => {
+        if (!Array.isArray(selectedAccounts)) {
+            ElMessage.error('批量刷新参数无效')
+            console.error('批量刷新参数无效，selectedAccounts 必须为数组:', selectedAccounts)
+            return { success: false, error: 'invalid_selected_accounts' }
+        }
+
         if (selectedAccounts.length === 0) {
             ElMessage.warning('请先选择要刷新的账号')
-            return
+            return { success: false, error: 'empty_selected_accounts' }
         }
 
         try {
@@ -322,7 +328,7 @@ export function useAccountActions() {
             const refreshPromises = selectedAccounts.map(async (account) => {
                 try {
                     accountStore.updateAccountStatus(account.id, '验证中', true)
-                    const res = await accountApi.getValidAccounts(account.id)
+                    const res = await accountApi.getValidAccounts(account.id, true)
 
                     if (res.code === 200 && res.data && res.data.length > 0) {
                         const updatedAccount = res.data[0]
@@ -344,10 +350,12 @@ export function useAccountActions() {
             dataCache.delete('/account-management/valid')
             ElMessage.closeAll()
             ElMessage.success(`批量刷新完成，共刷新 ${selectedAccounts.length} 个账号`)
+            return { success: true }
         } catch (error) {
             console.error('批量刷新账号失败:', error)
             ElMessage.closeAll()
             ElMessage.error('批量刷新失败')
+            return { success: false, error: error?.message || 'batch_refresh_failed' }
         } finally {
             accountStore.endRefresh()
         }
@@ -393,10 +401,11 @@ export function useAccountActions() {
         accountStore.setAllAccountsRefreshing(true)
 
         try {
-            const res = await accountApi.getValidAccounts()
+            const res = await accountApi.getValidAccounts(null, true)
             if (res.code === 200 && res.data) {
                 dataCache.set('/account-management/valid', res.data)
                 accountStore.setAccounts(res.data)
+                accountStore.setValidationCompleted()
                 lastRefreshTime.value = Date.now()
                 return { success: true }
             } else {
@@ -410,6 +419,17 @@ export function useAccountActions() {
         }
     }
 
+    // 账号变更后执行强一致刷新：必须以 force=true 的有效刷新成功并写入 store 才算完成
+    const refreshAccountsAfterMutation = async (reason = 'mutation') => {
+        const result = await forceRefreshAccounts()
+        if (!result.success) {
+            const errorMsg = `账号变更后同步失败(${reason}): ${result.error || 'unknown'}`
+            console.error(errorMsg)
+            throw new Error(errorMsg)
+        }
+        return result
+    }
+
     return {
         hasInitiallyLoaded,
         lastRefreshTime,
@@ -418,6 +438,7 @@ export function useAccountActions() {
         fetchAccountsQuick,
         fetchAccounts,
         forceRefreshAccounts,
+        refreshAccountsAfterMutation,
         validateAllAccountsInBackground,
         refreshExceptionAccounts,
         handleBatchRefresh,

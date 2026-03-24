@@ -21,11 +21,16 @@ export const materialApi = {
 
   // 下载素材
   downloadMaterial: (filePath) => {
-    return `${API_BASE_URL}/download/${filePath}`
+    return `${API_BASE_URL}/download/${encodeURIComponent(filePath)}`
   },
 
   // 获取素材预览URL
   getMaterialPreviewUrl: (filename) => {
-    return `${API_BASE_URL}/getFile?filename=${filename}`
+    return `${API_BASE_URL}/getFile?filename=${encodeURIComponent(filename)}`
+  },
+
+  // 同步本地素材
+  syncLocalMaterials: () => {
+    return http.post('/syncFiles')
   }
 }

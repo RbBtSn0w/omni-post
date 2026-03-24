@@ -85,6 +85,8 @@ export const useAccountStore = defineStore('account', () => {
           name: item[3],
           status: statusMap[item[4]] || initialStatus,
           group_id: item[5],
+          session_source: item[6] || 'managed',
+          browser_profile_id: item[7] || null,
           platform: platformTypes[item[1]] || '未知',
           avatar: '/vite.svg', // 默认使用vite.svg作为头像
           isRefreshing: false,
@@ -101,6 +103,8 @@ export const useAccountStore = defineStore('account', () => {
           name: item.userName,
           status: item.statusText || initialStatus,
           group_id: item.group_id,
+          session_source: item.session_source || 'managed',
+          browser_profile_id: item.browser_profile_id || null,
           platform: platformTypes[item.type] || '未知',
           avatar: '/vite.svg',
           isRefreshing: false,

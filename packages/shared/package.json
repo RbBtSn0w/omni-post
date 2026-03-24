@@ -1,0 +1,35 @@
+{
+  "name": "@omni-post/shared",
+  "version": "1.0.0",
+  "description": "Shared constants, types, and utilities for OmniPost frontend and backend",
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts"
+      },
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.1"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "license": "MIT"
+}

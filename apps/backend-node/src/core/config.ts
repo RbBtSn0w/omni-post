@@ -31,8 +31,14 @@ for (const dir of [DATA_DIR, COOKIES_DIR, VIDEOS_DIR, LOGS_DIR]) {
 }
 
 // File upload settings
-/** 500MB */
-export const MAX_UPLOAD_SIZE = 500 * 1024 * 1024;
+const parseUploadSize = (val: string | undefined): number => {
+    const parsed = parseInt(val || '102400', 10);
+    if (isNaN(parsed) || parsed < 1) return 102400;
+    // Clamp to 500GB upper bound to avoid extreme allocations or overflows
+    return Math.min(parsed, 512000);
+};
+/** Upload limit in bytes, defaults to 100GB */
+export const MAX_UPLOAD_SIZE = parseUploadSize(process.env.MAX_UPLOAD_SIZE_MB) * 1024 * 1024;
 
 // Server settings
 export const SERVER_HOST = '0.0.0.0';
@@ -74,8 +80,8 @@ function detectChromePath(): string | null {
 
 export const LOCAL_CHROME_PATH = detectChromePath();
 
-// Headless mode setting
-export const LOCAL_CHROME_HEADLESS = true;
+// Headless mode setting - defaults to true (especially for CI/Linux) unless disabled
+export const LOCAL_CHROME_HEADLESS = process.env.HEADLESS !== 'false' && process.env.LOCAL_CHROME_HEADLESS !== 'false';
 
 /**
  * Log browser configuration information at startup.

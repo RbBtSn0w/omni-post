@@ -2,7 +2,10 @@
 
 ## Overview
 
-OmniPost is built using a **Monorepo architecture** with separate frontend and backend applications. This document explains the overall system design, component interactions, and technical decisions.
+OmniPost is built using a **Monorepo architecture** with a Vue 3 frontend and a
+primary Node.js/TypeScript backend. The legacy Python backend remains in the
+repository for compatibility and migration reference only. This document explains
+the current system design, component interactions, and technical decisions.
 
 ## System Architecture Diagram
 
@@ -27,15 +30,15 @@ OmniPost is built using a **Monorepo architecture** with separate frontend and b
                            │ REST API calls
                            │ (http://localhost:5409)
 ┌──────────────────────────▼──────────────────────────────────┐
-│                 Backend (Flask + Python 3.10)               │
+│          Backend (Express + TypeScript, Primary)            │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │ Routes: /api/auth, /api/accounts, /api/publish        │ │
+│  │ Routes: /account, /publish, /articles, /browser       │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Services: AuthService, UploadService, TaskScheduler   │ │
+│  │ Services: TaskService, PublishService, LoginService   │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Uploaders: DouYin, Xiaohongshu, Kuaishou, Tencent    │ │
+│  │ Uploaders: Douyin, Xiaohongshu, Kuaishou, Weixin     │ │
 │  ├────────────────────────────────────────────────────────┤ │
-│  │ Database: SQLite models (User, Account, Video, Task)  │ │
+│  │ Database: SQLite tables (tasks, articles, user_info)  │ │
 │  ├────────────────────────────────────────────────────────┤ │
 │  │ Utils: File handling, Cookie management, Encryption   │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -171,75 +174,68 @@ Child Components
 
 ## Backend Architecture
 
+The maintained backend lives in `apps/backend-node` and follows a strict
+`Routes -> Services -> Uploaders` pattern. `apps/backend` is deprecated and
+should only be consulted for compatibility work.
+
 ### Directory Structure
 
 ```
-apps/backend/
+apps/backend-node/
 ├── src/
-│   ├── app.py                   # Flask application factory
+│   ├── app.ts                   # Express application factory
 │   ├── core/                    # Core configuration
-│   │   ├── config.py
-│   │   ├── constants.py
-│   │   └── logger.py
+│   │   ├── config.ts
+│   │   ├── constants.ts
+│   │   └── logger.ts
 │   │
 │   ├── routes/                  # API endpoint definitions
-│   │   ├── account.py           # Account management
-│   │   ├── publish.py           # Publishing operations
-│   │   ├── dashboard.py         # Dashboard stats
-│   │   ├── file.py              # File management
-│   │   ├── group.py             # Group management
-│   │   └── cookie.py            # Cookie operations
+│   │   ├── account.ts
+│   │   ├── publish.ts
+│   │   ├── article.ts
+│   │   ├── browser.ts
+│   │   └── file.ts
 │   │
 │   ├── services/                # Business logic layer
-│   │   ├── auth_service.py      # Authentication logic
-│   │   ├── task_service.py      # Task scheduling
-│   │   ├── publish_service.py   # Publishing orchestration
-│   │   ├── publish_executor.py  # Task execution logic
-│   │   ├── login_service.py     # Login management
-│   │   ├── login_impl.py        # Login implementations
-│   │   └── cookie_service.py    # Cookie management
+│   │   ├── task-service.ts
+│   │   ├── publish-service.ts
+│   │   ├── publish-executor.ts
+│   │   ├── login-service.ts
+│   │   ├── cookie-service.ts
+│   │   └── article_service.ts
 │   │
 │   ├── uploader/                # Platform-specific uploaders
-│   │   ├── __init__.py
-│   │   ├── base_uploader.py     # Abstract base class
-│   │   ├── douyin_uploader/
-│   │   │   ├── __init__.py
-│   │   │   ├── main.py
-│   │   │   ├── login.py
-│   │   │   └── utils.py
-│   │   ├── xiaohongshu_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │   ├── ks_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │   └── tencent_uploader/
-│   │   │   ├── __init__.py
-│   │   │   └── main.py
-│   │
-│   ├── utils/                   # Utility functions
-│   │   ├── network.py           # Network utilities
-│   │   └── files_times.py       # File and time helpers
+│   │   ├── douyin/
+│   │   │   └── main.ts
+│   │   ├── xiaohongshu/
+│   │   │   └── main.ts
+│   │   ├── kuaishou/
+│   │   │   └── main.ts
+│   │   ├── weixin/
+│   │   │   └── main.ts
+│   │   ├── bilibili/
+│   │   │   └── main.ts
+│   │   ├── zhihu/
+│   │   │   └── main.ts
+│   │   └── juejin/
+│   │       └── main.ts
 │   │
 │   ├── db/                      # Database layer
-│   │   ├── db_manager.py        # Database connection & management
-│   │   └── createTable.py       # Database initialization
+│   │   ├── migrations.ts
+│   │   └── index.ts
 │   │
-│   └── __init__.py
+│   ├── utils/                   # Utility functions
+│   │   ├── response.ts
+│   │   └── path.ts
+│   │
+│   └── types/
 │
-├── tests/                       # Comprehensive test suite
-│   ├── conftest.py              # Pytest configuration
-│   ├── mock_services.py         # Mock services
-│   ├── test_auth.py
-│   ├── test_account.py
-│   ├── test_upload.py
-│   ├── test_database.py
+├── tests/                       # Vitest test suite
+│   ├── test_routes_publish.test.ts
+│   ├── test_publish_executor.test.ts
+│   ├── test_article_routes.test.ts
 │   └── ...
-│
-├── requirements.txt             # Python dependencies
-├── pyproject.toml               # Project metadata
-├── pytest.ini                   # Pytest configuration
-└── package.json                 # NPM scripts
+└── package.json
 ```
 
 ### API Routes Structure
@@ -277,68 +273,62 @@ apps/backend/
 
 ### Service Layer Architecture
 
-```python
-# Service pattern example
-class PublishService:
-    """Orchestrates the publishing workflow."""
+```typescript
+// Service pattern example (Node.js)
+export class PublishService {
+    /**
+     * Orchestrates the publishing workflow.
+     */
+    constructor(
+        private readonly taskService: TaskService,
+        private readonly browserService: BrowserService
+    ) {}
 
-    def __init__(self, upload_service, task_service, db_session):
-        self.upload_service = upload_service
-        self.task_service = task_service
-        self.db = db_session
-
-    async def publish_video(self, video_id, platforms, publish_time):
-        """
-        Main publishing orchestration.
-
-        1. Validate input
-        2. Get video and accounts
-        3. Create publishing task
-        4. Schedule uploads
-        5. Monitor progress
-        """
-        # Implementation
+    async publishVideo(opts: UploadOptions): Promise<void> {
+        /**
+         * Main publishing orchestration.
+         * 1. Validate input
+         * 2. Create publishing tasks in DB
+         * 3. Dispatch to specific platform uploaders
+         * 4. Monitor and update progress
+         */
+        // Implementation
+    }
+}
 ```
 
 # Uploader Pattern
 
 The project uses a consistent pattern for all platform uploaders, utilizing shared utilities for browser management.
 
-```python
-# Shared Browser Launcher (src/core/browser.py)
-async def launch_browser(playwright, headless=True, ...):
-    """
-    Centralized browser launch configuration.
-    Ensures consistent args (no-sandbox, disable-blink-features, etc.)
-    """
-    pass
+```typescript
+// Shared Browser Launcher (src/core/browser.ts)
+export async function launchBrowser(options: LaunchOptions) {
+    /**
+     * Centralized browser launch configuration.
+     * Ensures consistent args (no-sandbox, disable-blink-features, etc.)
+     */
+}
 
-# Platform Implementation Example (src/uploader/douyin_uploader/main.py)
-class DouYinVideo(object):
-    def __init__(self, title, file_path, tags, ...):
-        self.title = title
-        # ...
+// Platform Implementation Example (src/uploader/douyin/main.ts)
+export class DouyinUploader extends BaseUploader {
+    protected platformName = 'Douyin';
 
-    async def upload(self, playwright: Playwright) -> None:
-        """
-        Upload workflows follow a try...finally pattern for resource safety.
-        """
-        browser = None
-        context = None
-        try:
-            # unified browser launch
-            browser = await launch_browser(playwright, headless=self.headless)
-
-            # Platform specific logic
-            context = await browser.new_context(...)
-            page = await context.new_page()
-
-            # ... automation steps ...
-
-        finally:
-            # Ensure resources are always cleaned up
-            if context: await context.close()
-            if browser: await browser.close()
+    async upload(context: BrowserContext, opts: UploadOptions): Promise<void> {
+        /**
+         * Upload workflows follow a try...finally pattern for resource safety.
+         */
+        const page = await context.newPage();
+        try {
+            // 1. Navigate to creator studio
+            // 2. Perform login check
+            // 3. Upload file & metadata
+            // 4. Submit for publishing
+        } finally {
+            await page.close();
+        }
+    }
+}
 ```
 
 ## Database Schema
@@ -480,24 +470,23 @@ Task
 
 ## Async/Concurrency Model
 
-The backend uses Python's `asyncio` for concurrent operations:
+The backend uses Node.js's asynchronous runtime and Promises for concurrent operations:
 
-```python
-# Multiple uploads in parallel
-async def publish_to_multiple_platforms(video_id, accounts):
-    tasks = [
-        upload_to_platform(video_id, account)
-        for account in accounts
-    ]
-    results = await asyncio.gather(*tasks)
-    return results
+```typescript
+// Multiple uploads in parallel using Promise.all
+async function publishToMultiplePlatforms(opts: UploadOptions) {
+    const tasks = opts.platforms.map(platform =>
+        uploadToPlatform(platform, opts)
+    );
+    const results = await Promise.all(tasks);
+    return results;
+}
 ```
 
 Benefits:
-- Non-blocking I/O operations
-- Multiple platform uploads in parallel
-- Better resource utilization
-- Improved response times
+- Non-blocking I/O operations (highly efficient for Playwright)
+- Built-in support for asynchronous task execution
+- Simplified orchestration of background jobs
 
 ## Error Handling
 
@@ -517,67 +506,63 @@ try {
 }
 ```
 
-### Backend Error Handling
+### Backend Error Handling (Express)
 
-```python
-@app.errorhandler(404)
-def not_found(e):
-    return {'error': 'Not found'}, 404
+```typescript
+// Standard response utility
+export const sendError = (res: Response, msg: string, code = 500) => {
+    return res.status(code).json({
+        code,
+        msg,
+        data: null
+    });
+};
 
-@app.errorhandler(500)
-def internal_error(e):
-    logger.error(f"Internal error: {str(e)}")
-    return {'error': 'Internal server error'}, 500
-
-# Service layer
-try:
-    await uploader.upload(video_path, metadata)
-except FileNotFoundError as e:
-    logger.error(f"File not found: {str(e)}")
-    raise ValueError(f"Video file not found: {video_path}")
-except TimeoutError as e:
-    logger.error(f"Upload timeout: {str(e)}")
-    raise Exception("Upload took too long, please try again")
+// Service layer error management
+try {
+    await uploader.upload(context, opts);
+} catch (err: any) {
+    logger.error(`[${platform}] Upload failed: ${err.message}`);
+    throw new Error(`Platform upload failure: ${err.message}`);
+}
 ```
 
 ## Security Considerations
 
 ### Cookie Management
 
-- Cookies stored encrypted in `apps/backend/src/cookies/`
-- Separate directories per platform
-- Encrypted before storage using `utils/encrypt.py`
-- Decrypted on-demand for platform login
+- Cookies stored in `apps/backend-node/data/cookies/`
+- Organized in subdirectories by platform
+- Managed via `cookie-service.ts` for lifecycle and validation
+- Integrated with `browser-profile` for session persistence
 
 ### Authentication
 
-- JWT tokens for API authentication
-- Password hashing using industry standards
-- CORS configuration for frontend requests
-- Input validation on all endpoints
+- JWT-based authentication for all API endpoints
+- Secured password hashing (using bcrypt or similar)
+- CORS enabled for frontend-backend communication
+- Request validation using unified middleware
 
 ### File Handling
 
-- Validate file types and sizes
-- Store uploads in isolated `videoFile/` directory
-- Clean up after successful publish
-- Scan for malware (optional)
+- Uploads stored in `apps/backend-node/data/videoFile/`
+- Validated by file-record service
+- Automated cleanup of temporary artifacts
 
 ## Deployment Architecture
 
 ```
 Development:
 ├── Frontend: localhost:5173 (Vite dev server)
-└── Backend: localhost:5409 (Flask dev server)
+└── Backend: localhost:5409 (Express/Node.js)
 
 Production:
 ├── Frontend: Deployed to static hosting
 │   ├── Built with npm run build
-│   ├── Served as static files
-│   └── CDN for assets
+│   └── Served via Nginx/CDN
 │
-└── Backend: Deployed to server
-    ├── Gunicorn WSGI server
+└── Backend: Node.js Service
+    ├── Process managed by PM2/Systemd
     ├── Nginx reverse proxy
     └── SQLite database
 ```
@@ -588,15 +573,13 @@ Production:
 
 - **Code Splitting**: Route-based splitting with Vue Router
 - **Lazy Loading**: Components loaded on demand
-- **Image Optimization**: Asset compression
-- **Caching**: Service workers for offline capability
+- **State Management**: Optimized Pinia store access
 
 ### Backend
 
-- **Connection Pooling**: Database connection reuse
-- **Async Operations**: Non-blocking I/O
-- **Task Queuing**: Scheduled tasks using APScheduler
-- **Caching**: Response caching for frequent queries
+- **Playwright Context Reuse**: Efficient session handling
+- **Non-blocking I/O**: High throughput for concurrent uploads
+- **Task Queuing**: Managed background execution pipeline
 
 ## Testing Strategy
 
@@ -614,39 +597,33 @@ Production:
 
 ### Backend Testing
 
-- Unit tests for individual services
-- Mock external dependencies (Playwright, APIs)
-- Integration tests for database operations
-- E2E tests for complete workflows
+- Unit tests for services (Vitest)
+- Integration tests for API routes
+- Platform automation diagnostics workflow
 
 ### Frontend Testing
 
-- Unit tests for components and composables
-- Store tests with mock data
-- API layer tests with mock responses
-- E2E tests for user workflows (optional)
+- Unit tests for components and stores (Vitest)
+- Composable behavior verification
 
 ## Monitoring & Logging
 
 ### Logging Levels
 
-```python
-import logging
+```typescript
+import { logger } from './core/logger.js';
 
-logger = logging.getLogger(__name__)
-
-logger.debug("Detailed diagnostic information")
-logger.info("General informational message")
-logger.warning("Warning message")
-logger.error("Error message")
-logger.critical("Critical system failure")
+logger.debug("Detailed diagnostic information");
+logger.info("General informational message");
+logger.warn("Warning message");
+logger.error("Error message");
 ```
 
 ### Log Storage
 
-- Backend logs: `apps/backend/src/logs/`
-- Organized by date and level
-- Rotation policy for log management
+- Backend logs: `apps/backend-node/data/logs/`
+- Organized by date and severity
+- Streamed to console during development
 
 ## Future Enhancements
 

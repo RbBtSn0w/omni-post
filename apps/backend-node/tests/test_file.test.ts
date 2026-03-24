@@ -24,19 +24,13 @@ vi.mock('../src/db/database.js', () => ({
     },
 }));
 
-vi.mock('../src/core/config.js', () => ({
-    COOKIES_DIR: '/tmp',
-    VIDEOS_DIR: tmpVideoDir || '/tmp/test-videos',
-    BASE_DIR: '/tmp',
-    ROOT_DIR: '/tmp',
-    DATA_DIR: '/tmp',
-    LOGS_DIR: '/tmp',
-    HOST: '0.0.0.0',
-    PORT: 5409,
-    MAX_UPLOAD_SIZE: 500 * 1024 * 1024,
-    LOCAL_CHROME_PATH: '',
-    DEBUG_MODE: false,
-}));
+vi.mock('../src/core/config.js', async () => {
+    const actual = await vi.importActual('../src/core/config.js') as any;
+    return {
+        ...actual,
+        get VIDEOS_DIR() { return tmpVideoDir; },
+    };
+});
 
 const { router } = await import('../src/routes/file.js');
 
@@ -55,7 +49,7 @@ describe('File Route', () => {
 
     afterEach(() => {
         cleanupTempDb(dbPath, db);
-        try { fs.rmSync(tmpVideoDir, { recursive: true }); } catch { /* ignore */ }
+        try { fs.rmSync(tmpVideoDir, { recursive: true, force: true }); } catch { /* ignore */ }
     });
 
     it('POST /api/file/upload should fail without file', async () => {
@@ -77,8 +71,8 @@ describe('File Route', () => {
         expect([403, 404, 500]).toContain(res.status);
     });
 
-    it('GET /api/file/getFiles should return file list', async () => {
-        // Insert a test record
+    it('GET /api/file/getFiles should return file list with is_missing flag', async () => {
+        // Insert a test record whose file_path doesn't physically exist
         db.prepare('INSERT INTO file_records (filename, filesize, file_path) VALUES (?, ?, ?)')
             .run('test.mp4', 10.5, 'uuid_test.mp4');
 
@@ -87,6 +81,8 @@ describe('File Route', () => {
         expect(res.status).toBe(200);
         expect(res.body.code).toBe(200);
         expect(res.body.data).toHaveLength(1);
+        // uuid_test.mp4 doesn't exist on disk, so is_missing should be true
+        expect(res.body.data[0].is_missing).toBe(true);
     });
 
     it('GET /api/file/deleteFile should fail without id', async () => {
@@ -116,5 +112,20 @@ describe('File Route', () => {
         const app = createTestApp();
         const res = await request(app).post('/api/file/uploadSave');
         expect(res.status).toBe(400);
+    });
+
+    it('POST /api/file/syncFiles should sync orphaned files', async () => {
+        const testFile = path.join(tmpVideoDir, 'orphan.mp4');
+        fs.writeFileSync(testFile, 'dummy content');
+        
+        const app = createTestApp();
+        const res = await request(app).post('/api/file/syncFiles');
+        expect(res.status).toBe(200);
+        expect(res.body.code).toBe(200);
+        expect(res.body.data.count).toBe(1);
+
+        // Run again, should be 0 since it's already synced
+        const res2 = await request(app).post('/api/file/syncFiles');
+        expect(res2.body.data.count).toBe(0);
     });
 });

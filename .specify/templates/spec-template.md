@@ -90,6 +90,16 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
+### Constitution Alignment *(mandatory)*
+
+- **CA-001**: 说明该功能的默认实现位于 `apps/backend-node`、`apps/frontend`、
+  `packages/shared` 还是明确的遗留兼容范围。
+- **CA-002**: 若涉及平台 ID、共享实体、任务结构或公共常量，必须列出受影响的
+  `@omni-post/shared` 导出项。
+- **CA-003**: 若涉及发布、登录、上传、轮询、取消或 SSE，必须说明后台状态流与前端反馈方式。
+- **CA-004**: 若涉及 Playwright 自动化变更，必须说明诊断依据，避免无证据修改平台逻辑。
+- **CA-005**: 必须列出需要同步更新的文档或明确写明 "None"。
+
 *Example of marking unclear requirements:*
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]

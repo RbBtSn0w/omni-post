@@ -1,15 +1,13 @@
 # omni-post Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-07
+Auto-generated from all feature plans. Last updated: 2026-03-23
 
 ## Active Technologies
-- SQLite (与 Python 后端相同 schema) (024-node-backend-rewrite)
-- TypeScript 5.x, Node.js 18+ LTS + Express.js, Playwright, better-sqlite3 (024-node-backend-rewrite)
-- SQLite (shared database with Python) (024-node-backend-rewrite)
-- TypeScript 5.x, Node.js 18+ LTS + Express.js, Playwright, better-sqlite3, uuid, winston (024-node-backend-rewrite)
-- SQLite (Shared database with Python `apps/backend/data/db.sqlite3`) (024-node-backend-rewrite)
+- Node.js 20+, TypeScript 5.x (backend), Vue 3 + JavaScript (frontend) + Express, Playwright, Pinia, Element Plus, Axios, Vites (030-harden-refresh-flow)
+- SQLite (`user_info` account metadata, validation timestamps) + in-memory frontend cache (`dataCache`) (030-harden-refresh-flow)
+- SQLite (backend account/task metadata), in-memory data cache (frontend) (030-harden-refresh-flow)
 
-- TypeScript 5.x, Node.js >= 18 LTS + Express.js 4.x, better-sqlite3, Playwright >= 1.50.0, multer, cors, winston, uuid (024-node-backend-rewrite)
+- TypeScript 5.x, Node.js 20+ LTS + TypeScript, npm workspaces (029-shared-common-package)
 
 ## Project Structure
 
@@ -24,13 +22,13 @@ npm test && npm run lint
 
 ## Code Style
 
-TypeScript 5.x, Node.js >= 18 LTS: Follow standard conventions
+TypeScript 5.x, Node.js 20+ LTS: Follow standard conventions
 
 ## Recent Changes
-- 024-node-backend-rewrite: Added TypeScript 5.x, Node.js 18+ LTS + Express.js, Playwright, better-sqlite3, uuid, winston
-- 024-node-backend-rewrite: Added TypeScript 5.x, Node.js 18+ LTS + Express.js, Playwright, better-sqlite3
-- 024-node-backend-rewrite: Added [if applicable, e.g., SQLite, PostgreSQL, CoreData, files or N/A]
+- 030-harden-refresh-flow: Added Node.js 20+, TypeScript 5.x (backend), Vue 3 + JavaScript (frontend) + Express, Playwright, Pinia, Element Plus, Axios, Vites
+- 030-harden-refresh-flow: Added Node.js 20+, TypeScript 5.x (backend), Vue 3 + JavaScript (frontend) + Express, Playwright, Pinia, Element Plus, Axios, Vites
 
+- 029-shared-common-package: Added TypeScript 5.x, Node.js 20+ LTS + TypeScript, npm workspaces
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

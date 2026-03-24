@@ -9,6 +9,7 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_UPLOAD_SIZE, VIDEOS_DIR } from '../core/config.js';
+import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { safeJoin } from '../utils/path.js';
 import { sendError, sendSuccess } from '../utils/response.js';
@@ -30,7 +31,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: MAX_UPLOAD_SIZE },
+    limits: { fileSize: Number(MAX_UPLOAD_SIZE) },
 });
 
 /**
@@ -144,11 +145,31 @@ router.post('/uploadSave', upload.single('file'), (req: Request, res: Response) 
  * GET /getFiles
  * Get all file records from the database.
  */
-router.get('/getFiles', (_req: Request, res: Response) => {
+router.get('/getFiles', async (_req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
-        const files = db.prepare('SELECT * FROM file_records ORDER BY upload_time DESC').all();
-        sendSuccess(res, files, '获取成功');
+        const files = db.prepare('SELECT * FROM file_records ORDER BY upload_time DESC').all() as any[];
+        
+        // Append is_missing flag sequentially to avoid EMFILE
+        const mappedFiles = [];
+        for (const file of files) {
+            let isMissing = true;
+            if (file.file_path) {
+                try {
+                    const filePath = safeJoin(VIDEOS_DIR, file.file_path);
+                    const stats = await fs.promises.stat(filePath).catch(() => null);
+                    isMissing = !stats;
+                } catch (e) {
+                    logger.error(`检查文件存在性失败 [${file.file_path}]:`, e);
+                }
+            }
+            mappedFiles.push({
+                ...file,
+                is_missing: isMissing
+            });
+        }
+
+        sendSuccess(res, mappedFiles, '获取成功');
     } catch (error: any) {
         sendError(res, 500, `获取文件列表失败: ${error.message}`);
     }
@@ -192,5 +213,62 @@ router.get('/deleteFile', (req: Request, res: Response) => {
         sendSuccess(res, null, '删除成功');
     } catch (error: any) {
         sendError(res, 500, `删除失败: ${error.message}`);
+    }
+});
+
+/**
+ * POST /syncFiles
+ * Scan the local VIDEOS_DIR for orphan files and add them to the file_records table.
+ */
+router.post('/syncFiles', async (_req: Request, res: Response) => {
+    try {
+        const db = dbManager.getDb();
+        const existingRecords = db.prepare('SELECT file_path FROM file_records WHERE file_path IS NOT NULL').all() as any[];
+        const existingPaths = new Set(existingRecords.map((r) => r.file_path));
+
+        if (!fs.existsSync(VIDEOS_DIR)) {
+            sendSuccess(res, { count: 0 }, '目录不存在，同步了 0 个新文件');
+            return;
+        }
+
+        const filesInDir = await fs.promises.readdir(VIDEOS_DIR);
+        const orphanFiles = filesInDir.filter(f => !existingPaths.has(f));
+        
+        let syncedCount = 0;
+        if (orphanFiles.length > 0) {
+            const insertStmt = db.prepare('INSERT INTO file_records (filename, filesize, file_path) VALUES (?, ?, ?)');
+            
+            // Process metadata sequentially to avoid EMFILE on large directories
+            const results = [];
+            for (const file of orphanFiles) {
+                const ext = path.extname(file).toLowerCase();
+                const validExts = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+                
+                if (validExts.includes(ext)) {
+                    try {
+                        const filePath = safeJoin(VIDEOS_DIR, file);
+                        const stats = await fs.promises.stat(filePath);
+                        const fileSizeMB = Number((stats.size / (1024 * 1024)).toFixed(2));
+                        results.push({ filename: file, filesize: fileSizeMB, file_path: file });
+                    } catch (e) {
+                        logger.error(`同步文件元数据失败 [${file}]:`, e);
+                    }
+                }
+            }
+
+            if (results.length > 0) {
+                const insertMany = db.transaction((items: any[]) => {
+                    for (const item of items) {
+                        insertStmt.run(item.filename, item.filesize, item.file_path);
+                        syncedCount++;
+                    }
+                });
+                insertMany(results);
+            }
+        }
+
+        sendSuccess(res, { count: syncedCount }, `成功同步了 ${syncedCount} 个新文件`);
+    } catch (error: any) {
+        sendError(res, 500, `同步失败: ${error.message}`);
     }
 });
