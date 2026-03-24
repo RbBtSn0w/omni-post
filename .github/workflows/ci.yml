@@ -39,6 +39,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Filter Paths
         id: filter
@@ -138,8 +139,8 @@ jobs:
 
       - name: Guard No New Any
         env:
-          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          DIFF_HEAD: ${{ github.sha }}
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node
@@ -168,11 +169,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Guard No New Any
         env:
-          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          DIFF_HEAD: ${{ github.sha }}
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node
@@ -198,11 +200,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Guard No New Any
         env:
-          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          DIFF_HEAD: ${{ github.sha }}
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node
@@ -251,11 +254,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Guard No New Any
         env:
-          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          DIFF_HEAD: ${{ github.sha }}
+          DIFF_BASE: ${{ github.event.before || format('{0}^', github.event.pull_request.head.sha || github.sha) }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node Backend
