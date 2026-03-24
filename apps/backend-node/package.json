@@ -20,7 +20,7 @@
     "prebuild": "npm run build -w @omni-post/shared"
   },
   "dependencies": {
-    "@omni-post/shared": "workspace:*",
+    "@omni-post/shared": "*",
     "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
@@ -34,10 +34,10 @@
     "uuid": "^11.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "@omni-post/shared-config": "workspace:*"
+    "@omni-post/shared-config": "*"
   },
   "devDependencies": {
-    "@omni-post/shared-config": "workspace:*",
+    "@omni-post/shared-config": "*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

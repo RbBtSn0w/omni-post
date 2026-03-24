@@ -29,6 +29,6 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      run: npm ci -w apps/backend-node || npm install -w apps/backend-node
+      run: npm ci
       env:
         HUSKY: 0
