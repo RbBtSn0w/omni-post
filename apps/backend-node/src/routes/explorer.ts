@@ -17,7 +17,9 @@ router.get('/explore', async (req: Request, res: Response) => {
     const result = await explorerService.explore(url);
     sendSuccess(res, result);
   } catch (error: any) {
-    sendError(res, 500, error.message);
+    const status = (error.message.includes('Invalid protocol') || 
+                    error.message.includes('restricted for security')) ? 400 : 500;
+    sendError(res, status, error.message);
   }
 });
 
