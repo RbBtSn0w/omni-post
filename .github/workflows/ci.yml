@@ -24,6 +24,8 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -64,6 +66,8 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
@@ -118,6 +122,8 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
@@ -141,6 +147,8 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.cli == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
@@ -161,6 +169,8 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
@@ -204,6 +214,8 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend_node == 'true' || needs.changes.outputs.shared == 'true' || needs.changes.outputs.node_infra == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     timeout-minutes: 20
 
     steps:
