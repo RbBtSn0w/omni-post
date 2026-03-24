@@ -50,8 +50,8 @@ router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
             file_path: req.file.filename,
             filesize: (req.file.size / (1024 * 1024)).toFixed(2),
         }, '上传成功');
-    } catch (error: any) {
-        sendError(res, 500, `上传失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `上传失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -81,8 +81,8 @@ router.get('/getFile', (req: Request, res: Response) => {
         }
 
         res.sendFile(filePath);
-    } catch (error: any) {
-        sendError(res, 500, `获取文件失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `获取文件失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -107,8 +107,8 @@ router.get('/download/:filename', (req: Request, res: Response) => {
         }
 
         res.download(filePath);
-    } catch (error: any) {
-        sendError(res, 500, `下载失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `下载失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -136,8 +136,8 @@ router.post('/uploadSave', upload.single('file'), (req: Request, res: Response) 
             file_path: req.file.filename,
             filesize: fileSize,
         }, '上传成功');
-    } catch (error: any) {
-        sendError(res, 500, `上传失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `上传失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -148,7 +148,7 @@ router.post('/uploadSave', upload.single('file'), (req: Request, res: Response) 
 router.get('/getFiles', async (_req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
-        const files = db.prepare('SELECT * FROM file_records ORDER BY upload_time DESC').all() as any[];
+        const files = db.prepare('SELECT * FROM file_records ORDER BY upload_time DESC').all() as { id: number, filename: string, filesize: number, file_path: string, upload_time: string }[];
         
         // Append is_missing flag sequentially to avoid EMFILE
         const mappedFiles = [];
@@ -170,8 +170,8 @@ router.get('/getFiles', async (_req: Request, res: Response) => {
         }
 
         sendSuccess(res, mappedFiles, '获取成功');
-    } catch (error: any) {
-        sendError(res, 500, `获取文件列表失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `获取文件列表失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -188,7 +188,7 @@ router.get('/deleteFile', (req: Request, res: Response) => {
         }
 
         const db = dbManager.getDb();
-        const fileRecord = db.prepare('SELECT * FROM file_records WHERE id = ?').get(Number(id)) as any;
+        const fileRecord = db.prepare('SELECT * FROM file_records WHERE id = ?').get(Number(id)) as { id: number, file_path: string } | undefined;
 
         if (!fileRecord) {
             sendError(res, 404, '文件记录不存在');
@@ -202,7 +202,7 @@ router.get('/deleteFile', (req: Request, res: Response) => {
                 if (fs.existsSync(filePath)) {
                     fs.unlinkSync(filePath);
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Ignore traversal or invalid path errors during deletion but log them
             }
         }
@@ -211,8 +211,8 @@ router.get('/deleteFile', (req: Request, res: Response) => {
         db.prepare('DELETE FROM file_records WHERE id = ?').run(Number(id));
 
         sendSuccess(res, null, '删除成功');
-    } catch (error: any) {
-        sendError(res, 500, `删除失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `删除失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 
@@ -223,7 +223,7 @@ router.get('/deleteFile', (req: Request, res: Response) => {
 router.post('/syncFiles', async (_req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
-        const existingRecords = db.prepare('SELECT file_path FROM file_records WHERE file_path IS NOT NULL').all() as any[];
+        const existingRecords = db.prepare('SELECT file_path FROM file_records WHERE file_path IS NOT NULL').all() as { file_path: string }[];
         const existingPaths = new Set(existingRecords.map((r) => r.file_path));
 
         if (!fs.existsSync(VIDEOS_DIR)) {
@@ -257,7 +257,7 @@ router.post('/syncFiles', async (_req: Request, res: Response) => {
             }
 
             if (results.length > 0) {
-                const insertMany = db.transaction((items: any[]) => {
+                const insertMany = db.transaction((items: { filename: string, filesize: number, file_path: string }[]) => {
                     for (const item of items) {
                         insertStmt.run(item.filename, item.filesize, item.file_path);
                         syncedCount++;
@@ -268,7 +268,7 @@ router.post('/syncFiles', async (_req: Request, res: Response) => {
         }
 
         sendSuccess(res, { count: syncedCount }, `成功同步了 ${syncedCount} 个新文件`);
-    } catch (error: any) {
-        sendError(res, 500, `同步失败: ${error.message}`);
+    } catch (error: unknown) {
+        sendError(res, 500, `同步失败: ${error instanceof Error ? error.message : String(error)}`);
     }
 });

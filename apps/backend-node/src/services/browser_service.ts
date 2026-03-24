@@ -8,7 +8,7 @@ class BrowserService {
    */
   getAllProfiles(): BrowserProfile[] {
     const db = dbManager.getDb();
-    const rows = db.prepare('SELECT * FROM browser_profiles ORDER BY created_at DESC').all() as any[];
+    const rows = db.prepare('SELECT * FROM browser_profiles ORDER BY created_at DESC').all() as BrowserProfile[];
     return rows.map(row => ({
       ...row,
       is_default: Boolean(row.is_default)
@@ -20,7 +20,7 @@ class BrowserService {
    */
   getProfile(id: string): BrowserProfile | null {
     const db = dbManager.getDb();
-    const row = db.prepare('SELECT * FROM browser_profiles WHERE id = ?').get(id) as any;
+    const row = db.prepare('SELECT * FROM browser_profiles WHERE id = ?').get(id) as BrowserProfile | undefined;
     if (!row) return null;
     return {
       ...row,
@@ -71,7 +71,7 @@ class BrowserService {
 
     const setClause = fields.map(f => `${f} = ?`).join(', ');
     const values = fields.map(f => {
-      const val = (data as any)[f];
+      const val = (data as Record<string, unknown>)[f];
       return f === 'is_default' ? (val ? 1 : 0) : val;
     });
 

@@ -9,9 +9,9 @@ class ArticleService {
   private resolveAccountFilePath(accountRef: string, expectedPlatformType: number): string {
     const db = dbManager.getDb();
     const isNumericId = /^\d+$/.test(String(accountRef));
-    const row = isNumericId
-      ? db.prepare('SELECT id, type, filePath FROM user_info WHERE id = ?').get(Number(accountRef)) as any
-      : db.prepare('SELECT id, type, filePath FROM user_info WHERE filePath = ?').get(accountRef) as any;
+    const row = (isNumericId
+      ? db.prepare('SELECT id, type, filePath FROM user_info WHERE id = ?').get(Number(accountRef))
+      : db.prepare('SELECT id, type, filePath FROM user_info WHERE filePath = ?').get(accountRef)) as { id: number, type: number, filePath: string } | undefined;
 
     if (!row) {
       throw new Error('Account not found');
@@ -30,7 +30,7 @@ class ArticleService {
    */
   getAllArticles(): Article[] {
     const db = dbManager.getDb();
-    const rows = db.prepare('SELECT * FROM articles ORDER BY created_at DESC').all() as any[];
+    const rows = db.prepare('SELECT * FROM articles ORDER BY created_at DESC').all() as (Article & { tags: string })[];
     return rows.map(row => ({
       ...row,
       tags: JSON.parse(row.tags || '[]')
@@ -42,7 +42,7 @@ class ArticleService {
    */
   getArticle(id: string): Article | null {
     const db = dbManager.getDb();
-    const row = db.prepare('SELECT * FROM articles WHERE id = ?').get(id) as any;
+    const row = db.prepare('SELECT * FROM articles WHERE id = ?').get(id) as (Article & { tags: string }) | undefined;
     if (!row) return null;
     return {
       ...row,
