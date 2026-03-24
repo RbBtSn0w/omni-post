@@ -30,15 +30,10 @@ export class ZhihuUploader extends BaseUploader {
 
     onProgress(30);
     this.log('Filling article content...');
-    
+
     // Title
     await page.fill('textarea[placeholder="请输入标题"]', article.title);
-    
-    // Content (Zhihu uses a custom editor, but often supports pasting HTML or has a hidden textarea)
-    // For simplicity in this implementation, we'll try to find the editor and paste.
-    // Real implementation would need more specific selectors.
-    const htmlContent = await markdownToHtml(article.content);
-    
+
     // Simple draft logic:
     await page.click('.WriteIndex-content'); // Focus editor
     await page.keyboard.type(article.content); // Type raw markdown as fallback or use a better strategy

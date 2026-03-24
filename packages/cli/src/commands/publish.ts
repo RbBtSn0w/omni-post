@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import fs from 'fs';
+import path from 'path';
 import { api } from '../api/client.js';
 import { toErrorMessage } from '../utils/error.js';
 
@@ -21,7 +22,7 @@ export function registerPublishCommands(program: Command) {
           throw new Error(`File not found: ${file}`);
         }
         const content = fs.readFileSync(file, 'utf-8');
-        const title = options.title || file.split('/').pop()?.replace('.md', '') || 'Untitled';
+        const title = options.title || path.basename(file, '.md') || 'Untitled';
 
         // 1. Create Article
         const article = await api.createArticle({

@@ -57,24 +57,39 @@ function parseTasksResponse(payload: PublishTask[] | ApiEnvelope<PublishTask[]>)
 export const api = {
   // Browser Profiles
   getProfiles: () =>
-    apiClient.get<BrowserProfile[]>('/api/browser/profiles').then((res) => res.data),
+    apiClient.get<ApiEnvelope<BrowserProfile[]>>('/profiles').then((res) => {
+      const payload = res.data;
+      return isApiEnvelope<BrowserProfile[]>(payload) ? (payload.data || []) : (payload as unknown as BrowserProfile[]);
+    }),
   linkProfile: (data: LinkProfileRequest) =>
-    apiClient.post<{ id: string }>('/api/browser/profiles', data).then((res) => res.data),
+    apiClient.post<ApiEnvelope<{ id: string }>>('/profiles', data).then((res) => {
+      const payload = res.data;
+      return isApiEnvelope<{ id: string }>(payload) ? payload.data! : (payload as unknown as { id: string });
+    }),
 
   // Articles
   createArticle: (data: CreateArticleRequest) =>
-    apiClient.post<CreateArticleResponse>('/api/articles', data).then((res) => res.data),
+    apiClient.post<ApiEnvelope<CreateArticleResponse>>('/articles', data).then((res) => {
+      const payload = res.data;
+      return isApiEnvelope<CreateArticleResponse>(payload) ? payload.data! : (payload as unknown as CreateArticleResponse);
+    }),
   publishArticle: (data: PublishArticleRequest) =>
-    apiClient.post<PublishArticleResponse>('/api/publish/article', data).then((res) => res.data),
+    apiClient.post<ApiEnvelope<PublishArticleResponse>>('/publish/article', data).then((res) => {
+      const payload = res.data;
+      return isApiEnvelope<PublishArticleResponse>(payload) ? payload.data! : (payload as unknown as PublishArticleResponse);
+    }),
 
   // Explore
   explore: (url: string) =>
-    apiClient.get<ExploreResult>('/api/explore', { params: { url } }).then((res) => res.data),
+    apiClient.get<ApiEnvelope<ExploreResult>>('/explore', { params: { url } }).then((res) => {
+      const payload = res.data;
+      return isApiEnvelope<ExploreResult>(payload) ? payload.data! : (payload as unknown as ExploreResult);
+    }),
 
   // Tasks
   getTasks: () =>
     apiClient
-      .get<PublishTask[] | ApiEnvelope<PublishTask[]>>('/api/publish/tasks')
+      .get<PublishTask[] | ApiEnvelope<PublishTask[]>>('/tasks')
       .then((res) => {
         if (!Array.isArray(res.data) && !isApiEnvelope<PublishTask[]>(res.data)) {
           throw new Error('Invalid tasks response: unsupported payload shape');

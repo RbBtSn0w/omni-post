@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/core/browser.js', () => ({
+vi.mock('../../core/browser.js', () => ({
     launchBrowser: vi.fn(),
     setInitScript: vi.fn(),
     createScreenshotDir: vi.fn().mockReturnValue('/tmp/screenshots'),

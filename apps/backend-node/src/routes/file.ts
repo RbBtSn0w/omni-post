@@ -150,8 +150,9 @@ router.get('/getFiles', async (_req: Request, res: Response) => {
         const db = dbManager.getDb();
         const files = db.prepare('SELECT * FROM file_records ORDER BY upload_time DESC').all() as any[];
         
-        // Append is_missing flag (Async check to avoid blocking)
-        const mappedFiles = await Promise.all(files.map(async (file) => {
+        // Append is_missing flag sequentially to avoid EMFILE
+        const mappedFiles = [];
+        for (const file of files) {
             let isMissing = true;
             if (file.file_path) {
                 try {
@@ -162,11 +163,11 @@ router.get('/getFiles', async (_req: Request, res: Response) => {
                     logger.error(`检查文件存在性失败 [${file.file_path}]:`, e);
                 }
             }
-            return {
+            mappedFiles.push({
                 ...file,
                 is_missing: isMissing
-            };
-        }));
+            });
+        }
 
         sendSuccess(res, mappedFiles, '获取成功');
     } catch (error: any) {
@@ -237,8 +238,9 @@ router.post('/syncFiles', async (_req: Request, res: Response) => {
         if (orphanFiles.length > 0) {
             const insertStmt = db.prepare('INSERT INTO file_records (filename, filesize, file_path) VALUES (?, ?, ?)');
             
-            // Process metadata in parallel but limited (to avoid EMFILE)
-            const tasks = orphanFiles.map(async (file) => {
+            // Process metadata sequentially to avoid EMFILE on large directories
+            const results = [];
+            for (const file of orphanFiles) {
                 const ext = path.extname(file).toLowerCase();
                 const validExts = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
                 
@@ -247,15 +249,12 @@ router.post('/syncFiles', async (_req: Request, res: Response) => {
                         const filePath = safeJoin(VIDEOS_DIR, file);
                         const stats = await fs.promises.stat(filePath);
                         const fileSizeMB = Number((stats.size / (1024 * 1024)).toFixed(2));
-                        return { filename: file, filesize: fileSizeMB, file_path: file };
+                        results.push({ filename: file, filesize: fileSizeMB, file_path: file });
                     } catch (e) {
                         logger.error(`同步文件元数据失败 [${file}]:`, e);
                     }
                 }
-                return null;
-            });
-
-            const results = (await Promise.all(tasks)).filter(r => r !== null) as any[];
+            }
 
             if (results.length > 0) {
                 const insertMany = db.transaction((items: any[]) => {

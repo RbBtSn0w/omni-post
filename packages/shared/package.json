@@ -4,7 +4,10 @@
   "description": "Shared constants, types, and utilities for OmniPost frontend and backend",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

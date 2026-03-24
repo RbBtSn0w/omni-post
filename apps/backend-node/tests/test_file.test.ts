@@ -14,7 +14,7 @@ import { cleanupTempDb, createTempDb } from './setup.js';
 
 let db: Database.Database;
 let dbPath: string;
-let tmpVideoDir: string;
+let tmpVideoDir = '/tmp/test-videos-global';
 
 vi.mock('../src/db/database.js', () => ({
     dbManager: {
@@ -28,7 +28,7 @@ vi.mock('../src/core/config.js', async () => {
     const actual = await vi.importActual('../src/core/config.js') as any;
     return {
         ...actual,
-        VIDEOS_DIR: '/tmp/test-videos-global',
+        get VIDEOS_DIR() { return tmpVideoDir; },
     };
 });
 
@@ -44,11 +44,7 @@ function createTestApp() {
 describe('File Route', () => {
     beforeEach(() => {
         ({ db, dbPath } = createTempDb());
-        tmpVideoDir = '/tmp/test-videos-global';
-        if (fs.existsSync(tmpVideoDir)) {
-            fs.rmSync(tmpVideoDir, { recursive: true, force: true });
-        }
-        fs.mkdirSync(tmpVideoDir, { recursive: true });
+        tmpVideoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-videos-'));
     });
 
     afterEach(() => {

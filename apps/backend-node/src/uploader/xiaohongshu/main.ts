@@ -21,16 +21,17 @@ export class XiaohongshuUploader extends BaseUploader {
             // 核心修复：不仅等 HTTP 200，还要检查 Body 里的业务状态
             await page.waitForResponse(
                 async (response) => {
-                    const isMatch = response.url().includes('query_transcode') && response.status() === 200;
-                    if (isMatch) {
-                        try {
+                    try {
+                        const urlObj = new URL(response.url());
+                        const isMatch = urlObj.hostname.endsWith('.xiaohongshu.com') 
+                            && urlObj.pathname.includes('query_transcode') 
+                            && response.status() === 200;
+                        if (isMatch) {
                             const data = await response.json();
-                            // 小红书转码成功的业务逻辑判定：status 1 代表就绪
-                            const isReady = data?.data?.video?.status === 1 || data?.success === true;
-                            if (isReady) return true;
-                        } catch {
-                            return false;
+                            return data?.data?.video?.status === 1 || data?.success === true;
                         }
+                    } catch {
+                        return false;
                     }
                     return false;
                 },
@@ -135,7 +136,16 @@ export class XiaohongshuUploader extends BaseUploader {
                 try {
                     // 核心修复：先声明 Promise 再点击，规避竞态
                     const submitPromise = page.waitForResponse(
-                        (resp) => resp.url().includes('web_api/sns/v2/note') && resp.status() === 200,
+                        (resp) => {
+                            try {
+                                const urlObj = new URL(resp.url());
+                                return urlObj.hostname.endsWith('.xiaohongshu.com') 
+                                    && urlObj.pathname.includes('/web_api/sns/v2/note') 
+                                    && resp.status() === 200;
+                            } catch {
+                                return false;
+                            }
+                        },
                         { timeout: 90000 }
                     );
                     

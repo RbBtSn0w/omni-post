@@ -31,9 +31,12 @@ for (const dir of [DATA_DIR, COOKIES_DIR, VIDEOS_DIR, LOGS_DIR]) {
 }
 
 // File upload settings
-/** 100GB default, override with MAX_UPLOAD_SIZE_MB if needed */
-const envUploadSizeMB = process.env.MAX_UPLOAD_SIZE_MB ? parseInt(process.env.MAX_UPLOAD_SIZE_MB, 10) : 102400;
-export const MAX_UPLOAD_SIZE = BigInt(envUploadSizeMB) * BigInt(1024 * 1024);
+const parseUploadSize = (val: string | undefined): number => {
+    const parsed = parseInt(val || '102400', 10);
+    return isNaN(parsed) ? 102400 : parsed;
+};
+/** Upload limit in bytes, defaults to 100GB */
+export const MAX_UPLOAD_SIZE = parseUploadSize(process.env.MAX_UPLOAD_SIZE_MB) * 1024 * 1024;
 
 // Server settings
 export const SERVER_HOST = '0.0.0.0';
@@ -75,10 +78,8 @@ function detectChromePath(): string | null {
 
 export const LOCAL_CHROME_PATH = detectChromePath();
 
-// Headless mode setting - defaults to true for CI/Linux stability
-// export const LOCAL_CHROME_HEADLESS = process.env.HEADLESS !== 'false';
-
-export const LOCAL_CHROME_HEADLESS = false;
+// Headless mode setting - defaults to true (especially for CI/Linux) unless disabled
+export const LOCAL_CHROME_HEADLESS = process.env.HEADLESS !== 'false' && process.env.LOCAL_CHROME_HEADLESS !== 'false';
 
 /**
  * Log browser configuration information at startup.

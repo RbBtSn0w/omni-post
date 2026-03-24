@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
+import { http } from '@/utils/request'
 
 export const useBrowserStore = defineStore('browser', () => {
   const profiles = ref([])
@@ -9,8 +9,8 @@ export const useBrowserStore = defineStore('browser', () => {
   const fetchProfiles = async () => {
     loading.value = true
     try {
-      const response = await axios.get('/api/profiles')
-      profiles.value = response.data
+      const response = await http.get('/profiles')
+      profiles.value = response.data || []
     } catch (error) {
       console.error('Failed to fetch browser profiles:', error)
     } finally {
@@ -20,9 +20,9 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const createProfile = async (profileData) => {
     try {
-      const response = await axios.post('/api/profiles', profileData)
+      const response = await http.post('/profiles', profileData)
       await fetchProfiles()
-      return response.data.id
+      return response.data?.id
     } catch (error) {
       console.error('Failed to create browser profile:', error)
       throw error
@@ -31,7 +31,7 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const updateProfile = async (id, profileData) => {
     try {
-      await axios.put(`/api/profiles/${id}`, profileData)
+      await http.put(`/profiles/${id}`, profileData)
       await fetchProfiles()
     } catch (error) {
       console.error('Failed to update browser profile:', error)
@@ -41,7 +41,7 @@ export const useBrowserStore = defineStore('browser', () => {
 
   const deleteProfile = async (id) => {
     try {
-      await axios.delete(`/api/profiles/${id}`)
+      await http.delete(`/profiles/${id}`)
       await fetchProfiles()
     } catch (error) {
       console.error('Failed to delete browser profile:', error)

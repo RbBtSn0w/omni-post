@@ -131,13 +131,29 @@ export class TencentUploader extends BaseUploader {
 
                 const uploadProgressListener = (request: any) => {
                     const url = request.url();
-                    // 1. 拦截分片完成信号 -> 立即标记为 99% (让用户知道网传完了)
+                    let hostname = '';
+                    try {
+                        hostname = new URL(url).hostname.toLowerCase();
+                    } catch {
+                        return;
+                    }
+
+                    const isTrustedDomain = hostname === 'channels.weixin.qq.com'
+                        || hostname.endsWith('.weixin.qq.com')
+                        || hostname === 'video.qq.com'
+                        || hostname.endsWith('.video.qq.com')
+                        || hostname === 'myqcloud.com'
+                        || hostname.endsWith('.myqcloud.com');
+
+                    if (!isTrustedDomain) return;
+
+                    // 1. 拦截分片完成信号
                     if (url.includes('completepartuploaddfs') && request.method() === 'POST') {
                         onProgress(99);
                         this.log('所有分片已传输系统，正在等待云端最终合包与解析...');
                     }
 
-                    // 2. 尝试监听微信官方的进度心跳包 (最准)
+                    // 2. 尝试监听微信官方的进度心跳包
                     if (url.includes('helper_mmdata') && request.method() === 'POST') {
                         try {
                             const postData = request.postData();
@@ -159,23 +175,8 @@ export class TencentUploader extends BaseUploader {
                         }
                     }
 
-                    // 2. 兜底逻辑：流量分片监听
-                    let hostname = '';
-                    try {
-                        hostname = new URL(url).hostname.toLowerCase();
-                    } catch {
-                        return;
-                    }
-
-                    const isTrustedUploadHost = hostname === 'video.qq.com'
-                        || hostname.endsWith('.video.qq.com')
-                        || hostname === 'myqcloud.com'
-                        || hostname.endsWith('.myqcloud.com');
-
-                    if (
-                        isTrustedUploadHost &&
-                        (request.method() === 'POST' || request.method() === 'PUT')
-                    ) {
+                    // 3. 兜底逻辑：流量分片监听
+                    if (request.method() === 'POST' || request.method() === 'PUT') {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;

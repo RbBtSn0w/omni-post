@@ -95,7 +95,7 @@ import { reactive, ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAccountStore } from '@/stores/account'
 import { useBrowserStore } from '@/stores/browser'
-import axios from 'axios'
+import { http } from '@/utils/request'
 
 const accountStore = useAccountStore()
 const browserStore = useBrowserStore()
@@ -161,7 +161,7 @@ const handlePublish = async () => {
   publishing.value = true
   try {
     // 1. Create Article
-    const articleRes = await axios.post('/api/articles', {
+    const articleRes = await http.post('/articles', {
       title: form.title,
       content: form.content,
       tags: form.tags
@@ -170,7 +170,7 @@ const handlePublish = async () => {
 
     // 2. Publish to selected platforms
     for (const platform of form.platforms) {
-      await axios.post('/api/publish/article', {
+      await http.post('/publish/article', {
         article_id: articleId,
         account_id: form.account_ids[platform],
         platform: platform,
@@ -179,7 +179,8 @@ const handlePublish = async () => {
     }
 
     ElMessage.success('发布任务已提交')
-  } catch {
+  } catch (error) {
+    console.error('Publish failed:', error)
     ElMessage.error('发布失败')
   } finally {
     publishing.value = false

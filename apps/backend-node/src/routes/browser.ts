@@ -1,74 +1,78 @@
-import express from 'express';
+import { Router, type Request, type Response } from 'express';
 import { browserService } from '../services/browser_service.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * Get all browser profiles.
  */
-router.get('/profiles', (req, res) => {
+router.get('/profiles', (req: Request, res: Response) => {
   try {
     const profiles = browserService.getAllProfiles();
-    res.json(profiles);
+    sendSuccess(res, profiles);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Get a profile by ID.
  */
-router.get('/profiles/:id', (req, res) => {
+router.get('/profiles/:id', (req: Request, res: Response) => {
   try {
-    const profile = browserService.getProfile(req.params.id);
+    const profile = browserService.getProfile(String(req.params.id));
     if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
+      sendError(res, 404, 'Profile not found');
+      return;
     }
-    res.json(profile);
+    sendSuccess(res, profile);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Create a new browser profile.
  */
-router.post('/profiles', (req, res) => {
+router.post('/profiles', (req: Request, res: Response) => {
   try {
     const id = browserService.createProfile(req.body);
-    res.status(201).json({ id });
+    sendSuccess(res, { id }, 'Create success');
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Update an existing profile.
  */
-router.put('/profiles/:id', (req, res) => {
+router.put('/profiles/:id', (req: Request, res: Response) => {
   try {
-    const success = browserService.updateProfile(req.params.id, req.body);
+    const success = browserService.updateProfile(String(req.params.id), req.body);
     if (!success) {
-      return res.status(404).json({ error: 'Profile not found or no changes made' });
+      sendError(res, 404, 'Profile not found or no changes made');
+      return;
     }
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Delete a profile.
  */
-router.delete('/profiles/:id', (req, res) => {
+router.delete('/profiles/:id', (req: Request, res: Response) => {
   try {
-    const success = browserService.deleteProfile(req.params.id);
+    const success = browserService.deleteProfile(String(req.params.id));
     if (!success) {
-      return res.status(404).json({ error: 'Profile not found' });
+      sendError(res, 404, 'Profile not found');
+      return;
     }
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 

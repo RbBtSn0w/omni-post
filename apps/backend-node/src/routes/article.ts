@@ -1,51 +1,53 @@
-import express from 'express';
+import { Router, type Request, type Response } from 'express';
 import { articleService } from '../services/article_service.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * Get all articles.
  */
-router.get('/articles', async (req, res) => {
+router.get('/articles', async (req: Request, res: Response) => {
   try {
     const articles = articleService.getAllArticles();
-    res.json(articles);
+    sendSuccess(res, articles);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Get an article by ID.
  */
-router.get('/articles/:id', async (req, res) => {
+router.get('/articles/:id', async (req: Request, res: Response) => {
   try {
-    const article = articleService.getArticle(req.params.id);
+    const article = articleService.getArticle(String(req.params.id));
     if (!article) {
-      return res.status(404).json({ error: 'Article not found' });
+      sendError(res, 404, 'Article not found');
+      return;
     }
-    res.json(article);
+    sendSuccess(res, article);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Create a new article.
  */
-router.post('/articles', async (req, res) => {
+router.post('/articles', async (req: Request, res: Response) => {
   try {
     const id = articleService.createArticle(req.body);
-    res.status(201).json({ id });
+    sendSuccess(res, { id }, 'Create success');
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
 /**
  * Publish an article (trigger task).
  */
-router.post('/publish/article', async (req, res) => {
+router.post('/publish/article', async (req: Request, res: Response) => {
   try {
     const { article_id, account_id, platform, browser_profile_id, schedule_time } = req.body;
     const taskId = await articleService.publishArticle(
@@ -55,9 +57,9 @@ router.post('/publish/article', async (req, res) => {
       browser_profile_id,
       schedule_time
     );
-    res.status(202).json({ task_id: taskId });
+    sendSuccess(res, { task_id: taskId }, 'Publish task submitted');
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 

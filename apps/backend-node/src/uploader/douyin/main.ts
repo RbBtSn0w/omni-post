@@ -197,7 +197,12 @@ export class DouyinUploader extends BaseUploader {
                     const hostLabels = hostname.split('.');
                     const isTrustedUploadHost = hostname === 'bytedance.com'
                         || hostname.endsWith('.bytedance.com')
-                        || hostLabels.some((label) => label === 'vod' || label.startsWith('vod-'));
+                        || hostname === 'byteimg.com'
+                        || hostname.endsWith('.byteimg.com')
+                        || hostname === 'pstatp.com'
+                        || hostname.endsWith('.pstatp.com')
+                        || hostname === 'volcengine.com'
+                        || hostname.endsWith('.volcengine.com');
 
                     if (isTrustedUploadHost && request.method() === 'POST') {
                         const buffer = request.postDataBuffer();

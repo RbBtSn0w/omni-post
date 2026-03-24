@@ -1,21 +1,23 @@
-import express from 'express';
+import { Router, type Request, type Response } from 'express';
 import { explorerService } from '../services/explorer_service.js';
+import { sendError, sendSuccess } from '../utils/response.js';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * Explore a URL.
  */
-router.get('/explore', async (req, res) => {
+router.get('/explore', async (req: Request, res: Response) => {
   try {
     const url = req.query.url as string;
     if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
+      sendError(res, 400, 'URL is required');
+      return;
     }
     const result = await explorerService.explore(url);
-    res.json(result);
+    sendSuccess(res, result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, 500, error.message);
   }
 });
 
