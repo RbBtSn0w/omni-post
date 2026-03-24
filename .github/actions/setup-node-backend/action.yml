@@ -1,14 +1,10 @@
 name: "Setup Node.js Backend Engine"
-description: "Sets up Node, caches npm dependencies"
+description: "Sets up Node and installs dependencies"
 inputs:
   node-version:
     description: "Version of Node to use"
     required: false
     default: "20.19.0"
-outputs:
-  cache-hit:
-    description: "Whether the cache hit occurred"
-    value: ${{ steps.cache-npm.outputs.cache-hit }}
 runs:
   using: "composite"
   steps:
@@ -17,25 +13,12 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
-
-    - name: Cache npm modules
-      id: cache-npm
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        cache-dependency-path: package-lock.json
 
     - name: Install dependencies
       shell: bash
       run: |
-        echo "📦 Upgrading npm and installing dependencies..."
-        npm install -g npm@latest
-        npm ci
+        echo "Installing npm dependencies..."
+        npm ci --include=optional
       env:
         HUSKY: 0
-
-    - name: Build All Workspaces
-      shell: bash
-      run: npm run build --workspaces --if-present

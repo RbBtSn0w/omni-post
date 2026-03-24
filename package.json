@@ -35,6 +35,8 @@
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
     "clean": "node tools/scripts/clean-workspaces.mjs",
     "check:workspace": "node tools/scripts/check-workspace.mjs",
+    "check:changed": "node tools/scripts/run-affected.mjs",
+    "check:changed:all": "node tools/scripts/run-affected.mjs --all",
     "prepare": "husky || true"
   },
   "engines": {
