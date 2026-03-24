@@ -86,15 +86,18 @@ jobs:
         run: npm audit --audit-level=high --omit=dev || echo "NPM Audit met warnings but continuing..."
 
       - name: Lint
-        run: npm run lint -w apps/frontend
+        working-directory: apps/frontend
+        run: npm run lint
 
       - name: Run Tests
         # Usage of test:frontend:coverage from root package.json logic or direct
         # package.json in apps/frontend has "test:coverage": "vitest run --coverage"
-        run: npm run test:coverage -w apps/frontend
+        working-directory: apps/frontend
+        run: npm run test:coverage
 
       - name: Build
-        run: npm run build -w apps/frontend
+        working-directory: apps/frontend
+        run: npm run build
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
@@ -118,16 +121,20 @@ jobs:
         uses: ./.github/actions/setup-node-backend
 
       - name: Install Playwright
-        run: npx playwright install chromium --with-deps -w apps/backend-node
+        working-directory: apps/backend-node
+        run: npx playwright install chromium --with-deps
 
       - name: Security (NPM Audit)
-        run: npm audit --audit-level=high --omit=dev -w apps/backend-node
+        working-directory: apps/backend-node
+        run: npm audit --audit-level=high --omit=dev
 
       - name: Lint
-        run: npm run lint -w apps/backend-node
+        working-directory: apps/backend-node
+        run: npm run lint
 
       - name: Typecheck
-        run: npm run typecheck -w apps/backend-node
+        working-directory: apps/backend-node
+        run: npm run typecheck
 
       - name: Run Tests
         run: npm test -w apps/backend-node -- --coverage
