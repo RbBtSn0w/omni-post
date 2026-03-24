@@ -22,3 +22,7 @@ runs:
       run: |
         echo "📦 Installing npm dependencies..."
         npm ci
+
+    - name: Build Shared Package
+      shell: bash
+      run: npm run build -w @omni-post/shared

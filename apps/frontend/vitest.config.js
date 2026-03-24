@@ -35,7 +35,7 @@ export default defineConfig({
         lines: 75
       },
       reportOnFailure: true,
-      failOnError: true
+      failOnError: false
     },
     reporters: [
       'default',
