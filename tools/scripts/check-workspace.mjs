@@ -95,8 +95,8 @@ const validateWorkspaceDeps = (pkgJson, workspaceNames, pkgDirName) => {
       if (!workspaceNames.has(dep)) {
         continue;
       }
-      if (!version.startsWith('workspace:')) {
-        problems.push(`${pkgDirName}: ${dep} must use workspace protocol`);
+      if (version !== '*' && !version.startsWith('workspace:')) {
+        problems.push(`${pkgDirName}: ${dep} must use workspace protocol (* or workspace:*)`);
       }
     }
   }
