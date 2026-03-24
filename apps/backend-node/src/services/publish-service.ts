@@ -74,19 +74,21 @@ async function runWithOptimizedBrowser(
     // Strategy 1: Local Session Reuse
     if (opts.browser_profile_id) {
         const profile = browserService.getProfile(opts.browser_profile_id);
-        if (profile) {
-            console.log(`[PublishService] Using local browser profile: ${profile.name}`);
-            const context = await launchPersistentContext(
-                profile.user_data_dir,
-                profile.profile_name
-            );
-            try {
-                await dispatchUploader(uploader, context, enrichedOpts, null);
-            } finally {
-                await context.close();
-            }
-            return;
+        if (!profile) {
+            throw new Error(`Browser profile not found for id: ${opts.browser_profile_id}`);
         }
+
+        console.log(`[PublishService] Using local browser profile: ${profile.name}`);
+        const context = await launchPersistentContext(
+            profile.user_data_dir,
+            profile.profile_name
+        );
+        try {
+            await dispatchUploader(uploader, context, enrichedOpts, null);
+        } finally {
+            await context.close();
+        }
+        return;
     }
 
     // Strategy 2: Managed Cookies (Fallback)

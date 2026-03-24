@@ -50,6 +50,10 @@ router.post('/articles', async (req: Request, res: Response) => {
 router.post('/publish/article', async (req: Request, res: Response) => {
   try {
     const { article_id, account_id, platform, browser_profile_id, schedule_time } = req.body;
+    if (!article_id || !platform || typeof platform !== 'string') {
+      sendError(res, 400, 'article_id and platform (string) are required');
+      return;
+    }
     const taskId = await articleService.publishArticle(
       article_id,
       account_id,

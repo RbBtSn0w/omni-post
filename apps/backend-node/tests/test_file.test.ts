@@ -14,7 +14,7 @@ import { cleanupTempDb, createTempDb } from './setup.js';
 
 let db: Database.Database;
 let dbPath: string;
-let tmpVideoDir = '/tmp/test-videos-global';
+let tmpVideoDir: string;
 
 vi.mock('../src/db/database.js', () => ({
     dbManager: {

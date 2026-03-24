@@ -15,13 +15,14 @@ class ExplorerService {
     if (privateIps.test(hostname) || hostname === 'localhost' || hostname === '::1') {
       throw new Error('Private network access is restricted for security.');
     }
+    return urlObj;
   }
 
   /**
    * Explore a URL to identify interaction points.
    */
   async explore(url: string): Promise<any> {
-    this.validateUrl(url);
+    const urlObj = this.validateUrl(url);
     
     const browser = await chromium.launch({ headless: true });
     try {
@@ -64,8 +65,7 @@ class ExplorerService {
       });
 
       // Synthesis: suggest an adapter template
-      let hostname = 'unknown';
-      try { hostname = new URL(url).hostname; } catch { /* ignore */ }
+      const hostname = urlObj.hostname;
       
       const adapterDraft = {
         platform: hostname,
