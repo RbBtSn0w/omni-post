@@ -29,6 +29,7 @@ const shouldCheckFile = (file) => {
   }
   if (
     !file.startsWith('apps/backend-node/')
+    && !file.startsWith('apps/frontend/')
     && !file.startsWith('packages/cli/')
     && !file.startsWith('packages/shared/')
   ) {
