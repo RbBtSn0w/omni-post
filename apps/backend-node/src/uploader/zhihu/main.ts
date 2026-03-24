@@ -16,7 +16,7 @@ export class ZhihuUploader extends BaseUploader {
     onProgress: (progress: number) => void
   ): Promise<void> {
     const page = await this.createPage(context);
-    const article = (options as any).article;
+    const article = options.article;
     if (!article) throw new Error('Article data missing in options');
 
     onProgress(10);
