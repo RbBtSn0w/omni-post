@@ -167,6 +167,9 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node-frontend
 
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
+
       - name: Security (NPM Audit)
         run: npm audit --audit-level=high --omit=dev
 

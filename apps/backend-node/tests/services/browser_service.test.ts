@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { browserService } from '../../src/services/browser_service.js';
 import { dbManager } from '../../src/db/database.js';
+import { createTables } from '../../src/db/migrations.js';
 
 describe('BrowserService', () => {
   beforeEach(() => {
+    createTables();
     // Clear database or mock properly if needed
     // For now, let's assume we can run real SQLite in-memory or a test file
     const db = dbManager.getDb();
