@@ -646,7 +646,7 @@ export class BilibiliUploader extends BaseUploader {
             this.log('正在并行填写简介...');
             const descInput = page.locator('.ql-editor').first();
             if (await descInput.count()) {
-                const descText = `${title || ''}\n${(tags || []).map(t => '#' + t).join(' ')}`;
+                const descText = `${title || ''}\n${(tags || []).map((t: string) => '#' + t).join(' ')}`;
                 await descInput.click();
                 await descInput.press('ControlOrMeta+a');
                 await descInput.press('Backspace');

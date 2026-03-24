@@ -207,6 +207,9 @@ jobs:
       - name: Setup Node Backend
         uses: ./.github/actions/setup-node-backend
 
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
+
       - name: Install Playwright
         working-directory: apps/backend-node
         run: npx playwright install chromium --with-deps

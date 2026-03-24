@@ -22,3 +22,13 @@ runs:
       run: |
         echo "Installing npm dependencies..."
         npm ci --include=optional
+
+    - name: Ensure Rollup Native Binary (Linux x64)
+      shell: bash
+      run: |
+        if [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]]; then
+          ROLLUP_VERSION="$(node -p "try { require('./node_modules/rollup/package.json').version } catch { '' }")"
+          if [[ -n "$ROLLUP_VERSION" ]]; then
+            npm install --no-save "@rollup/rollup-linux-x64-gnu@${ROLLUP_VERSION}"
+          fi
+        fi
