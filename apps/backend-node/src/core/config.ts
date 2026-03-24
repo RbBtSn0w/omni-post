@@ -33,7 +33,9 @@ for (const dir of [DATA_DIR, COOKIES_DIR, VIDEOS_DIR, LOGS_DIR]) {
 // File upload settings
 const parseUploadSize = (val: string | undefined): number => {
     const parsed = parseInt(val || '102400', 10);
-    return isNaN(parsed) ? 102400 : parsed;
+    if (isNaN(parsed) || parsed < 1) return 102400;
+    // Clamp to 500GB upper bound to avoid extreme allocations or overflows
+    return Math.min(parsed, 512000);
 };
 /** Upload limit in bytes, defaults to 100GB */
 export const MAX_UPLOAD_SIZE = parseUploadSize(process.env.MAX_UPLOAD_SIZE_MB) * 1024 * 1024;
