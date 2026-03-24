@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import fs from 'fs';
 import { api } from '../api/client.js';
+import { toErrorMessage } from '../utils/error.js';
 
 export function registerPublishCommands(program: Command) {
   const publish = program.command('publish').description('Publish content to platforms');
@@ -38,8 +39,8 @@ export function registerPublishCommands(program: Command) {
         });
 
         console.log(chalk.green(`Publish task created: ${res.task_id}`));
-      } catch (error: any) {
-        console.error(chalk.red('Failed to publish article:'), error.message);
+      } catch (error: unknown) {
+        console.error(chalk.red('Failed to publish article:'), toErrorMessage(error));
       }
     });
 
@@ -49,15 +50,15 @@ export function registerPublishCommands(program: Command) {
     .action(async () => {
       try {
         const tasks = await api.getTasks();
-        console.table(tasks.map((t: any) => ({
+        console.table(tasks.map((t) => ({
           ID: t.id,
           Title: t.title,
           Status: t.status,
           Progress: `${t.progress}%`,
           Created: t.created_at
         })));
-      } catch (error: any) {
-        console.error(chalk.red('Failed to fetch tasks:'), error.message);
+      } catch (error: unknown) {
+        console.error(chalk.red('Failed to fetch tasks:'), toErrorMessage(error));
       }
     });
 }

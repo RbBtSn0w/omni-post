@@ -130,6 +130,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DIFF_HEAD: ${{ github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
+
       - name: Setup Node
         uses: ./.github/actions/setup-node-backend
 
@@ -155,6 +161,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DIFF_HEAD: ${{ github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
+
       - name: Setup Node
         uses: ./.github/actions/setup-node-backend
 
@@ -176,6 +188,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DIFF_HEAD: ${{ github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node
         uses: ./.github/actions/setup-node-frontend
@@ -221,6 +239,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Guard No New Any
+        env:
+          DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DIFF_HEAD: ${{ github.sha }}
+        run: node tools/scripts/check-no-new-any.mjs --base "$DIFF_BASE" --head "$DIFF_HEAD"
 
       - name: Setup Node Backend
         uses: ./.github/actions/setup-node-backend

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { api } from '../api/client.js';
+import { toErrorMessage } from '../utils/error.js';
 
 export function registerExploreCommands(program: Command) {
   program
@@ -24,8 +25,8 @@ export function registerExploreCommands(program: Command) {
           fs.writeFileSync(options.output, JSON.stringify(result.adapterDraft, null, 2));
           console.log(chalk.green(`\nDraft saved to ${options.output}`));
         }
-      } catch (error: any) {
-        console.error(chalk.red('Exploration failed:'), error.message);
+      } catch (error: unknown) {
+        console.error(chalk.red('Exploration failed:'), toErrorMessage(error));
       }
     });
 }

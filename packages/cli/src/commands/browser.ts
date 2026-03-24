@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { api } from '../api/client.js';
+import { toErrorMessage } from '../utils/error.js';
 
 export function registerBrowserCommands(program: Command) {
   const browser = program.command('browser').description('Manage browser profiles');
@@ -11,14 +12,14 @@ export function registerBrowserCommands(program: Command) {
     .action(async () => {
       try {
         const profiles = await api.getProfiles();
-        console.table(profiles.map((p: any) => ({
+        console.table(profiles.map((p) => ({
           ID: p.id,
           Name: p.name,
           Type: p.browser_type,
           Path: p.user_data_dir
         })));
-      } catch (error: any) {
-        console.error(chalk.red('Failed to fetch profiles:'), error.message);
+      } catch (error: unknown) {
+        console.error(chalk.red('Failed to fetch profiles:'), toErrorMessage(error));
       }
     });
 
@@ -38,8 +39,8 @@ export function registerBrowserCommands(program: Command) {
           browser_type: options.type
         });
         console.log(chalk.green(`Successfully linked profile: ${res.id}`));
-      } catch (error: any) {
-        console.error(chalk.red('Failed to link profile:'), error.message);
+      } catch (error: unknown) {
+        console.error(chalk.red('Failed to link profile:'), toErrorMessage(error));
       }
     });
 }

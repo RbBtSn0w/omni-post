@@ -1,4 +1,15 @@
 import axios from 'axios';
+import type {
+  ApiEnvelope,
+  BrowserProfile,
+  CreateArticleRequest,
+  CreateArticleResponse,
+  ExploreResult,
+  LinkProfileRequest,
+  PublishArticleRequest,
+  PublishArticleResponse,
+  PublishTask,
+} from '../types.js';
 
 const API_BASE_URL = process.env.OMNI_API_URL || 'http://localhost:5409';
 
@@ -11,24 +22,42 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(config => {
   const maskedConfig = { ...config };
   if (maskedConfig.data && typeof maskedConfig.data === 'object') {
-    if (maskedConfig.data.cookie) maskedConfig.data.cookie = '***MASKED***';
-    if (maskedConfig.data.password) maskedConfig.data.password = '***MASKED***';
+    const requestData = maskedConfig.data as Record<string, unknown>;
+    if (requestData.cookie) requestData.cookie = '***MASKED***';
+    if (requestData.password) requestData.password = '***MASKED***';
   }
   return config;
 });
 
+function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return typeof obj.code === 'number' && 'data' in obj;
+}
+
 export const api = {
   // Browser Profiles
-  getProfiles: () => apiClient.get('/api/browser/profiles').then(res => res.data),
-  linkProfile: (data: any) => apiClient.post('/api/browser/profiles', data).then(res => res.data),
-  
+  getProfiles: () =>
+    apiClient.get<BrowserProfile[]>('/api/browser/profiles').then((res) => res.data),
+  linkProfile: (data: LinkProfileRequest) =>
+    apiClient.post<{ id: string }>('/api/browser/profiles', data).then((res) => res.data),
+
   // Articles
-  createArticle: (data: any) => apiClient.post('/api/articles', data).then(res => res.data),
-  publishArticle: (data: any) => apiClient.post('/api/publish/article', data).then(res => res.data),
-  
+  createArticle: (data: CreateArticleRequest) =>
+    apiClient.post<CreateArticleResponse>('/api/articles', data).then((res) => res.data),
+  publishArticle: (data: PublishArticleRequest) =>
+    apiClient.post<PublishArticleResponse>('/api/publish/article', data).then((res) => res.data),
+
   // Explore
-  explore: (url: string) => apiClient.get('/api/explore', { params: { url } }).then(res => res.data),
-  
+  explore: (url: string) =>
+    apiClient.get<ExploreResult>('/api/explore', { params: { url } }).then((res) => res.data),
+
   // Tasks
-  getTasks: () => apiClient.get('/api/publish/tasks').then(res => res.data),
+  getTasks: () =>
+    apiClient
+      .get<PublishTask[] | ApiEnvelope<PublishTask[]>>('/api/publish/tasks')
+      .then((res) => (isApiEnvelope<PublishTask[]>(res.data) ? (res.data.data ?? []) : res.data)),
 };

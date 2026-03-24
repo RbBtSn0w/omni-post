@@ -45,6 +45,7 @@ if (!forceAll && !hasChanges) {
 }
 
 console.log('Detected affected targets:', affected);
+run('node', ['tools/scripts/check-no-new-any.mjs']);
 
 if (affected.shared) {
   run('npm', ['run', 'lint', '-w', '@omni-post/shared']);
