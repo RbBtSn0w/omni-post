@@ -183,6 +183,9 @@ jobs:
       - name: Lint
         run: npm run lint -w @omni-post/shared-cli
 
+      - name: Build Shared Package
+        run: npm run build -w @omni-post/shared
+
       - name: Build
         run: npm run build -w @omni-post/shared-cli
 

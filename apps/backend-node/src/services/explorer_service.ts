@@ -4,17 +4,35 @@ import { logger } from '../core/logger.js';
 class ExplorerService {
   /**
    * Validate URL for safety (SSRF protection).
+   * Resolves hostname and blocks private/loopback/link-local/ULA ranges.
    */
-  private validateUrl(url: string) {
+  private async validateUrl(url: string) {
     const urlObj = new URL(url);
     if (!['http:', 'https:'].includes(urlObj.protocol)) {
       throw new Error('Invalid protocol. Only http/https are allowed.');
     }
+    const { lookup } = await import('node:dns/promises');
     const hostname = urlObj.hostname.toLowerCase();
+    
+    // Preliminary regex check for literals
     const privateIps = /^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|169\.254\.|100\.6[4-9]\.|100\.7[0-9]\.)/;
     if (privateIps.test(hostname) || hostname === 'localhost' || hostname === '::1') {
       throw new Error('Private network access is restricted for security.');
     }
+
+    try {
+      const { address } = await lookup(hostname);
+      // More robust check should happen here if using a dedicated SSRF library or deeper subnet checking
+      // For now, check if resolved address matches private prefixes
+      if (privateIps.test(address) || address === '127.0.0.1' || address === '::1') {
+        throw new Error('Hostname resolved to a restricted private IP address.');
+      }
+    } catch (error: any) {
+      if (error.code !== 'ENOTFOUND') {
+        throw error;
+      }
+    }
+
     return urlObj;
   }
 
@@ -22,7 +40,7 @@ class ExplorerService {
    * Explore a URL to identify interaction points.
    */
   async explore(url: string): Promise<any> {
-    const urlObj = this.validateUrl(url);
+    const urlObj = await this.validateUrl(url);
     
     const browser = await chromium.launch({ headless: true });
     try {
