@@ -85,6 +85,7 @@
 | 视频号 | `apps/backend-node/src/uploader/weixin/main.ts` |
 | 小红书 | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
 | 快手 | `apps/backend-node/src/uploader/kuaishou/main.ts` |
+| Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
 
 ## 💾 安装指南
 
@@ -197,10 +198,36 @@ omni-post/
 │       │   └── router/         # 路由配置
 │       └── tests/              # 前端测试
 │
+├── packages/
+│   ├── shared/                 # 共享逻辑 (类型/常量 SSOT)
+│   ├── shared-config/          # 标准化 Lint/TS 配置
+│   └── cli/                    # 基于 Node 的 CLI 自动化工具
+│
 ├── package.json                # Monorepo 根配置
 ├── ARCHITECTURE.md             # 架构文档
 └── CONTRIBUTING.md             # 贡献指南
 ```
+
+## 核心目录说明
+
+### 后端结构 (Node.js 主后端)
+
+- **routes/**: API 路由定义 (`account.ts`, `publish.ts`, `article.ts`, `browser.ts`, `file.ts`)
+- **services/**: 业务逻辑层 (`task-service.ts`, `publish-service.ts`, `publish-executor.ts`, `login-service.ts`, `cookie-service.ts`)
+- **uploader/**: 平台特定上传实现 (`main.ts` 入口)
+- **utils/**: 网络与文件工具类 (`path.ts`, `response.ts`)
+- **db/**: 数据库管理与迁移 (`migrations.ts`)
+
+### 前端结构
+
+- **views/**: 主要页面 (`Dashboard`, `AccountManagement`, `PublishCenter`, `TaskManagement`, `MaterialManagement`)
+- **components/**: UI 组件 (`GroupSelector`)
+- **stores/**: Pinia 状态管理 (`user.js`, `account.js`, `task.js`, `group.js`)
+- **api/**: API 客户端 (`account.js`, `task.js`, `material.js`, `user.js`)
+- **共享包 (@omni-post/shared)**:
+  - **SSOT**: 平台 ID、任务接口和枚举映射的唯一事实来源。
+  - **logic/**: 通用校验与转换工具。
+  - **tests/**: Vitest 测试集，确保跨平台逻辑一致性。
 
 ## 🤝 贡献指南
 

@@ -14,6 +14,7 @@ The following is a set of guidelines for contributing to `OmniPost`, which is ho
   - [Your First Code Contribution](#your-first-code-contribution)
 - [Styleguides](#styleguides)
   - [Git Commit Messages](#git-commit-messages)
+  - [Node.js/TypeScript Styleguide](#nodejs-typescript-styleguide)
   - [Python Styleguide](#python-styleguide)
   - [Vue.js Styleguide](#vuejs-styleguide)
 

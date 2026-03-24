@@ -86,6 +86,7 @@ This project implements video upload functionality through platform-specific `up
 | WeChat Channels | `apps/backend-node/src/uploader/weixin/main.ts` |
 | Xiaohongshu | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
 | Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
+| Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
 
 ## 💾 Installation Guide
 
@@ -237,13 +238,13 @@ omni-post/
 
 ## Key Directories
 
-### Backend Structure
+### Backend Structure (Node.js Primary)
 
-- **routes/**: API endpoint definitions (`account.py`, `publish.py`, `dashboard.py`, `group.py`)
-- **services/**: Business logic layers (`auth_service.py`, `task_service.py`, `publish_service.py`, `login_service.py`)
-- **uploader/**: Platform-specific upload implementations (`main.py` entry points)
-- **utils/**: Network utilities and time helpers
-- **db/**: Database management and table creation
+- **routes/**: API endpoint definitions (`account.ts`, `publish.ts`, `article.ts`, `browser.ts`, `file.ts`)
+- **services/**: Business logic layers (`task-service.ts`, `publish-service.ts`, `publish-executor.ts`, `login-service.ts`, `cookie-service.ts`)
+- **uploader/**: Platform-specific upload implementations (`main.ts` entry points)
+- **utils/**: Network utilities and file helpers (`path.ts`, `response.ts`)
+- **db/**: Database management and migrations (`migrations.ts`)
 
 ### Frontend Structure
 
