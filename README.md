@@ -83,7 +83,7 @@ This project implements video upload functionality through platform-specific `up
 | Platform Name | Primary Uploader Module |
 |--------------|--------------------------|
 | Douyin | `apps/backend-node/src/uploader/douyin/main.ts` |
-| WeChat Channels | `apps/backend-node/src/uploader/weixin/main.ts` |
+| WXChannels (WeChat Channels) | `apps/backend-node/src/uploader/wx_channels/main.ts` |
 | Xiaohongshu | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
 | Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 | Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
@@ -153,13 +153,16 @@ cd apps/backend
 npx playwright install chromium
 ```
 
-### 4. Initialize Database
+### 5. 🛠 Upgrade Notice (v1->v2)
+
+If you are upgrading from a version older than v1.3.1, please run the one-time data migration script to sync your historical WeChat Channels (Tencent) tasks to the new **WXChannels** standard:
 
 ```bash
-npm run db:init -w apps/backend-node
+cd apps/backend-node
+node scripts/migrate-wx-channels.mjs
 ```
 
-### 5. Start the Services
+### 6. Start the Services
 
 ```bash
 # Start the maintained backend and frontend
