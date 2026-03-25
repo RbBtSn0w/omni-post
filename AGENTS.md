@@ -149,6 +149,26 @@ Some newer routes (e.g., browser/article/explorer) may return plain JSON objects
 - `apps/backend-node/src/core/browser.ts` - Playwright/browser bootstrap helpers
 - `apps/backend-node/src/core/logger.ts` - logger setup
 
+## Quality & Security Guards
+
+### 1. Strict 'No New Any' Policy
+The project uses `tools/scripts/check-no-new-any.mjs` to block NEW `explicit any` usages.
+- **Rule**: Never introduce `any` in new or modified code.
+- **Alternatives**: Use specific interfaces, `unknown` with type guards, or `Record<string, unknown>` for dynamic objects.
+
+### 2. Type-Safe Error Handling
+- **Rule**: Catch blocks must use `(error: unknown)`.
+- **Pattern**: `catch (error: unknown) { const msg = error instanceof Error ? error.message : String(error); ... }`
+
+### 3. SSRF Protection & DNS Validation
+All features fetching external URLs must provide SSRF protection.
+- **Rule**: Validate hostnames through DNS resolution and block private/local ranges (IPv4/IPv6).
+- **Implementation**: Refer to `ExplorerService.validateUrl`.
+
+### 4. Workspace & Build Integrity
+- **Command**: `npm run check:workspace` (via `tools/scripts/check-workspace.mjs`) ensures dependency version alignment.
+- **ESM Compatibility**: Use extensionless imports (`../src/index`) in TypeScript tests to ensure Vitest handles module resolution correctly.
+
 ## Critical Files by Purpose
 
 **System Overview:**
@@ -190,3 +210,5 @@ Some newer routes (e.g., browser/article/explorer) may return plain JSON objects
 6. **Route-service-uploader boundaries** should remain clear; avoid mixing automation logic into route handlers.
 7. **When diagnosing automation regressions**, use `opencli-diagnostics` workflow to capture real network/UI behavior before patching selectors.
 8. **SSOT Compliance**: All platform IDs and shared entity interfaces MUST be imported from `@omni-post/shared`. Do not define local interfaces for `Task`, `UploadOptions`, or `PlatformType`.
+9. **Strict Linting Compliance**: Always resolve `any` violations and use type-safe error handling. CI will block any push that adds new `any` keywords.
+10. **Security First**: Default to blocking private network access for any outbound crawler/fetcher logic.
