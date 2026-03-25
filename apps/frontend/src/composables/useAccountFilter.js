@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
 import { useAccountStore } from '../stores/account'
+import { PLATFORM_NAMES, PlatformType } from '../core/platformConstants'
 
 export function useAccountFilter() {
     const accountStore = useAccountStore()
@@ -22,23 +22,23 @@ export function useAccountFilter() {
 
     // 各平台过滤
     const filteredKuaishouAccounts = computed(() =>
-        filteredAccounts.value.filter(account => account.platform === '快手')
+        filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.KUAISHOU])
     )
 
     const filteredDouyinAccounts = computed(() =>
-        filteredAccounts.value.filter(account => account.platform === '抖音')
+        filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.DOUYIN])
     )
 
     const filteredChannelsAccounts = computed(() =>
-        filteredAccounts.value.filter(account => account.platform === '视频号')
+        filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.WX_CHANNELS])
     )
 
     const filteredXiaohongshuAccounts = computed(() =>
-        filteredAccounts.value.filter(account => account.platform === '小红书')
+        filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.XIAOHONGSHU])
     )
 
     const filteredBilibiliAccounts = computed(() =>
-        filteredAccounts.value.filter(account => account.platform === 'Bilibili')
+        filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.BILIBILI])
     )
 
     return {

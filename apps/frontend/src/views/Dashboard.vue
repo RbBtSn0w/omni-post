@@ -59,8 +59,8 @@
                 <el-tooltip content="抖音账号" placement="top">
                   <el-tag size="small" type="danger">{{ platformStats.douyin }}</el-tag>
                 </el-tooltip>
-                <el-tooltip content="视频号账号" placement="top">
-                  <el-tag size="small" type="warning">{{ platformStats.channels }}</el-tag>
+                <el-tooltip content="微信视频号账号" placement="top">
+                  <el-tag size="small" type="warning">{{ platformStats.wx_channels }}</el-tag>
                 </el-tooltip>
                 <el-tooltip content="小红书账号" placement="top">
                   <el-tag size="small" type="info">{{ platformStats.xiaohongshu }}</el-tag>
@@ -366,7 +366,7 @@ const platformStats = computed(() => {
   return {
     kuaishou: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.KUAISHOU]).length,
     douyin: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.DOUYIN]).length,
-    channels: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.TENCENT]).length,
+    wx_channels: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.WX_CHANNELS]).length,
     xiaohongshu: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.XIAOHONGSHU]).length,
     bilibili: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.BILIBILI]).length
   }
@@ -544,7 +544,7 @@ const validateStatsData = () => {
   // 验证平台统计数据
   platformStats.value.kuaishou = Math.max(0, platformStats.value.kuaishou)
   platformStats.value.douyin = Math.max(0, platformStats.value.douyin)
-  platformStats.value.channels = Math.max(0, platformStats.value.channels)
+  platformStats.value.wx_channels = Math.max(0, platformStats.value.wx_channels)
   platformStats.value.xiaohongshu = Math.max(0, platformStats.value.xiaohongshu)
   platformStats.value.bilibili = Math.max(0, platformStats.value.bilibili)
 
@@ -642,7 +642,7 @@ const updateDashboardData = (data) => {
   // 更新平台统计
   platformStats.value.kuaishou = data.platformStats.kuaishou
   platformStats.value.douyin = data.platformStats.douyin
-  platformStats.value.channels = data.platformStats.channels
+  platformStats.value.wx_channels = data.platformStats.wx_channels
   platformStats.value.xiaohongshu = data.platformStats.xiaohongshu
   platformStats.value.bilibili = data.platformStats.bilibili || 0
 

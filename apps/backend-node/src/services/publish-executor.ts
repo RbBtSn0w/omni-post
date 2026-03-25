@@ -14,7 +14,7 @@ import {
     postVideoBilibili,
     postVideoDouyin,
     postVideoKs,
-    postVideoTencent,
+    postVideoWxChannels,
     postVideoXhs,
     postArticleZhihu,
     postArticleJuejin,
@@ -179,7 +179,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         // Dispatch to appropriate uploader
         switch (type) {
             case PlatformType.XIAOHONGSHU: await postVideoXhs(opts); break;
-            case PlatformType.TENCENT: await postVideoTencent(opts); break;
+            case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts); break;
             case PlatformType.DOUYIN: await postVideoDouyin(opts); break;
             case PlatformType.KUAISHOU: await postVideoKs(opts); break;
             case PlatformType.BILIBILI: await postVideoBilibili(opts); break;

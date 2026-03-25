@@ -10,7 +10,7 @@ import { CookieService, getCookieService } from './cookie-service.js';
  */
 export interface AuthService {
     cookieAuthDouyin(accountFile: string): Promise<boolean>;
-    cookieAuthTencent(accountFile: string): Promise<boolean>;
+    cookieAuthWxChannels(accountFile: string): Promise<boolean>;
     cookieAuthKs(accountFile: string): Promise<boolean>;
     cookieAuthXhs(accountFile: string): Promise<boolean>;
     cookieAuthBilibili(accountFile: string): Promise<boolean>;
@@ -30,8 +30,8 @@ export class DefaultAuthService implements AuthService {
         return this.cookieService.cookieAuthDouyin(accountFile);
     }
 
-    async cookieAuthTencent(accountFile: string): Promise<boolean> {
-        return this.cookieService.cookieAuthTencent(accountFile);
+    async cookieAuthWxChannels(accountFile: string): Promise<boolean> {
+        return this.cookieService.cookieAuthWxChannels(accountFile);
     }
 
     async cookieAuthKs(accountFile: string): Promise<boolean> {

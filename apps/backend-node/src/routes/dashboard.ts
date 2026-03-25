@@ -27,7 +27,7 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
         const platformStats: Record<string, number> = {
             kuaishou: 0,
             douyin: 0,
-            channels: 0,
+            wx_channels: 0,
             xiaohongshu: 0,
             bilibili: 0,
         };
@@ -36,7 +36,7 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
             switch (row.type) {
                 case PlatformType.KUAISHOU: platformStats.kuaishou = row.count; break;
                 case PlatformType.DOUYIN: platformStats.douyin = row.count; break;
-                case PlatformType.TENCENT: platformStats.channels = row.count; break;
+                case PlatformType.WX_CHANNELS: platformStats.wx_channels = row.count; break;
                 case PlatformType.XIAOHONGSHU: platformStats.xiaohongshu = row.count; break;
                 case PlatformType.BILIBILI: platformStats.bilibili = row.count; break;
             }
@@ -100,7 +100,7 @@ router.get('/getDashboardStats', (_req: Request, res: Response) => {
                 ],
             },
             contentStatsData: {
-                xAxis: ['快手', '抖音', '视频号', '小红书', 'Bilibili'],
+                xAxis: ['快手', '抖音', '微信视频号', '小红书', 'Bilibili'],
                 series: [
                     { name: '已发布', data: [0, 0, 0, 0, 0] },
                     { name: '草稿', data: [0, 0, 0, 0, 0] },

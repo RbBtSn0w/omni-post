@@ -128,9 +128,9 @@ export async function postVideoDouyin(opts: UploadOptions): Promise<void> {
     await runWithOptimizedBrowser(opts, async () => new DouyinUploader());
 }
 
-export async function postVideoTencent(opts: UploadOptions): Promise<void> {
-    const { TencentUploader } = await import('../uploader/tencent/main.js');
-    await runWithOptimizedBrowser(opts, async () => new TencentUploader());
+export async function postVideoWxChannels(opts: UploadOptions): Promise<void> {
+    const { WxChannelsUploader } = await import('../uploader/wx_channels/main.js');
+    await runWithOptimizedBrowser(opts, async () => new WxChannelsUploader());
 }
 
 export async function postVideoXhs(opts: UploadOptions): Promise<void> {

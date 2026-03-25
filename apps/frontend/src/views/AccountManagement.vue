@@ -317,7 +317,7 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="视频号" name="channels">
+        <el-tab-pane label="微信视频号" name="channels">
           <div class="account-list-container">
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
@@ -387,7 +387,7 @@
             </div>
 
             <div v-else class="empty-data">
-              <el-empty description="暂无视频号账号数据" />
+              <el-empty description="暂无微信视频号账号数据" />
             </div>
           </div>
         </el-tab-pane>
@@ -563,7 +563,7 @@
           >
             <el-option label="快手" value="快手" />
             <el-option label="抖音" value="抖音" />
-            <el-option label="视频号" value="视频号" />
+            <el-option label="微信视频号" value="微信视频号" />
             <el-option label="小红书" value="小红书" />
             <el-option label="Bilibili" value="Bilibili" />
           </el-select>
@@ -968,14 +968,8 @@ onBeforeUnmount(() => {
 
 // 获取平台标签类型
 const getPlatformTagType = (platform) => {
-  const typeMap = {
-    '快手': 'success',
-    '抖音': 'danger',
-    '视频号': 'warning',
-    '小红书': 'info',
-    'Bilibili': 'primary'
-  }
-  return typeMap[platform] || 'info'
+  // platform could be a name or a type ID
+  return import('@/core/platformConstants').then(m => m.getPlatformTagType(platform))
 }
 
 // 判断状态是否可点击（异常状态可点击）
@@ -1309,11 +1303,12 @@ const connectSSE = (platform, name, groupName) => {
 
   // 获取平台类型编号
   const platformTypeMap = {
-    '小红书': '1',
-    '视频号': '2',
-    '抖音': '3',
-    '快手': '4',
-    'Bilibili': '5'
+    '小红书': PlatformType.XIAOHONGSHU.toString(),
+    '微信视频号': PlatformType.WX_CHANNELS.toString(),
+    '视频号': PlatformType.WX_CHANNELS.toString(), // Legacy support during migration
+    '抖音': PlatformType.DOUYIN.toString(),
+    '快手': PlatformType.KUAISHOU.toString(),
+    'Bilibili': PlatformType.BILIBILI.toString()
   }
 
   const type = platformTypeMap[platform] || '1'
@@ -1415,11 +1410,12 @@ const submitAccountForm = () => {
           // 注意：映射必须与 stores/account.js 中的 platformTypes 保持一致
           // 1=小红书, 2=视频号, 3=抖音, 4=快手
           const platformTypeMap = {
-            '小红书': 1,
-            '视频号': 2,
-            '抖音': 3,
-            '快手': 4,
-            'Bilibili': 5
+            '小红书': PlatformType.XIAOHONGSHU,
+            '微信视频号': PlatformType.WX_CHANNELS,
+            '视频号': PlatformType.WX_CHANNELS, // Legacy support during migration
+            '抖音': PlatformType.DOUYIN,
+            '快手': PlatformType.KUAISHOU,
+            'Bilibili': PlatformType.BILIBILI
           };
           const type = platformTypeMap[accountForm.platform] || 1;
 

@@ -11,7 +11,7 @@ import { logger } from './logger.js';
 
 // Social media platform identifiers
 export const SOCIAL_MEDIA_DOUYIN = 'douyin';
-export const SOCIAL_MEDIA_TENCENT = 'tencent';
+export const SOCIAL_MEDIA_WX_CHANNELS = 'wx_channels';
 export const SOCIAL_MEDIA_KUAISHOU = 'kuaishou';
 export const SOCIAL_MEDIA_XIAOHONGSHU = 'xiaohongshu';
 

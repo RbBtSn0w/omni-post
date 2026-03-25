@@ -20,7 +20,7 @@ vi.mock('../src/services/publish-service.js', () => ({
     postVideoDouyin: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoBilibili: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoKs: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
-    postVideoTencent: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
+    postVideoWxChannels: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoXhs: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
 }));
 

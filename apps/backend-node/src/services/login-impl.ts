@@ -147,19 +147,19 @@ export async function douyinCookieGen(
 }
 
 /**
- * Tencent Video (WeChat Channels) login implementation
+ * WXChannels (WeChat Channels) login implementation
  */
-export async function getTencentCookie(
+export async function getWxChannelsCookie(
     id: string,
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
 ): Promise<any> {
-    const screenshotDir = createScreenshotDir('tencent');
+    const screenshotDir = createScreenshotDir('wx_channels');
 
     const browser = await launchBrowser();
     const abortHandler = () => {
-        logger.info('[Login:Tencent] Detected abort signal, closing browser...');
+        logger.info('[Login:WxChannels] Detected abort signal, closing browser...');
         browser.close().catch(() => {});
     };
     signal.addEventListener('abort', abortHandler);
