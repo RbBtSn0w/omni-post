@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 /**
- * Tencent Video (WeChat Channels) video uploader.
+ * WXChannels (WeChat Channels) video uploader.
  * Mirrors: apps/backend/src/uploader/tencent_uploader/main.py
  */
 
@@ -16,8 +16,8 @@ import { BaseUploader } from '../base-uploader.js';
 
 const UPLOAD_TIMEOUT_MINUTES = 30;
 
-export class TencentUploader extends BaseUploader {
-    protected platformName = 'Tencent';
+export class WxChannelsUploader extends BaseUploader {
+    protected platformName = 'WxChannels';
 
     private async waitForUploadComplete(page: Page): Promise<void> {
         this.log('等待上传解析 (Shadow DOM 类名与物理特征探测)...');
@@ -96,7 +96,7 @@ export class TencentUploader extends BaseUploader {
 
         this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
         const page = await this.createPage(context);
-        const screenshotDir = createScreenshotDir('tencent');
+        const screenshotDir = createScreenshotDir('wx_channels');
         const uploadUrl = 'https://channels.weixin.qq.com/platform/post/create';
 
         try {
@@ -267,7 +267,7 @@ export class TencentUploader extends BaseUploader {
         opts: UploadOptions,
         onProgress: (progress: number) => void
     ): Promise<void> {
-        this.log('Tencent article upload not implemented yet', 'warn');
+        this.log('WxChannels article upload not implemented yet', 'warn');
     }
 
     /**

@@ -232,17 +232,17 @@
           </el-checkbox-group>
         </div>
 
-        <!-- 草稿选项 (仅在视频号可见) -->
-        <div v-if="tab.selectedPlatforms.includes(2)" class="draft-section">
+        <!-- 草稿选项 (仅在微信视频号可见) -->
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.WX_CHANNELS)" class="draft-section">
           <el-checkbox
             v-model="tab.isDraft"
-            label="视频号仅保存草稿(用手机发布)"
+            label="微信视频号仅保存草稿(用手机发布)"
             class="draft-checkbox"
           />
         </div>
 
         <!-- 封面图 (仅在抖音可见) -->
-        <div v-if="tab.selectedPlatforms.includes(3)" class="thumbnail-section">
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.DOUYIN)" class="thumbnail-section">
           <h3>封面图</h3>
           <el-upload
             class="thumbnail-upload"
@@ -269,7 +269,7 @@
         </div>
 
         <!-- 商品链接 (仅在抖音可见) -->
-        <div v-if="tab.selectedPlatforms.includes(3)" class="product-section">
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.DOUYIN)" class="product-section">
           <h3>商品链接</h3>
           <el-input
             v-model="tab.productTitle"
@@ -814,6 +814,7 @@ import { groupApi } from '@/api/group'
 import { materialApi } from '@/api/material'
 import { API_BASE_URL, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '@/core/config'
 import { PLATFORM_LIST, getPlatformName } from '@/core/platformConstants'
+import { PlatformType } from '@omni-post/shared'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
@@ -1014,7 +1015,7 @@ const defaultTabInit = {
   startDays: 0, // 从今天开始计算的发布天数，0表示明天，1表示后天
   publishStatus: null, // 发布状态，包含message和type
   publishing: false, // 发布状态，用于控制按钮loading效果
-  isDraft: false, // 是否保存为草稿，仅视频号平台可见
+  isDraft: false, // 是否保存为草稿，仅微信视频号平台可见
   priority: 1, // 上传优先级 (0: 低, 1: 正常, 2: 高)
   uploadTab: 'local' // 上传选项卡，默认本地上传
 }
@@ -1534,10 +1535,10 @@ const confirmPublish = async (tab) => {
         dailyTimes: tab.scheduleEnabled ? tab.dailyTimes || ['10:00'] : ['10:00'],
         startDays: tab.scheduleEnabled ? tab.startDays || 0 : 0,
         category: 0,
-        productLink: platform === 3 ? tab.productLink.trim() || '' : '',
-        productTitle: platform === 3 ? tab.productTitle.trim() || '' : '',
-        thumbnail: platform === 3 ? tab.thumbnail || '' : '',
-        isDraft: platform === 2 ? tab.isDraft : false
+        productLink: platform === PlatformType.DOUYIN ? tab.productLink.trim() || '' : '',
+        productTitle: platform === PlatformType.DOUYIN ? tab.productTitle.trim() || '' : '',
+        thumbnail: platform === PlatformType.DOUYIN ? tab.thumbnail || '' : '',
+        isDraft: platform === PlatformType.WX_CHANNELS ? tab.isDraft : false
       }
 
       return fetch(`${apiBaseUrl}/postVideo`, {

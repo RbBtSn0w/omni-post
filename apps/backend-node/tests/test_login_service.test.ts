@@ -27,7 +27,7 @@ describe('MockLoginService', () => {
         const messages: string[] = [];
         emitter.on('message', (msg: string) => messages.push(msg));
 
-        await service.getTencentCookie('user1', emitter, controller.signal);
+        await service.getWxChannelsCookie('user1', emitter, controller.signal);
         expect(messages).toContain('500');
     });
 
@@ -44,7 +44,7 @@ describe('MockLoginService', () => {
 
     it('should work for all platforms', async () => {
         const service = new MockLoginService(true, true);
-        const platforms = ['douyinCookieGen', 'getTencentCookie', 'getKsCookie', 'xiaohongshuCookieGen', 'bilibiliCookieGen'] as const;
+        const platforms = ['douyinCookieGen', 'getWxChannelsCookie', 'getKsCookie', 'xiaohongshuCookieGen', 'bilibiliCookieGen'] as const;
 
         for (const method of platforms) {
             const emitter = new EventEmitter();

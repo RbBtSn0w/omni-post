@@ -45,7 +45,7 @@ export interface LoginService {
     pollInterval: number;
 
     douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
-    getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
     getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
     xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
     bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
@@ -79,9 +79,9 @@ export class MockLoginService implements LoginService {
         return {};
     }
 
-    async getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
         if (signal.aborted) return;
-        emitter.emit('message', 'https://mock-qrcode-url.com/tencent');
+        emitter.emit('message', 'https://channels.weixin.qq.com/platform/login/qr');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
@@ -122,9 +122,9 @@ export class DefaultLoginService implements LoginService {
         return douyinCookieGen(id, emitter, signal, groupName);
     }
 
-    async getTencentCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
-        const { getTencentCookie } = await import('./login-impl.js');
-        return getTencentCookie(id, emitter, signal, groupName);
+    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+        const { getWxChannelsCookie } = await import('./login-impl.js');
+        return getWxChannelsCookie(id, emitter, signal, groupName);
     }
 
     async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
@@ -160,7 +160,7 @@ export function runAsyncFunction(
         try {
             switch (type) {
                 case '1': await loginService.xiaohongshuCookieGen(id, emitter, signal, groupName); break;
-                case '2': await loginService.getTencentCookie(id, emitter, signal, groupName); break;
+                case '2': await loginService.getWxChannelsCookie(id, emitter, signal, groupName); break;
                 case '3': await loginService.douyinCookieGen(id, emitter, signal, groupName); break;
                 case '4': await loginService.getKsCookie(id, emitter, signal, groupName); break;
                 case '5': await loginService.bilibiliCookieGen(id, emitter, signal, groupName); break;

@@ -14,7 +14,7 @@ import {
 describe('PlatformType Constants', () => {
     it('should have correct enum values', () => {
         expect(PlatformType.XIAOHONGSHU).toBe(1);
-        expect(PlatformType.TENCENT).toBe(2);
+        expect(PlatformType.WX_CHANNELS).toBe(2);
         expect(PlatformType.DOUYIN).toBe(3);
         expect(PlatformType.KUAISHOU).toBe(4);
         expect(PlatformType.BILIBILI).toBe(5);

@@ -20,20 +20,20 @@ import { PlatformType, PLATFORM_NAMES } from '@omni-post/shared'
 
 // ─── Frontend-Only: Element Plus Tag Types ──────────────────────────
 export const PLATFORM_TAG_TYPES = Object.freeze({
-    '小红书': 'info',
-    '视频号': 'warning',
-    '抖音': 'danger',
-    '快手': 'success',
-    'Bilibili': 'primary',
-    '知乎': 'info',
-    '掘金': 'success',
+    [PlatformType.XIAOHONGSHU]: 'info',
+    [PlatformType.WX_CHANNELS]: 'warning',
+    [PlatformType.DOUYIN]: 'danger',
+    [PlatformType.KUAISHOU]: 'success',
+    [PlatformType.BILIBILI]: 'primary',
+    [PlatformType.ZHIHU]: 'info',
+    [PlatformType.JUEJIN]: 'success',
 })
 
 // ─── Frontend-Only: UI Dropdown List ────────────────────────────────
 export const PLATFORM_LIST = Object.freeze([
     { key: PlatformType.DOUYIN, name: '抖音' },
     { key: PlatformType.KUAISHOU, name: '快手' },
-    { key: PlatformType.TENCENT, name: '视频号' },
+    { key: PlatformType.WX_CHANNELS, name: '微信视频号' },
     { key: PlatformType.XIAOHONGSHU, name: '小红书' },
     { key: PlatformType.BILIBILI, name: 'Bilibili' },
 ])
@@ -45,9 +45,15 @@ export const ALL_PLATFORM_NAMES = Object.freeze(
 
 /**
  * Get Element Plus tag type for a platform
- * @param {string} platformName - Platform display name
+ * @param {number|string} platform - Platform ID or display name (fallback)
  * @returns {string} Element Plus tag type ('success', 'danger', etc.)
  */
-export function getPlatformTagType(platformName) {
-    return PLATFORM_TAG_TYPES[platformName] || 'info'
+export function getPlatformTagType(platform) {
+    // If it's a number (PlatformType ID), use it
+    if (typeof platform === 'number') {
+        return PLATFORM_TAG_TYPES[platform] || 'info'
+    }
+    // Fallback: reverse lookup for legacy name support if needed (not recommended)
+    const type = PLATFORM_NAME_TO_TYPE[platform]
+    return PLATFORM_TAG_TYPES[type] || 'info'
 }
