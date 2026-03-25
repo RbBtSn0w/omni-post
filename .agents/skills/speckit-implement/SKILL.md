@@ -1,15 +1,12 @@
 ---
-name: speckit-implement
-description: Execute all tasks from the task breakdown to build the feature. Use after
-  task generation to systematically implement the planned solution following TDD approach
-  where applicable.
-compatibility: Requires spec-kit project structure with .specify/ directory
+name: "speckit-implement"
+description: "Execute the implementation plan by processing and executing all tasks defined in tasks.md"
+compatibility: "Requires spec-kit project structure with .specify/ directory"
 metadata:
-  author: github-spec-kit
-  source: templates/commands/implement.md
+  author: "github-spec-kit"
+  source: "templates/commands/implement.md"
 ---
 
-# Speckit Implement Skill
 
 ## User Input
 
