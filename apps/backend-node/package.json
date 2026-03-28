@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@omni-post/shared": "*",
-    "better-sqlite3": "^11.7.0",
+    "better-sqlite3": "^12.8.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-rate-limit": "^8.3.1",
