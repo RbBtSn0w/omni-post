@@ -1,7 +1,7 @@
 import { PLATFORM_NAMES } from '@/core/platformConstants'
-import { usePlatformStore } from './platform'
 import { defineStore } from 'pinia'
-import { reactive, ref, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { usePlatformStore } from './platform'
 
 export const useAccountStore = defineStore('account', () => {
   // 存储所有账号信息
