@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { articleService } from '../services/article_service.js';
+import { capabilityService } from '../services/capability-service.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 const router = Router();
@@ -49,13 +50,19 @@ router.post('/articles', async (req: Request, res: Response) => {
  */
 router.post('/publish/article', async (req: Request, res: Response) => {
   try {
-    const { article_id, account_id, platform, browser_profile_id, schedule_time } = req.body;
+    const { article_id, account_id, platform, platform_id, capability_id, browser_profile_id, schedule_time } = req.body;
     if (!article_id || typeof article_id !== 'string') {
       sendError(res, 400, 'article_id (string) is required');
       return;
     }
-    if (!platform || typeof platform !== 'string') {
-      sendError(res, 400, 'platform (string) is required');
+    const resolvedCapability = typeof capability_id === 'string' ? capabilityService.getCapabilityById(capability_id) : null;
+    const platformInput = resolvedCapability?.platform_id ?? platform_id ?? platform;
+    if (platformInput === undefined || platformInput === null) {
+      sendError(res, 400, 'platform_id (number) or platform (string) is required');
+      return;
+    }
+    if (typeof platformInput !== 'string' && typeof platformInput !== 'number') {
+      sendError(res, 400, 'platform_id must be a number, or platform must be a string');
       return;
     }
     // account_id can be optional if using a profile, or vice versa, but we should validate them if they exist
@@ -74,7 +81,7 @@ router.post('/publish/article', async (req: Request, res: Response) => {
     const taskId = await articleService.publishArticle(
       article_id,
       account_id,
-      platform,
+      platformInput,
       browser_profile_id,
       schedule_time
     );

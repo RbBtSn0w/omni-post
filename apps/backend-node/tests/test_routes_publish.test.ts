@@ -29,6 +29,26 @@ vi.mock('../src/services/login-service.js', () => ({
     activeQueues: new Map(),
     runAsyncFunction: vi.fn(),
 }));
+vi.mock('../src/services/capability-service.js', () => ({
+    capabilityService: {
+        getCapabilityById: vi.fn((id: string) => {
+            if (id === 'builtin:douyin:publish_video') {
+                return {
+                    id,
+                    site: 'douyin',
+                    name: '抖音视频发布',
+                    kind: 'publish.video',
+                    platform_id: 3,
+                    source: 'builtin',
+                    requires_auth: true,
+                    supports_draft: false,
+                    input_schema: { fields: [] },
+                };
+            }
+            return null;
+        }),
+    },
+}));
 
 const { router } = await import('../src/routes/publish.js');
 const { taskService } = await import('../src/services/task-service.js');
@@ -134,5 +154,22 @@ describe('Publish Route', () => {
             ]);
         expect(res.status).toBe(200);
         expect(res.body.data).toHaveLength(2);
+    });
+
+    it('POST /api/publish/postVideo should resolve capability_id to platform type', async () => {
+        db.prepare('INSERT INTO user_info (type, filePath, userName, status) VALUES (?, ?, ?, ?)')
+            .run(3, 'acc2.json', 'TestUser2', 1);
+
+        const app = createTestApp();
+        const res = await request(app)
+            .post('/api/publish/postVideo')
+            .send({
+                capability_id: 'builtin:douyin:publish_video',
+                title: 'By Capability',
+                fileList: ['f2.mp4'],
+                accountList: ['acc2.json'],
+            });
+        expect(res.status).toBe(200);
+        expect(res.body.code).toBe(200);
     });
 });

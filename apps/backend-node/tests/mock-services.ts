@@ -15,7 +15,7 @@ export class MockAuthService implements AuthService {
     constructor(public cookieValid: boolean = true) { }
 
     async cookieAuthDouyin(_accountFile: string): Promise<boolean> { return this.cookieValid; }
-    async cookieAuthTencent(_accountFile: string): Promise<boolean> { return this.cookieValid; }
+    async cookieAuthWxChannels(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthKs(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthXhs(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthBilibili(_accountFile: string): Promise<boolean> { return this.cookieValid; }
@@ -28,7 +28,7 @@ export class MockCookieService implements CookieService {
     constructor(public cookieValid: boolean = true) { }
 
     async cookieAuthDouyin(_accountFile: string): Promise<boolean> { return this.cookieValid; }
-    async cookieAuthTencent(_accountFile: string): Promise<boolean> { return this.cookieValid; }
+    async cookieAuthWxChannels(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthKs(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthXhs(_accountFile: string): Promise<boolean> { return this.cookieValid; }
     async cookieAuthBilibili(_accountFile: string): Promise<boolean> { return this.cookieValid; }
@@ -59,7 +59,7 @@ export class MockTestLoginService implements LoginService {
     }
 
     async douyinCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'douyin'); return {}; }
-    async getTencentCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'tencent'); return {}; }
+    async getWxChannelsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'wx_channels'); return {}; }
     async getKsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'ks'); return {}; }
     async xiaohongshuCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'xiaohongshu'); return {}; }
     async bilibiliCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'bilibili'); return {}; }

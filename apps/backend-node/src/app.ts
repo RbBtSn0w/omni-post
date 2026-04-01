@@ -20,6 +20,7 @@ import explorerRouter from './routes/explorer.js';
 import { router as fileRouter } from './routes/file.js';
 import { router as groupRouter } from './routes/group.js';
 import { router as publishRouter } from './routes/publish.js';
+import { router as extensionRouter } from './routes/extension.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,6 +61,7 @@ export function createApp(): Express {
     app.use('/', cookieRouter);
     app.use('/', groupRouter);
     app.use('/', publishRouter);
+    app.use('/', extensionRouter);
 
     // Static file serving (match Flask's static folder behavior)
     const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');

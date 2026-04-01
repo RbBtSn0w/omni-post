@@ -47,6 +47,7 @@ export function createTables(): void {
       group_id INTEGER,
       session_source TEXT DEFAULT 'managed',
       browser_profile_id TEXT,
+      credentials TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       last_validated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(type, userName),
@@ -66,6 +67,9 @@ export function createTables(): void {
     }
     if (!tableInfo.some(col => col.name === 'browser_profile_id')) {
       db.exec("ALTER TABLE user_info ADD COLUMN browser_profile_id TEXT");
+    }
+    if (!tableInfo.some(col => col.name === 'credentials')) {
+      db.exec("ALTER TABLE user_info ADD COLUMN credentials TEXT");
     }
   } catch (error: any) {
     logger.error(`Error updating user_info table: ${error.message}`);
@@ -130,6 +134,19 @@ export function createTables(): void {
   } catch (error: any) {
     logger.error(`Error updating tasks table: ${error.message}`);
   }
+
+  // Create system_extensions table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS system_extensions (
+      id TEXT PRIMARY KEY,
+      platform_id INTEGER,
+      name TEXT NOT NULL,
+      manifest TEXT NOT NULL,
+      executable TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      last_synced DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 // If run directly, create tables

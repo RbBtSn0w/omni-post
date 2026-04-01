@@ -1,0 +1,19 @@
+{
+    "ocs_version": "1.0",
+    "name": "WeChat Official Account",
+    "platform_id": 8,
+    "version": "1.0.0",
+    "description": "Publish articles to WeChat Official Account via CLI",
+    "actions": {
+        "publish_article": {
+            "command": "publish",
+            "args": {
+                "title": "--title",
+                "content": "--content",
+                "tags": "--tags",
+                "userName": "--user"
+            },
+            "progress_regex": "Progress: (\\d+)%"
+        }
+    }
+}

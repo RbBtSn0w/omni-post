@@ -2,8 +2,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { dbManager } from '../db/database.js';
 import { Article } from '../models/article.js';
 import { PlatformType } from '../db/models.js';
+import { getPlatformType } from '../core/constants.js';
 import { taskService } from './task-service.js';
 import { startPublishThread } from './publish-executor.js';
+import { extensionService } from './extension-service.js';
 
 class ArticleService {
   private resolveAccountFilePath(accountRef: string, expectedPlatformType: number): string {
@@ -79,14 +81,17 @@ class ArticleService {
   async publishArticle(
     articleId: string,
     accountId: string | undefined,
-    platform: string,
+    platform: string | number,
     browserProfileId?: string,
     scheduleTime?: string
   ): Promise<string> {
     const article = this.getArticle(articleId);
     if (!article) throw new Error('Article not found');
     const platformType = this._getPlatformType(platform);
-    if (!platformType) throw new Error(`Unsupported platform: ${platform}`);
+    if (!platformType) throw new Error(`Unsupported platform: ${String(platform)}`);
+    if (!this._supportsArticlePublishing(platformType)) {
+      throw new Error(`Unsupported article platform type: ${platformType}`);
+    }
     
     const accountList: string[] = [];
     if (accountId) {
@@ -118,12 +123,38 @@ class ArticleService {
     return taskId;
   }
 
-  private _getPlatformType(platform: string): number {
-    switch (platform.toUpperCase()) {
-      case 'ZHIHU': return PlatformType.ZHIHU;
-      case 'JUEJIN': return PlatformType.JUEJIN;
-      default: return 0;
+  private _getPlatformType(platform: string | number): number {
+    if (typeof platform === 'number' && Number.isInteger(platform) && platform > 0) {
+      return platform;
     }
+
+    const raw = String(platform).trim();
+    if (!raw) return 0;
+    if (/^\d+$/.test(raw)) {
+      return Number(raw);
+    }
+
+    switch (raw.toUpperCase()) {
+      case 'ZHIHU':
+        return PlatformType.ZHIHU;
+      case 'JUEJIN':
+        return PlatformType.JUEJIN;
+      case 'WX_OFFICIAL_ACCOUNT':
+        return PlatformType.WX_OFFICIAL_ACCOUNT;
+      default:
+        return getPlatformType(raw);
+    }
+  }
+
+  private _supportsArticlePublishing(platformType: number): boolean {
+    if (platformType === PlatformType.ZHIHU || platformType === PlatformType.JUEJIN) {
+      return true;
+    }
+    if (platformType === PlatformType.WX_OFFICIAL_ACCOUNT || platformType >= 100) {
+      const ext = extensionService.getExtensionByPlatformId(platformType);
+      return Boolean(ext?.manifest.actions.publish_article);
+    }
+    return false;
   }
 }
 
