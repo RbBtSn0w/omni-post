@@ -72,7 +72,7 @@ describe('useAccountStore', () => {
       group_id: undefined,
       session_source: 'managed',
       browser_profile_id: null,
-      platform: '视频号',
+      platform: '微信视频号',
       avatar: '/vite.svg',
       isRefreshing: false,
       retryCount: 0,
@@ -273,7 +273,7 @@ describe('useAccountStore', () => {
       filePath: '/path/to/file2',
       name: 'user2',
       status: '正常',
-      platform: '视频号',
+      platform: '微信视频号',
       avatar: '/vite.svg'
     })
 
@@ -302,7 +302,7 @@ describe('useAccountStore', () => {
       filePath: '/path/to/file2',
       name: 'user2',
       status: '正常',
-      platform: '视频号',
+      platform: '微信视频号',
       avatar: '/vite.svg'
     })
 
@@ -311,10 +311,10 @@ describe('useAccountStore', () => {
     expect(xiaohongshuAccounts.length).toBe(1)
     expect(xiaohongshuAccounts[0].platform).toBe('小红书')
 
-    // 获取视频号账号
-    const channelsAccounts = accountStore.getAccountsByPlatform('视频号')
+    // 获取微信视频号账号
+    const channelsAccounts = accountStore.getAccountsByPlatform('微信视频号')
     expect(channelsAccounts.length).toBe(1)
-    expect(channelsAccounts[0].platform).toBe('视频号')
+    expect(channelsAccounts[0].platform).toBe('微信视频号')
 
     // 获取不存在的平台账号
     const douyinAccounts = accountStore.getAccountsByPlatform('抖音')
@@ -370,7 +370,7 @@ describe('useAccountStore', () => {
       filePath: '/path/to/file2',
       name: 'user2',
       status: '正常',
-      platform: '视频号',
+      platform: '微信视频号',
       avatar: '/vite.svg'
     })
 

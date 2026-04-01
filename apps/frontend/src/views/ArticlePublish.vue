@@ -41,8 +41,13 @@
 
         <el-form-item label="发布平台">
           <el-checkbox-group v-model="form.platforms">
-            <el-checkbox label="ZHIHU">知乎</el-checkbox>
-            <el-checkbox label="JUEJIN">掘金</el-checkbox>
+            <el-checkbox
+              v-for="item in articlePlatforms"
+              :key="item.key"
+              :label="item.key"
+            >
+              {{ item.name }}
+            </el-checkbox>
           </el-checkbox-group>
         </el-form-item>
 
@@ -62,7 +67,7 @@
                 <el-option
                   v-for="acc in getAccountsForPlatform(platform)"
                   :key="`${platform}-${acc.id}`"
-                  :label="`${acc.name} (${acc.platform})`"
+                  :label="`${acc.name} (${platformLabel(platform)})`"
                   :value="acc.id"
                 />
               </el-select>
@@ -91,56 +96,83 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, watch } from 'vue'
+import { reactive, ref, onMounted, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAccountStore } from '@/stores/account'
 import { useBrowserStore } from '@/stores/browser'
+import { usePlatformStore } from '@/stores/platform'
+import { PlatformType } from '@/core/platformConstants'
 import { http } from '@/utils/request'
 
 const accountStore = useAccountStore()
 const browserStore = useBrowserStore()
+const platformStore = usePlatformStore()
 
 const form = reactive({
   title: '',
   content: '',
   tags: [],
-  platforms: ['ZHIHU'],
-  account_ids: {
-    ZHIHU: '',
-    JUEJIN: ''
-  },
+  platforms: [PlatformType.ZHIHU],
+  account_ids: {},
   browser_profile_id: null
 })
 
 const publishing = ref(false)
 const existingTags = ref(['技术', '自动化', '工具'])
-const PLATFORM_LABELS = {
-  ZHIHU: '知乎',
-  JUEJIN: '掘金'
+
+const ARTICLE_BASE_PLATFORMS = [
+  { key: PlatformType.ZHIHU, name: '知乎' },
+  { key: PlatformType.JUEJIN, name: '掘金' }
+]
+
+const supportsArticlePublishing = (platformKey) => {
+  if (platformKey === PlatformType.ZHIHU || platformKey === PlatformType.JUEJIN) return true
+  const ext = platformStore.customExtensions.find(item => item.platform_id === platformKey)
+  return Boolean(ext?.manifest?.actions?.publish_article)
 }
 
-const normalizePlatformCode = (platformName) => {
-  const raw = String(platformName || '').toUpperCase()
-  if (raw === '知乎'.toUpperCase() || raw === 'ZHIHU') return 'ZHIHU'
-  if (raw === '掘金'.toUpperCase() || raw === 'JUEJIN') return 'JUEJIN'
-  return ''
+const articlePlatforms = computed(() => {
+  const platformMap = new Map()
+  ARTICLE_BASE_PLATFORMS.forEach(item => {
+    platformMap.set(item.key, item)
+  })
+  platformStore.customExtensions.forEach(ext => {
+    const platformKey = Number(ext.platform_id)
+    if (supportsArticlePublishing(platformKey)) {
+      platformMap.set(platformKey, { key: platformKey, name: ext.name })
+    }
+  })
+  return Array.from(platformMap.values())
+})
+
+const platformLabel = (platformKey) => {
+  const found = articlePlatforms.value.find(item => item.key === Number(platformKey))
+  return found?.name || `平台 ${platformKey}`
 }
 
-const platformLabel = (platform) => PLATFORM_LABELS[platform] || platform
-const getAccountsForPlatform = (platform) => {
-  return accountStore.accounts.filter(acc => normalizePlatformCode(acc.platform) === platform)
+const getAccountsForPlatform = (platformKey) => {
+  return accountStore.accounts.filter(acc => Number(acc.type) === Number(platformKey))
 }
 
 onMounted(async () => {
-  await browserStore.fetchProfiles()
+  await Promise.all([
+    browserStore.fetchProfiles(),
+    platformStore.fetchExtensions()
+  ])
+
+  const availablePlatformKeys = articlePlatforms.value.map(item => item.key)
+  form.platforms = form.platforms.filter(platformKey => availablePlatformKeys.includes(Number(platformKey)))
+  if (form.platforms.length === 0 && availablePlatformKeys.length > 0) {
+    form.platforms = [availablePlatformKeys[0]]
+  }
 })
 
 watch(
   () => [...form.platforms],
   (selectedPlatforms) => {
     for (const platform of Object.keys(form.account_ids)) {
-      if (!selectedPlatforms.includes(platform)) {
-        form.account_ids[platform] = ''
+      if (!selectedPlatforms.includes(Number(platform))) {
+        delete form.account_ids[platform]
       }
     }
   }
@@ -173,7 +205,7 @@ const handlePublish = async () => {
       await http.post('/publish/article', {
         article_id: articleId,
         account_id: form.account_ids[platform],
-        platform: platform,
+        platform_id: Number(platform),
         browser_profile_id: form.browser_profile_id
       })
     }

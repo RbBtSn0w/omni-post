@@ -92,6 +92,7 @@ export const useTaskStore = defineStore('task', () => {
         id: task.id || `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: task.title || '未命名任务',
         selectedPlatforms: platforms,
+        capabilityId: task.publish_data?.capability_id || '',
         status: task.status || 'waiting',
         statusText: taskStatusMap[task.status] || '未知',
         progress: task.progress || 0,
@@ -103,6 +104,7 @@ export const useTaskStore = defineStore('task', () => {
         platformNames: platforms.map(key => platformMap[key] || '未知'),
         fileList: fileList,
         selectedAccounts: accountList,
+        publishData: task.publish_data || null,
         productLink: task.productLink || '',
         productTitle: task.productTitle || '',
         selectedTopics: task.selectedTopics || []
@@ -130,6 +132,7 @@ export const useTaskStore = defineStore('task', () => {
       id: task.id,
       title: task.title || '未命名任务',
       selectedPlatforms: task.selectedPlatforms || [],
+      capabilityId: task.capabilityId || '',
       status: task.status || 'waiting',
       statusText: taskStatusMap[task.status] || '未知',
       progress: task.progress || 0,
@@ -140,6 +143,7 @@ export const useTaskStore = defineStore('task', () => {
       platformNames: (task.selectedPlatforms || []).map(key => platformMap[key] || '未知'),
       fileList: task.fileList || [],
       selectedAccounts: task.selectedAccounts || [],
+      publishData: task.publishData || null,
       productLink: task.productLink || '',
       productTitle: task.productTitle || '',
       selectedTopics: task.selectedTopics || []

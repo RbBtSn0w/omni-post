@@ -27,6 +27,7 @@ export const PLATFORM_TAG_TYPES = Object.freeze({
     [PlatformType.BILIBILI]: 'primary',
     [PlatformType.ZHIHU]: 'info',
     [PlatformType.JUEJIN]: 'success',
+    [PlatformType.WX_OFFICIAL_ACCOUNT]: 'success', // 绿色标
 })
 
 // ─── Frontend-Only: UI Dropdown List ────────────────────────────────
@@ -36,6 +37,7 @@ export const PLATFORM_LIST = Object.freeze([
     { key: PlatformType.WX_CHANNELS, name: '微信视频号' },
     { key: PlatformType.XIAOHONGSHU, name: '小红书' },
     { key: PlatformType.BILIBILI, name: 'Bilibili' },
+    { key: PlatformType.WX_OFFICIAL_ACCOUNT, name: '微信公众号' },
 ])
 
 // ─── Frontend-Only: All Platform Names Array ────────────────────────

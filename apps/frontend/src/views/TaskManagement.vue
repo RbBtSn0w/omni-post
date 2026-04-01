@@ -243,6 +243,7 @@
         <el-descriptions :column="1" border>
           <el-descriptions-item label="任务ID">{{ selectedTask.id }}</el-descriptions-item>
           <el-descriptions-item label="任务名称">{{ selectedTask.title }}</el-descriptions-item>
+          <el-descriptions-item v-if="selectedTask.capabilityId" label="能力ID">{{ selectedTask.capabilityId }}</el-descriptions-item>
           <el-descriptions-item label="平台">
             <el-tag
               v-for="platform in selectedTask.platformNames"
@@ -310,6 +311,9 @@
               </el-tag>
               <div v-if="selectedTask.selectedTopics.length === 0" class="empty-topics">暂无话题</div>
             </div>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="selectedTask.publishData" label="执行快照">
+            <pre class="snapshot-pre">{{ JSON.stringify(selectedTask.publishData, null, 2) }}</pre>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -787,5 +791,16 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+.snapshot-pre {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 </style>

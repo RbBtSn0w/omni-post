@@ -31,7 +31,6 @@ TypeScript 5.x, Node.js 20+ LTS: Follow standard conventions
 ## Recent Changes
 - 031-wxchannels-rename: Added Node.js 20+, TypeScript 5.x + Playwright (uploaders), Express (API), Vue 3 (FE)
 - 031-wxchannels-rename: Added Node.js 20+, TypeScript 5.x + Playwright, Express, Vue 3, Element Plus
-- 030-harden-refresh-flow: Added Node.js 20+, TypeScript 5.x (backend), Vue 3 + JavaScript (frontend) + Express, Playwright, Pinia, Element Plus, Axios, Vites
 
 
 <!-- MANUAL ADDITIONS START -->

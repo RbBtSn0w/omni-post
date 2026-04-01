@@ -1,6 +1,7 @@
 import { PLATFORM_NAMES } from '@/core/platformConstants'
+import { usePlatformStore } from './platform'
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 
 export const useAccountStore = defineStore('account', () => {
   // 存储所有账号信息
@@ -40,8 +41,16 @@ export const useAccountStore = defineStore('account', () => {
     validationState.lastValidationTime = Date.now()
   }
 
-  // Platform types mapping - use centralized constants
-  const platformTypes = PLATFORM_NAMES
+  const platformStore = usePlatformStore()
+
+  // Platform types mapping - combine static and dynamic
+  const platformTypes = computed(() => {
+    const combined = { ...PLATFORM_NAMES }
+    platformStore.customExtensions.forEach(ext => {
+      combined[ext.platform_id] = ext.name
+    })
+    return combined.value ? combined.value : combined
+  })
 
   // 状态机映射
   const statusMap = {
@@ -87,7 +96,7 @@ export const useAccountStore = defineStore('account', () => {
           group_id: item[5],
           session_source: item[6] || 'managed',
           browser_profile_id: item[7] || null,
-          platform: platformTypes[item[1]] || '未知',
+          platform: platformTypes.value[item[1]] || '未知',
           avatar: '/vite.svg', // 默认使用vite.svg作为头像
           isRefreshing: false,
           retryCount: 0,        // 连续失败次数
@@ -105,7 +114,7 @@ export const useAccountStore = defineStore('account', () => {
           group_id: item.group_id,
           session_source: item.session_source || 'managed',
           browser_profile_id: item.browser_profile_id || null,
-          platform: platformTypes[item.type] || '未知',
+          platform: platformTypes.value[item.type] || '未知',
           avatar: '/vite.svg',
           isRefreshing: false,
           retryCount: 0,        // 连续失败次数
