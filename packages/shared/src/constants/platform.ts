@@ -21,6 +21,7 @@ export enum PlatformType {
     BILIBILI = 5,
     ZHIHU = 6,
     JUEJIN = 7,
+    WX_OFFICIAL_ACCOUNT = 8, // 微信公众号
 }
 
 // ─── Platform Display Names ─────────────────────────────────────────
@@ -33,6 +34,7 @@ export const PLATFORM_NAMES: Record<PlatformType, string> = {
     [PlatformType.BILIBILI]: 'Bilibili',
     [PlatformType.ZHIHU]: '知乎',
     [PlatformType.JUEJIN]: '掘金',
+    [PlatformType.WX_OFFICIAL_ACCOUNT]: '微信公众号',
 };
 
 // ─── Reverse Mapping ─────────────────────────────────────────────────
@@ -51,6 +53,7 @@ export const PLATFORM_LOGIN_URLS: Record<PlatformType, string> = {
     [PlatformType.BILIBILI]: 'https://member.bilibili.com/platform/home',
     [PlatformType.ZHIHU]: 'https://www.zhihu.com/signin',
     [PlatformType.JUEJIN]: 'https://juejin.cn/',
+    [PlatformType.WX_OFFICIAL_ACCOUNT]: 'https://mp.weixin.qq.com/',
 };
 
 // ─── Helper Functions ────────────────────────────────────────────────

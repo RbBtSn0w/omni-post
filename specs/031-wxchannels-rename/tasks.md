@@ -17,9 +17,9 @@
 
 **Purpose**: Update the Single Source of Truth (SSOT) and prepare file structure.
 
-- [ ] T001 Rename `PlatformType.TENCENT` to `PlatformType.WX_CHANNELS` in `packages/shared/src/constants/platform.ts`
-- [ ] T002 Update `PLATFORM_NAMES` mapping for `WX_CHANNELS` in `packages/shared/src/constants/platform.ts`
-- [ ] T003 [P] Rename uploader directory from `tencent` to `wx_channels` in `apps/backend-node/src/uploader/`
+- [X] T001 Rename `PlatformType.TENCENT` to `PlatformType.WX_CHANNELS` in `packages/shared/src/constants/platform.ts`
+- [X] T002 Update `PLATFORM_NAMES` mapping for `WX_CHANNELS` in `packages/shared/src/constants/platform.ts`
+- [X] T003 [P] Rename uploader directory from `tencent` to `wx_channels` in `apps/backend-node/src/uploader/`
 
 ---
 
@@ -27,11 +27,11 @@
 
 **Purpose**: Core backend infrastructure updates that MUST be complete before UI or bulk cleanup.
 
-- [ ] T004 Update `WxChannelsUploader` class name and exports in `apps/backend-node/src/uploader/wx_channels/main.ts`
-- [ ] T005 Update `SOCIAL_MEDIA_TENCENT` to `SOCIAL_MEDIA_WX_CHANNELS = 'wx_channels'` in `apps/backend-node/src/core/browser.ts`
-- [ ] T006 Update `tencentLogger` to `wxChannelsLogger` and filename to `wx_channels.log` in `apps/backend-node/src/core/logger.ts`
-- [ ] T007 [P] Rename `postVideoTencent` to `postVideoWxChannels` in `apps/backend-node/src/services/publish-service.ts`
-- [ ] T008 Update platform dispatching logic in `apps/backend-node/src/services/publish-executor.ts`
+- [X] T004 Update `WxChannelsUploader` class name and exports in `apps/backend-node/src/uploader/wx_channels/main.ts`
+- [X] T005 Update `SOCIAL_MEDIA_TENCENT` to `SOCIAL_MEDIA_WX_CHANNELS = 'wx_channels'` in `apps/backend-node/src/core/browser.ts`
+- [X] T006 Update `tencentLogger` to `wxChannelsLogger` and filename to `wx_channels.log` in `apps/backend-node/src/core/logger.ts`
+- [X] T007 [P] Rename `postVideoTencent` to `postVideoWxChannels` in `apps/backend-node/src/services/publish-service.ts`
+- [X] T008 Update platform dispatching logic in `apps/backend-node/src/services/publish-executor.ts`
 
 **Checkpoint**: Foundation ready - backend can run with the new naming scheme for Platform 2.
 
@@ -45,10 +45,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Refactor `PLATFORM_TAG_TYPES` to use `PlatformType` Enum keys in `apps/frontend/src/core/platformConstants.js`
-- [ ] T010 [US1] Update all UI labels from "视频号" to "微信视频号" in `apps/frontend/src/` (Views and Components)
-- [ ] T011 [P] [US1] Update `AccountRecord` interface and account validation logic in `apps/backend-node/src/routes/account.ts`
-- [ ] T012 [US1] Sync frontend platform mapping to match `packages/shared` in `apps/frontend/src/core/platformConstants.js`
+- [X] T009 [US1] Refactor `PLATFORM_TAG_TYPES` to use `PlatformType` Enum keys in `apps/frontend/src/core/platformConstants.js`
+- [X] T010 [US1] Update all UI labels from "视频号" to "微信视频号" in `apps/frontend/src/` (Views and Components)
+- [X] T011 [P] [US1] Update `AccountRecord` interface and account validation logic in `apps/backend-node/src/routes/account.ts`
+- [X] T012 [US1] Sync frontend platform mapping to match `packages/shared` in `apps/frontend/src/core/platformConstants.js`
 
 **Checkpoint**: User Story 1 is fully functional; UI is correctly styled and backend uses standardized naming.
 
@@ -62,10 +62,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T013 [P] [US2] Update all backend unit tests for platform 2 in `apps/backend-node/tests/`
-- [ ] T014 [P] [US2] Update all frontend unit tests for platform 2 in `apps/frontend/tests/`
-- [ ] T015 [US2] Perform global replacement of `TENCENT` with `WX_CHANNELS` in source files (excluding legacy Python).
-- [ ] T016 [US2] Update CLI command definitions and argument parsing in `packages/cli/` to use `wx_channels`.
+- [X] T013 [P] [US2] Update all backend unit tests for platform 2 in `apps/backend-node/tests/`
+- [X] T014 [P] [US2] Update all frontend unit tests for platform 2 in `apps/frontend/tests/`
+- [X] T015 [US2] Perform global replacement of `TENCENT` with `WX_CHANNELS` in source files (excluding legacy Python).
+- [X] T016 [US2] Update CLI command definitions and argument parsing in `packages/cli/` to use `wx_channels`.
 
 **Checkpoint**: User Stories 1 AND 2 are complete; codebase is fully sanitized.
 
@@ -75,9 +75,9 @@
 
 **Purpose**: Final data integrity checks and documentation verification.
 
-- [ ] T017 Audit `tasks` table `publish_data` JSON for legacy `'tencent'` keys and update to `'wx_channels'` via a one-off script.
-- [ ] T018 [P] Update `ARCHITECTURE.md` and monorepo documentation to reflect the new WeChat ecosystem naming standard.
-- [ ] T019 Run full verification suite per `quickstart.md`.
+- [X] T017 Audit `tasks` table `publish_data` JSON for legacy `'tencent'` keys and update to `'wx_channels'` via a one-off script.
+- [X] T018 [P] Update `ARCHITECTURE.md` and monorepo documentation to reflect the new WeChat ecosystem naming standard.
+- [X] T019 Run full verification suite per `quickstart.md`.
 
 ---
 

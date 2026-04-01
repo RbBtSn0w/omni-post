@@ -27,12 +27,20 @@ global.sessionStorage = {
   clear: vi.fn()
 }
 
-// 模拟 window 对象
-global.window = {
-  ...global.window,
+// 模拟 window 对象 (non-destructive: add/override properties without replacing the real jsdom window)
+Object.assign(global.window, {
   localStorage: global.localStorage,
   sessionStorage: global.sessionStorage,
-  location: {
+  open: vi.fn(),
+  confirm: vi.fn().mockReturnValue(true),
+  alert: vi.fn(),
+  // 添加hasFocus方法模拟，解决Element Plus组件依赖问题
+  hasFocus: vi.fn().mockReturnValue(true)
+})
+
+// Preserve real location but override specific properties for testing
+Object.defineProperty(global.window, 'location', {
+  value: {
     href: 'http://localhost:5174/',
     origin: 'http://localhost:5174',
     protocol: 'http:',
@@ -46,47 +54,15 @@ global.window = {
     replace: vi.fn(),
     reload: vi.fn()
   },
-  open: vi.fn(),
-  confirm: vi.fn().mockReturnValue(true),
-  alert: vi.fn(),
-  // 添加hasFocus方法模拟，解决Element Plus组件依赖问题
-  hasFocus: vi.fn().mockReturnValue(true)
-}
+  writable: true,
+  configurable: true
+})
 
-// 模拟document方法，保留原始方法
-global.document = {
-  ...global.document,
-  hasFocus: vi.fn().mockReturnValue(true),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  querySelector: vi.fn(),
-  querySelectorAll: vi.fn(),
-  createElement: vi.fn(),
-  body: {
-    appendChild: vi.fn(),
-    removeChild: vi.fn(),
-    contains: vi.fn()
-  },
-  head: {
-    appendChild: vi.fn(),
-    removeChild: vi.fn()
-  },
-  getElementById: vi.fn(),
-  createTextNode: vi.fn(),
-  createComment: vi.fn(),
-  createDocumentFragment: vi.fn(),
-  importNode: vi.fn(),
-  createEvent: vi.fn(),
-  dispatchEvent: vi.fn(),
-  activeElement: {
-    hasAttribute: vi.fn()
-  },
-  documentElement: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    style: {}
-  },
-  defaultView: global.window
+// 模拟document方法 (non-destructive: use spies on real jsdom document to preserve DOM functionality)
+if (typeof global.document.hasFocus !== 'function') {
+  global.document.hasFocus = vi.fn().mockReturnValue(true)
+} else {
+  vi.spyOn(global.document, 'hasFocus').mockReturnValue(true)
 }
 
 // 模拟 MutationObserver

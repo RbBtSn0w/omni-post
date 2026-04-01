@@ -59,17 +59,61 @@ vi.mock('element-plus', () => ({
 
 // 模拟Element Plus图标
 vi.mock('@element-plus/icons-vue', () => ({
-  // 只返回简单的空对象，避免模板渲染问题
-  Upload: {},
-  Plus: {},
-  Close: {},
-  Folder: {},
-  Management: {},
-  Delete: {},
-  InfoFilled: {},
-  Search: {},
-  Grid: {},
-  ArrowDown: {}
+  Upload: { template: '<i />' },
+  Plus: { template: '<i />' },
+  Close: { template: '<i />' },
+  Folder: { template: '<i />' },
+  Management: { template: '<i />' },
+  Delete: { template: '<i />' },
+  InfoFilled: { template: '<i />' },
+  Search: { template: '<i />' },
+  Grid: { template: '<i />' },
+  ArrowDown: { template: '<i />' },
+  VideoPlay: { template: '<i />' }
+}))
+
+vi.mock('@/stores/app', () => ({
+  useAppStore: vi.fn(() => ({
+    materials: [],
+    setMaterials: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/task', () => ({
+  useTaskStore: vi.fn(() => ({
+    tasks: [],
+    addTask: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/platform', () => ({
+  usePlatformStore: vi.fn(() => ({
+    platforms: [],
+    fetchPlatforms: vi.fn().mockResolvedValue()
+  }))
+}))
+
+vi.mock('@/api/material', () => ({
+  materialApi: {
+    getAllMaterials: vi.fn().mockResolvedValue({ code: 200, data: [] }),
+    getMaterialPreviewUrl: vi.fn().mockReturnValue('http://example.com/preview')
+  }
+}))
+
+vi.mock('@/core/config', () => ({
+  API_BASE_URL: 'http://localhost:8000',
+  MAX_UPLOAD_SIZE: 500 * 1024 * 1024,
+  MAX_UPLOAD_SIZE_MB: 500
+}))
+
+vi.mock('@/core/platformConstants', () => ({
+  getPlatformName: vi.fn((id) => ({ 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手' })[id] || ''),
+  ALL_PLATFORM_NAMES: { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手' },
+  getPlatformTagType: vi.fn(() => '')
+}))
+
+vi.mock('@omni-post/shared', () => ({
+  PlatformType: { XIAOHONGSHU: 1, WX_CHANNELS: 2, DOUYIN: 3, KUAISHOU: 4, BILIBILI: 5 }
 }))
 
 describe('PublishCenter.vue', () => {
@@ -80,42 +124,36 @@ describe('PublishCenter.vue', () => {
     vi.clearAllMocks()
 
     // 挂载组件，使用最基本的配置
-    try {
-      wrapper = mount(PublishCenter, {
-        global: {
-          stubs: {
-            // 模拟所有Element Plus组件
-            ElCard: { template: '<div class="el-card"><slot></slot></div>' },
-            ElButton: { template: '<button class="el-button"><slot></slot></button>' },
-            ElIcon: { template: '<span class="el-icon"><slot></slot></span>' },
-            ElForm: { template: '<form class="el-form"><slot></slot></form>' },
-            ElFormItem: { template: '<div class="el-form-item"><slot></slot></div>' },
-            ElSelect: { template: '<div class="el-select"><slot></slot></div>' },
-            ElOption: { template: '<div class="el-option"><slot></slot></div>' },
-            ElTag: { template: '<span class="el-tag"><slot></slot></span>' },
-            ElProgress: { template: '<div class="el-progress"></div>' },
-            ElDialog: { template: '<div class="el-dialog"><slot></slot></div>' },
-            ElDescriptions: { template: '<div class="el-descriptions"><slot></slot></div>' },
-            ElDescriptionsItem: { template: '<div class="el-descriptions-item"><slot></slot></div>' },
-            ElPagination: { template: '<div class="el-pagination"></div>' },
-            ElTable: { template: '<div class="el-table"><slot></slot></div>' },
-            ElTableColumn: { template: '<div class="el-table-column"><slot></slot></div>' },
-            ElUpload: { template: '<div class="el-upload"><slot></slot></div>' },
-            ElCheckbox: { template: '<div class="el-checkbox"><slot></slot></div>' },
-            ElCheckboxGroup: { template: '<div class="el-checkbox-group"><slot></slot></div>' },
-            ElSwitch: { template: '<div class="el-switch"><slot></slot></div>' },
-            ElTabs: { template: '<div class="el-tabs"><slot></slot></div>' },
-            ElTabPane: { template: '<div class="el-tab-pane"><slot></slot></div>' },
-            // 禁用所有transition组件
-            Transition: false,
-            TransitionGroup: false
-          }
+    wrapper = mount(PublishCenter, {
+      global: {
+        stubs: {
+          // stub所有Element Plus组件 - 使用true避免scoped slot渲染问题
+          ElCard: true,
+          ElButton: true,
+          ElIcon: true,
+          ElForm: true,
+          ElFormItem: true,
+          ElSelect: true,
+          ElOption: true,
+          ElTag: true,
+          ElProgress: true,
+          ElDialog: true,
+          ElDescriptions: true,
+          ElDescriptionsItem: true,
+          ElPagination: true,
+          ElTable: true,
+          ElTableColumn: true,
+          ElUpload: true,
+          ElCheckbox: true,
+          ElCheckboxGroup: true,
+          ElSwitch: true,
+          ElTabs: true,
+          ElTabPane: true,
+          Transition: false,
+          TransitionGroup: false
         }
-      })
-    } catch (error) {
-      console.error('Component mount failed:', error)
-      wrapper = null
-    }
+      }
+    })
   })
 
   it('should be able to mount the component', () => {
@@ -133,7 +171,7 @@ describe('Account-Platform Filtering Logic', () => {
     { id: 'acc-1', platform: '抖音', filePath: 'douyin-1.json' },
     { id: 'acc-2', platform: '抖音', filePath: 'douyin-2.json' },
     { id: 'acc-3', platform: '快手', filePath: 'kuaishou-1.json' },
-    { id: 'acc-4', platform: '视频号', filePath: 'tencent-1.json' }
+    { id: 'acc-4', platform: '视频号', filePath: 'wx_channels-1.json' }
   ]
 
   // 模拟过滤函数 (与 PublishCenter.vue 中的逻辑一致)
@@ -175,7 +213,7 @@ describe('Account-Platform Filtering Logic', () => {
     // 验证每个平台只获取对应的账号
     expect(filterAccountsByPlatform(selectedAccounts, 3, mockAccounts)).toEqual(['douyin-1.json'])
     expect(filterAccountsByPlatform(selectedAccounts, 4, mockAccounts)).toEqual(['kuaishou-1.json'])
-    expect(filterAccountsByPlatform(selectedAccounts, 2, mockAccounts)).toEqual(['tencent-1.json'])
+    expect(filterAccountsByPlatform(selectedAccounts, 2, mockAccounts)).toEqual(['wx_channels-1.json'])
     expect(filterAccountsByPlatform(selectedAccounts, 1, mockAccounts)).toEqual([]) // 没有小红书账号
   })
 })

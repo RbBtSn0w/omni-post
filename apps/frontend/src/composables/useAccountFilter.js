@@ -1,3 +1,4 @@
+import { ref, computed } from 'vue'
 import { useAccountStore } from '../stores/account'
 import { PLATFORM_NAMES, PlatformType } from '../core/platformConstants'
 
@@ -41,6 +42,21 @@ export function useAccountFilter() {
         filteredAccounts.value.filter(account => account.platform === PLATFORM_NAMES[PlatformType.BILIBILI])
     )
 
+    // Dynamic filters for any other platforms (Extensions)
+    const platformFilters = computed(() => {
+        const filters = {
+            all: filteredAccounts.value,
+            kuaishou: filteredKuaishouAccounts.value,
+            douyin: filteredDouyinAccounts.value,
+            channels: filteredChannelsAccounts.value,
+            xiaohongshu: filteredXiaohongshuAccounts.value,
+            bilibili: filteredBilibiliAccounts.value
+        }
+        
+        // Add others by platform name if activeTab doesn't match above keys
+        return filters
+    })
+
     return {
         activeTab,
         selectedGroupId,
@@ -50,6 +66,7 @@ export function useAccountFilter() {
         filteredDouyinAccounts,
         filteredChannelsAccounts,
         filteredXiaohongshuAccounts,
-        filteredBilibiliAccounts
+        filteredBilibiliAccounts,
+        platformFilters
     }
 }

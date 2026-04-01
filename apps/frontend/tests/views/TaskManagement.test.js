@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
 import TaskManagement from '@/views/TaskManagement.vue'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 静态mock stores，避免动态导入问题
 const mockTaskStore = {
@@ -32,7 +32,10 @@ const mockTaskStore = {
   deleteTasks: vi.fn(),
   clearCompletedTasks: vi.fn().mockReturnValue(0),
   getTaskById: vi.fn(),
-  getTasksByStatus: vi.fn()
+  getTasksByStatus: vi.fn(),
+  hasActiveTasks: vi.fn().mockReturnValue(false),
+  startPolling: vi.fn(),
+  stopPolling: vi.fn()
 }
 
 // 直接mock stores，避免Pinia版本兼容问题
@@ -77,22 +80,26 @@ vi.mock('element-plus', () => ({
 
 // 模拟Element Plus图标
 vi.mock('@element-plus/icons-vue', () => ({
-  // 只返回简单的空对象，避免模板渲染问题
-  List: {},
-  CircleCheckFilled: {},
-  CircleCloseFilled: {},
-  Loading: {},
-  Refresh: {},
-  Delete: {},
-  InfoFilled: {},
-  Search: {},
-  VideoPlay: {},
-  VideoPause: {}
+  List: { template: '<i />' },
+  CircleCheckFilled: { template: '<i />' },
+  CircleCloseFilled: { template: '<i />' },
+  Loading: { template: '<i />' },
+  Refresh: { template: '<i />' },
+  Delete: { template: '<i />' },
+  InfoFilled: { template: '<i />' },
+  Search: { template: '<i />' },
+  VideoPlay: { template: '<i />' },
+  VideoPause: { template: '<i />' }
+}))
+
+vi.mock('@/core/platformConstants', () => ({
+  ALL_PLATFORM_NAMES: { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'B站' },
+  getPlatformTagType: vi.fn(() => '')
 }))
 
 describe('TaskManagement Component', () => {
   let wrapper
-  
+
   // 测试数据
   const mockTasks = [
     {
@@ -144,11 +151,11 @@ describe('TaskManagement Component', () => {
       selectedTopics: ['测试', '任务3']
     }
   ]
-  
+
   beforeEach(() => {
     // 重置模拟
     vi.clearAllMocks()
-    
+
     // 更新mockTaskStore的数据
     mockTaskStore.tasks = mockTasks
     mockTaskStore.recentTasks = mockTasks.slice(0, 2)
@@ -161,45 +168,38 @@ describe('TaskManagement Component', () => {
     mockTaskStore.clearCompletedTasks.mockReturnValue(1)
     mockTaskStore.getTaskById.mockImplementation((id) => mockTasks.find(task => task.id === id))
     mockTaskStore.getTasksByStatus.mockImplementation((status) => mockTasks.filter(task => task.status === status))
-    
+
     // 挂载组件，使用简化的配置
-    try {
-      wrapper = mount(TaskManagement, {
-        global: {
-          stubs: {
-            // 模拟所有Element Plus组件
-            ElCard: { template: '<div class="el-card"><slot></slot></div>' },
-            ElButton: { template: '<button class="el-button"><slot></slot></button>' },
-            ElIcon: { template: '<span class="el-icon"><slot></slot></span>' },
-            ElForm: { template: '<form class="el-form"><slot></slot></form>' },
-            ElFormItem: { template: '<div class="el-form-item"><slot></slot></div>' },
-            ElSelect: { template: '<div class="el-select"><slot></slot></div>' },
-            ElOption: { template: '<div class="el-option"><slot></slot></div>' },
-            ElTag: { template: '<span class="el-tag"><slot></slot></span>' },
-            ElProgress: { template: '<div class="el-progress"></div>' },
-            ElDialog: { template: '<div class="el-dialog"><slot></slot></div>' },
-            ElDescriptions: { template: '<div class="el-descriptions"><slot></slot></div>' },
-            ElDescriptionsItem: { template: '<div class="el-descriptions-item"><slot></slot></div>' },
-            ElPagination: { template: '<div class="el-pagination"></div>' },
-            ElTable: { template: '<div class="el-table"><slot></slot></div>' },
-            ElTableColumn: { template: '<div class="el-table-column"><slot></slot></div>' },
-            ElCheckbox: { template: '<div class="el-checkbox"><slot></slot></div>' },
-            ElCheckboxGroup: { template: '<div class="el-checkbox-group"><slot></slot></div>' },
-            ElSwitch: { template: '<div class="el-switch"><slot></slot></div>' },
-            ElTabs: { template: '<div class="el-tabs"><slot></slot></div>' },
-            ElTabPane: { template: '<div class="el-tab-pane"><slot></slot></div>' },
-            // 禁用所有transition组件
-            Transition: false,
-            TransitionGroup: false
-          }
+    wrapper = mount(TaskManagement, {
+      global: {
+        stubs: {
+          ElCard: true,
+          ElButton: true,
+          ElIcon: true,
+          ElForm: true,
+          ElFormItem: true,
+          ElSelect: true,
+          ElOption: true,
+          ElTag: true,
+          ElProgress: true,
+          ElDialog: true,
+          ElDescriptions: true,
+          ElDescriptionsItem: true,
+          ElPagination: true,
+          ElTable: true,
+          ElTableColumn: true,
+          ElCheckbox: true,
+          ElCheckboxGroup: true,
+          ElSwitch: true,
+          ElTabs: true,
+          ElTabPane: true,
+          Transition: false,
+          TransitionGroup: false
         }
-      })
-    } catch (error) {
-      console.error('Component mount failed:', error)
-      wrapper = null
-    }
+      }
+    })
   })
-  
+
   it('should be able to mount the component', () => {
     // 只测试组件是否能挂载，不测试具体内容
     expect(wrapper).not.toBeNull()

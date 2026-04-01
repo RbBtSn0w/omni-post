@@ -42,6 +42,7 @@
 - ✅ **Cookie Management**: Multi-account cookie storage and management
 - ✅ **Comprehensive Testing**: Extensive test suite for reliability
 - ✅ **Automated CI/CD**: GitHub Actions workflows for continuous integration
+- ✅ **OpenCLI Extensions**: Plug-in architecture for adding new platforms via CLI tools (New!)
 
 ### Platform Support Status
 
@@ -88,7 +89,44 @@ This project implements video upload functionality through platform-specific `up
 | Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 | Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
 
-## 💾 Installation Guide
+## � OpenCLI Extensions
+
+OmniPost supports dynamically adding new platform uploaders through **OpenCLI extensions**. Each extension is a self-contained CLI tool with a JSON manifest that declares its capabilities.
+
+### Extension Structure
+
+```
+apps/backend-node/extensions/<platform_slug>/
+├── cli.js              # CLI entry point (Commander-based)
+└── manifest.ocs.json   # OCS capability manifest
+```
+
+### Creating an Extension
+
+1. **Create the directory** under `apps/backend-node/extensions/` using the platform slug (e.g., `wx_official_account`)
+2. **Write `manifest.ocs.json`** declaring the platform ID, supported actions, and required arguments:
+   ```json
+   {
+     "name": "my-platform",
+     "version": "1.0.0",
+     "platform_id": 8,
+     "actions": {
+       "publish_article": {
+         "description": "Publish article to My Platform",
+         "args": {
+           "title": { "type": "string", "required": true },
+           "content": { "type": "string", "required": true }
+         }
+       }
+     }
+   }
+   ```
+3. **Write `cli.js`** implementing the declared actions. The runner invokes it with `node cli.js <action> --<arg> <value>`.
+4. **Sync extensions** via the API: `POST /api/opencli/sync`
+
+The backend will automatically discover the extension and make it available for publishing through the standard task pipeline.
+
+## �💾 Installation Guide
 
 ### System Requirements
 
@@ -205,6 +243,7 @@ omni-post/
 │   │   │   ├── routes/         # HTTP Route Layer
 │   │   │   ├── services/       # Business Logic & Task Execution
 │   │   │   └── uploader/       # TS Playwright Uploaders
+│   │   ├── extensions/         # OpenCLI extension plugins
 │   │   └── tests/              # Vitest suite
 │   │
 │   └── frontend/               # Vue.js 3 Frontend (Shared)

@@ -90,7 +90,7 @@
 
 - [X] T024 [P] [US3] Add failing composable test: `handleBatchRefresh(undefined)` hard-rejects and sends no request in `apps/frontend/tests/composables/useAccountActions.test.js`
 - [X] T025 [P] [US3] Add failing composable test: `handleBatchRefresh([])` hard-rejects and sends no request in `apps/frontend/tests/composables/useAccountActions.test.js`
-- [ ] T026 [P] [US3] Add failing view test: batch relogin path passes explicit selected scope in `apps/frontend/tests/views/AccountManagement.test.js`
+- [X] T026 [P] [US3] Add failing view test: batch relogin path passes explicit selected scope in `apps/frontend/tests/views/AccountManagement.test.js`
 
 ### Implementation for User Story 3 (Green)
 
@@ -113,8 +113,8 @@
 
 - [X] T031 [P] [US4] Add failing composable test: post-operation completion requires `force=true` validated refresh success in `apps/frontend/tests/composables/useAccountActions.test.js`
 - [X] T032 [P] [US4] Add failing composable test: completion requires store write after validated refresh in `apps/frontend/tests/composables/useAccountActions.test.js`
-- [ ] T033 [P] [US4] Add failing view test: cookie upload success path uses validated refresh completion semantics in `apps/frontend/tests/views/AccountManagement.test.js`
-- [ ] T034 [P] [US4] Add failing view test: account edit success path uses validated refresh completion semantics in `apps/frontend/tests/views/AccountManagement.test.js`
+- [X] T033 [P] [US4] Add failing view test: cookie upload success path uses validated refresh completion semantics in `apps/frontend/tests/views/AccountManagement.test.js`
+- [X] T034 [P] [US4] Add failing view test: account edit success path uses validated refresh completion semantics in `apps/frontend/tests/views/AccountManagement.test.js`
 
 ### Implementation for User Story 4 (Green)
 

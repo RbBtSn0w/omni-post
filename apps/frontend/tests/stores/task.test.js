@@ -56,7 +56,7 @@ describe('Task Store', () => {
       expect(taskStore.tasks.length).toBe(1)
       expect(taskStore.tasks[0].id).toBeDefined()
       expect(taskStore.tasks[0].title).toBe('测试任务')
-      expect(taskStore.tasks[0].platformNames).toEqual(['小红书', '视频号'])
+      expect(taskStore.tasks[0].platformNames).toEqual(['小红书', '微信视频号'])
       expect(taskStore.tasks[0].statusText).toBe('等待中')
       expect(taskStore.tasks[0].priorityText).toBe('正常')
       expect(addedTask).toEqual(taskStore.tasks[0])
@@ -119,7 +119,7 @@ describe('Task Store', () => {
         selectedPlatforms: [2, 3]
       })
 
-      expect(updatedTask.platformNames).toEqual(['视频号', '抖音'])
+      expect(updatedTask.platformNames).toEqual(['微信视频号', '抖音'])
     })
 
     it('should return null when updating non-existent task', () => {
