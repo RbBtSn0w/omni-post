@@ -1,6 +1,6 @@
 # Implementation Plan: Rename WeChat Channels to WXChannels
 
-**Branch**: `031-wxchannels-rename` | **Date**: 2026-03-25 | **Spec**: [spec.md](file:///Users/snow/Documents/GitHub/omni-post/specs/031-wxchannels-rename/spec.md)
+**Branch**: `031-wxchannels-rename` | **Date**: 2026-03-25 | **Spec**: [spec.md](./spec.md)
 
 ## Summary
 

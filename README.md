@@ -89,7 +89,7 @@ This project implements video upload functionality through platform-specific `up
 | Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 | Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
 
-## � OpenCLI Extensions
+## 🔌 OpenCLI Extensions
 
 OmniPost supports dynamically adding new platform uploaders through **OpenCLI extensions**. Each extension is a self-contained CLI tool with a JSON manifest that declares its capabilities.
 
@@ -126,7 +126,7 @@ apps/backend-node/extensions/<platform_slug>/
 
 The backend will automatically discover the extension and make it available for publishing through the standard task pipeline.
 
-## �💾 Installation Guide
+## 💾 Installation Guide
 
 ### System Requirements
 
