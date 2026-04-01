@@ -110,16 +110,15 @@ apps/backend-node/extensions/<platform_slug>/
      "name": "my-platform",
      "version": "1.0.0",
      "platform_id": 8,
-     "actions": {
-       "publish_article": {
-         "description": "Publish article to My Platform",
-         "args": {
-           "title": { "type": "string", "required": true },
-           "content": { "type": "string", "required": true }
-         }
-       }
-     }
-   }
+      "actions": {
+        "publish_article": {
+          "command": "publish",
+          "args": {
+            "title": "--title",
+            "content": "--content"
+          }
+        }
+      }
    ```
 3. **Write `cli.js`** implementing the declared actions. The runner invokes it with `node cli.js <action> --<arg> <value>`.
 4. **Sync extensions** via the API: `POST /api/opencli/sync`

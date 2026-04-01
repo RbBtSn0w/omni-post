@@ -4,7 +4,7 @@
 | Field | Type | Description |
 |-------|------|-------------|
 | id | TEXT (PK) | Unique uploader ID (e.g., `opencli-xhs`) |
-| platform_id | INTEGER | Dynamic ID (100+) |
+| platform_id | INTEGER | Dynamic ID (100+ for local, 10000+ for system) |
 | name | TEXT | Display name (e.g., "Xiaohongshu (OpenCLI)") |
 | manifest | TEXT | Full JSON of the OCS manifest |
 | executable | TEXT | Command string (e.g., `opencli xhs`) |
@@ -19,7 +19,7 @@
 - `progressRegex`: string (optional)
 
 ### `PlatformType` (Extension)
-- Reserved Range: 100-999 for Dynamic/OpenCLI Platforms.
+- Reserved Range: 100+ for local, 10000+ for system platforms.
 
 ## State Transitions (Task Status)
 - `waiting` -> `executing (OpenCLIRunner)` -> `success`/`failed`.
