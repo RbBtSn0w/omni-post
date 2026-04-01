@@ -1,9 +1,9 @@
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import { logger } from '../core/logger.js';
-import { dbManager } from '../db/database.js';
 import { OpenCLIRunner } from '../core/opencli-runner.js';
+import { dbManager } from '../db/database.js';
 
 export interface OCSAction {
   command?: string;
@@ -70,7 +70,7 @@ interface OpenCLIListItem {
 export class ExtensionService {
   private static readonly DYNAMIC_ID_START = 100;
   private static readonly SYSTEM_DYNAMIC_ID_START = 10000;
-  
+
   private resolveLocalExtDirs(): string[] {
     const candidates = [
       path.resolve(process.cwd(), 'extensions'),
@@ -124,10 +124,10 @@ export class ExtensionService {
    */
   async checkEnvironment(): Promise<{ installed: boolean; binary_path: string; version?: string }> {
     try {
-      const binaryPath = execSync('which opencli 2>/dev/null').toString().trim();
+      const binaryPath = execFileSync('which', ['opencli'], { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
       if (!binaryPath) return { installed: false, binary_path: '' };
-      
-      const version = execSync('opencli --version 2>/dev/null').toString().trim();
+
+      const version = execFileSync(binaryPath, ['--version'], { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
       return { installed: true, binary_path: binaryPath, version };
     } catch {
       return { installed: false, binary_path: '' };
@@ -190,7 +190,7 @@ export class ExtensionService {
   private async discoverSystemExtensions(): Promise<ExtensionInfo[]> {
     const extensions: ExtensionInfo[] = [];
     try {
-      const binaryPath = execSync('which opencli 2>/dev/null').toString().trim();
+      const binaryPath = execFileSync('which', ['opencli'], { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
       if (binaryPath) {
         logger.debug(`Probing system opencli at ${binaryPath}`);
         const manifests = await this.discoverSystemManifests(binaryPath);
@@ -443,7 +443,7 @@ export class ExtensionService {
             const manifest = JSON.parse(manifestContent) as OCSManifest;
             const commandSpec = this.resolveLocalCommandSpec(extPath, manifest);
             manifest.executable_args = commandSpec.executableArgs;
-          
+
             extensions.push({
               id: `local-${dirName}`,
               platform_id: manifest.platform_id || nextId++,

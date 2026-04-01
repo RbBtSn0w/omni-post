@@ -11,8 +11,15 @@ import type { UploadOptions } from '../db/models.js';
 import { generateScheduleTimeNextDay } from '../utils/files-times.js';
 import { safeJoin } from '../utils/path.js';
 import { browserService } from './browser_service.js';
+import type { Browser, BrowserContext } from 'playwright';
 
 export type { UploadOptions };
+type ProgressHandler = (progress: number) => void;
+type UploaderLike = {
+    postArticle?: (context: BrowserContext | null, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
+    postVideo?: (context: BrowserContext | null, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
+    upload?: (options: UploadOptions, context: BrowserContext | null, browser: Browser | null) => Promise<void>;
+};
 
 /**
  * Compute publish datetimes for scheduled publishing.
@@ -46,13 +53,20 @@ function enrichOpts(opts: UploadOptions): UploadOptions {
     return { ...opts, publishDatetimes };
 }
 
-async function dispatchUploader(uploader: any, context: any, opts: UploadOptions, browser: any): Promise<void> {
+async function dispatchUploader(
+    uploader: UploaderLike,
+    context: BrowserContext | null,
+    opts: UploadOptions,
+    browser: Browser | null,
+    onProgress?: ProgressHandler
+): Promise<void> {
+    const progressHandler: ProgressHandler = onProgress || (() => {});
     if (typeof uploader.postArticle === 'function' && opts.article) {
-        await uploader.postArticle(context, opts, (_progress: number) => {});
+        await uploader.postArticle(context, opts, progressHandler);
         return;
     }
     if (typeof uploader.postVideo === 'function') {
-        await uploader.postVideo(context, opts, (_progress: number) => {});
+        await uploader.postVideo(context, opts, progressHandler);
         return;
     }
     if (typeof uploader.upload === 'function') {
@@ -66,7 +80,8 @@ async function dispatchUploader(uploader: any, context: any, opts: UploadOptions
 
 async function runWithOptimizedBrowser(
     opts: UploadOptions,
-    uploaderFactory: () => Promise<any>
+    uploaderFactory: () => Promise<UploaderLike>,
+    onProgress?: ProgressHandler
 ): Promise<void> {
     const enrichedOpts = enrichOpts(opts);
     const uploader = await uploaderFactory();
@@ -84,7 +99,7 @@ async function runWithOptimizedBrowser(
             profile.profile_name
         );
         try {
-            await dispatchUploader(uploader, context, enrichedOpts, null);
+            await dispatchUploader(uploader, context, enrichedOpts, null, onProgress);
         } finally {
             await context.close();
         }
@@ -112,7 +127,8 @@ async function runWithOptimizedBrowser(
                     uploader,
                     context,
                     { ...enrichedOpts, accountList: [accountFile] },
-                    browser
+                    browser,
+                    onProgress
                 );
             } finally {
                 await context.close();
@@ -123,37 +139,49 @@ async function runWithOptimizedBrowser(
     }
 }
 
-export async function postVideoDouyin(opts: UploadOptions): Promise<void> {
+export async function postVideoDouyin(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { DouyinUploader } = await import('../uploader/douyin/main.js');
-    await runWithOptimizedBrowser(opts, async () => new DouyinUploader());
+    await runWithOptimizedBrowser(opts, async () => new DouyinUploader(), onProgress);
 }
 
-export async function postVideoWxChannels(opts: UploadOptions): Promise<void> {
+export async function postVideoWxChannels(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { WxChannelsUploader } = await import('../uploader/wx_channels/main.js');
-    await runWithOptimizedBrowser(opts, async () => new WxChannelsUploader());
+    await runWithOptimizedBrowser(opts, async () => new WxChannelsUploader(), onProgress);
 }
 
-export async function postVideoXhs(opts: UploadOptions): Promise<void> {
+export async function postVideoXhs(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { XiaohongshuUploader } = await import('../uploader/xiaohongshu/main.js');
-    await runWithOptimizedBrowser(opts, async () => new XiaohongshuUploader());
+    await runWithOptimizedBrowser(opts, async () => new XiaohongshuUploader(), onProgress);
 }
 
-export async function postVideoKs(opts: UploadOptions): Promise<void> {
+export async function postVideoKs(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { KuaishouUploader } = await import('../uploader/kuaishou/main.js');
-    await runWithOptimizedBrowser(opts, async () => new KuaishouUploader());
+    await runWithOptimizedBrowser(opts, async () => new KuaishouUploader(), onProgress);
 }
 
-export async function postVideoBilibili(opts: UploadOptions): Promise<void> {
+export async function postVideoBilibili(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { BilibiliUploader } = await import('../uploader/bilibili/main.js');
-    await runWithOptimizedBrowser(opts, async () => new BilibiliUploader());
+    await runWithOptimizedBrowser(opts, async () => new BilibiliUploader(), onProgress);
 }
 
-export async function postArticleZhihu(opts: UploadOptions): Promise<void> {
+export async function postArticleZhihu(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { ZhihuUploader } = await import('../uploader/zhihu/main.js');
-    await runWithOptimizedBrowser(opts, async () => new ZhihuUploader());
+    await runWithOptimizedBrowser(opts, async () => new ZhihuUploader(), onProgress);
 }
 
-export async function postArticleJuejin(opts: UploadOptions): Promise<void> {
+export async function postArticleJuejin(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
     const { JuejinUploader } = await import('../uploader/juejin/main.js');
-    await runWithOptimizedBrowser(opts, async () => new JuejinUploader());
+    await runWithOptimizedBrowser(opts, async () => new JuejinUploader(), onProgress);
+}
+
+/**
+ * Entry point for any OpenCLI-based dynamic platform.
+ */
+export async function postOpenCLI(opts: UploadOptions, onProgress?: ProgressHandler): Promise<void> {
+    const { OpenCLIUploader } = await import('../uploader/opencli/main.js');
+    const uploader = new OpenCLIUploader();
+    const enrichedOpts = enrichOpts(opts);
+    
+    // Bypasses runWithOptimizedBrowser as CLI tools don't need Playwright contexts
+    await dispatchUploader(uploader, null, enrichedOpts, null, onProgress);
 }

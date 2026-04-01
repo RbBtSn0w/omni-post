@@ -20,6 +20,7 @@ describe('PlatformType Constants', () => {
         expect(PlatformType.BILIBILI).toBe(5);
         expect(PlatformType.ZHIHU).toBe(6);
         expect(PlatformType.JUEJIN).toBe(7);
+        expect(PlatformType.WX_OFFICIAL_ACCOUNT).toBe(8);
     });
 });
 
@@ -59,7 +60,7 @@ describe('isValidPlatform', () => {
     });
 
     it('should reject invalid platforms', () => {
-        expect(isValidPlatform(8)).toBe(false);
+        expect(isValidPlatform(9)).toBe(false);
         expect(isValidPlatform(0)).toBe(false);
     });
 });

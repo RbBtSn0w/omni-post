@@ -124,8 +124,9 @@ router.get('/getValidAccounts', async (req: Request, res: Response) => {
         ]);
 
         sendSuccess(res, rowsList, '获取成功');
-    } catch (error: any) {
-        sendError(res, 500, `获取有效账号失败: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, `获取有效账号失败: ${message}`);
     }
 });
 
@@ -145,7 +146,7 @@ router.get('/getAccountStatus', async (req: Request, res: Response) => {
             return;
         }
 
-        let account = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as any;
+        let account = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as AccountRecord | undefined;
         if (!account) {
             sendError(res, 404, '账号不存在');
             return;
@@ -165,8 +166,9 @@ router.get('/getAccountStatus', async (req: Request, res: Response) => {
             platformName: getPlatformName(account.type),
             last_validated_at: account.last_validated_at,
         }, '获取成功');
-    } catch (error: any) {
-        sendError(res, 500, `获取账号状态失败: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, `获取账号状态失败: ${message}`);
     }
 });
 
@@ -185,7 +187,7 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
         }
 
         // Query the record first to get filePath for cookie cleanup (matching Python)
-        const record = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as any;
+        const record = db.prepare('SELECT * FROM user_info WHERE id = ?').get(Number(id)) as AccountRecord | undefined;
         if (!record) {
             sendError(res, 404, 'account not found');
             return;
@@ -207,8 +209,43 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
         db.prepare('DELETE FROM user_info WHERE id = ?').run(Number(id));
 
         sendSuccess(res, null, 'account deleted successfully');
-    } catch (error: any) {
-        sendError(res, 500, `删除账号失败: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, `删除账号失败: ${message}`);
+    }
+});
+
+/**
+ * POST /account
+ * Directly create an account record (used for dynamic platforms and direct imports).
+ */
+router.post('/account', (req: Request, res: Response) => {
+    try {
+        const { type, userName, group_id, credentials } = req.body;
+        if (!type || !userName) {
+            sendError(res, 400, '缺少 type 或 userName');
+            return;
+        }
+
+        const db = dbManager.getDb();
+        const groupId = group_id === 0 ? null : group_id;
+        const credsJson = credentials ? JSON.stringify(credentials) : null;
+        
+        // Check if account already exists for this type and user
+        const existing = db.prepare('SELECT id FROM user_info WHERE type = ? AND userName = ?').get(type, userName);
+        if (existing) {
+            sendError(res, 409, '账号已存在');
+            return;
+        }
+
+        const result = db.prepare(
+            'INSERT INTO user_info (type, userName, group_id, credentials, status, filePath) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(type, userName, groupId, credsJson, 1, `${type}_${userName.replace(/[^a-zA-Z0-9_-]/g, '')}_manual.json`);
+
+        sendSuccess(res, { id: result.lastInsertRowid }, '账号添加成功');
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, `添加账号失败: ${message}`);
     }
 });
 
@@ -219,7 +256,7 @@ router.get('/deleteAccount', (req: Request, res: Response) => {
 router.post('/updateUserinfo', (req: Request, res: Response) => {
     try {
         const db = dbManager.getDb();
-        const { id, type, filePath, userName, group_id } = req.body;
+        const { id, type, filePath, userName, group_id, credentials } = req.body;
 
         if (!id) {
             sendError(res, 400, '缺少账号ID');
@@ -227,7 +264,7 @@ router.post('/updateUserinfo', (req: Request, res: Response) => {
         }
 
         const updates: string[] = [];
-        const values: any[] = [];
+        const values: Array<string | number | null> = [];
 
         if (type !== undefined) {
             updates.push('type = ?');
@@ -245,6 +282,10 @@ router.post('/updateUserinfo', (req: Request, res: Response) => {
             updates.push('group_id = ?');
             values.push(group_id === 0 ? null : group_id);
         }
+        if (credentials !== undefined) {
+            updates.push('credentials = ?');
+            values.push(credentials ? JSON.stringify(credentials) : null);
+        }
 
         if (updates.length === 0) {
             sendError(res, 400, '没有需要更新的字段');
@@ -255,7 +296,8 @@ router.post('/updateUserinfo', (req: Request, res: Response) => {
         db.prepare(`UPDATE user_info SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
         sendSuccess(res, null, '更新成功');
-    } catch (error: any) {
-        sendError(res, 500, `更新账号失败: ${error.message}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, `更新账号失败: ${message}`);
     }
 });

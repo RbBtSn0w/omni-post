@@ -1,16 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
-import { ExtensionService } from '../../src/services/extension-service.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { OpenCLIRunner } from '../../src/core/opencli-runner.js';
 import { dbManager } from '../../src/db/database.js';
 import type { OCSManifest } from '../../src/services/extension-service.js';
-import { OpenCLIRunner } from '../../src/core/opencli-runner.js';
+import { ExtensionService } from '../../src/services/extension-service.js';
 
 vi.mock('fs');
-const { execSyncMock } = vi.hoisted(() => ({
-  execSyncMock: vi.fn()
+const { execFileSyncMock } = vi.hoisted(() => ({
+  execFileSyncMock: vi.fn()
 }));
 vi.mock('child_process', () => ({
-  execSync: execSyncMock.mockImplementation(() => {
+  execFileSync: execFileSyncMock.mockImplementation(() => {
     throw new Error('Not found');
   })
 }));
@@ -27,7 +27,7 @@ describe('ExtensionService', () => {
   beforeEach(() => {
     service = new ExtensionService();
     vi.clearAllMocks();
-    execSyncMock.mockImplementation(() => {
+    execFileSyncMock.mockImplementation(() => {
       throw new Error('Not found');
     });
     vi.mocked(OpenCLIRunner.run).mockResolvedValue({ code: 1, stdout: '', stderr: '' });
@@ -41,16 +41,16 @@ describe('ExtensionService', () => {
 
   const createMockDb = (results: MockRow[] = []): MockDb => ({
     transaction: (fn: () => void) => () => fn(),
-    prepare: vi.fn().mockReturnValue({ 
-      run: vi.fn(), 
-      all: vi.fn().mockReturnValue(results) 
+    prepare: vi.fn().mockReturnValue({
+      run: vi.fn(),
+      all: vi.fn().mockReturnValue(results)
     })
   });
 
   it('should skip discovery if extension directory does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
-    
+
     const db = createMockDb();
     vi.mocked(dbManager.getDb).mockReturnValue(db as ReturnType<typeof dbManager.getDb>);
 
@@ -102,9 +102,10 @@ describe('ExtensionService', () => {
   });
 
   it('should discover system platforms from opencli list --json output', async () => {
-    execSyncMock.mockImplementation((cmd: string) => {
-      if (cmd.includes('which opencli')) return '/usr/local/bin/opencli';
-      return '1.4.0';
+    execFileSyncMock.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === 'which' && args[0] === 'opencli') return '/usr/local/bin/opencli';
+      if (args[0] === '--version') return '1.4.0';
+      return '';
     });
 
     vi.mocked(fs.existsSync).mockReturnValue(false);

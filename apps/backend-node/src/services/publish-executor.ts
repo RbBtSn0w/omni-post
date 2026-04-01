@@ -18,6 +18,7 @@ import {
     postVideoXhs,
     postArticleZhihu,
     postArticleJuejin,
+    postOpenCLI,
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
@@ -65,6 +66,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
     const contentType: 'video' | 'article' = publishData.content_type || 'video';
     const browser_profile_id = publishData.browser_profile_id || null;
     const lockKeys: string[] = [];
+    let lastProgress = 0;
 
     try {
         const resourcesToLock = [...accountList];
@@ -174,18 +176,33 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             isDraft,
             browser_profile_id,
             article,
+            platform_id: type,
+            userName: accountList[0]?.split('.')[0] || '', // Guessing userName from cookie filename for now
+        };
+        const onProgress = (progress: number): void => {
+            if (!Number.isFinite(progress)) return;
+            const normalized = Math.max(0, Math.min(100, Math.trunc(progress)));
+            if (normalized <= lastProgress || normalized >= 100) return;
+            lastProgress = normalized;
+            taskService.updateTaskStatus(taskId, 'uploading', normalized);
         };
 
         // Dispatch to appropriate uploader
         switch (type) {
-            case PlatformType.XIAOHONGSHU: await postVideoXhs(opts); break;
-            case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts); break;
-            case PlatformType.DOUYIN: await postVideoDouyin(opts); break;
-            case PlatformType.KUAISHOU: await postVideoKs(opts); break;
-            case PlatformType.BILIBILI: await postVideoBilibili(opts); break;
-            case PlatformType.ZHIHU: await postArticleZhihu(opts); break;
-            case PlatformType.JUEJIN: await postArticleJuejin(opts); break;
-            default: throw new Error(`Unknown platform type: ${type}`);
+            case PlatformType.XIAOHONGSHU: await postVideoXhs(opts, onProgress); break;
+            case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts, onProgress); break;
+            case PlatformType.DOUYIN: await postVideoDouyin(opts, onProgress); break;
+            case PlatformType.KUAISHOU: await postVideoKs(opts, onProgress); break;
+            case PlatformType.BILIBILI: await postVideoBilibili(opts, onProgress); break;
+            case PlatformType.ZHIHU: await postArticleZhihu(opts, onProgress); break;
+            case PlatformType.JUEJIN: await postArticleJuejin(opts, onProgress); break;
+            case PlatformType.WX_OFFICIAL_ACCOUNT: await postOpenCLI(opts, onProgress); break;
+            default: 
+                if (type >= 100) {
+                    await postOpenCLI(opts, onProgress);
+                } else {
+                    throw new Error(`Unknown platform type: ${type}`);
+                }
         }
 
         logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
