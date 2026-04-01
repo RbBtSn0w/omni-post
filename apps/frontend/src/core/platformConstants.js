@@ -8,16 +8,12 @@
 
 // ─── Re-exports from @omni-post/shared ──────────────────────────────
 export {
-    PlatformType,
-    PLATFORM_NAMES,
-    PLATFORM_NAME_TO_TYPE,
     getPlatformName,
     getPlatformType,
-    isValidPlatform,
+    isValidPlatform, PLATFORM_NAME_TO_TYPE, PLATFORM_NAMES, PlatformType
 } from '@omni-post/shared'
 
-import { PlatformType, PLATFORM_NAMES } from '@omni-post/shared'
-import { PLATFORM_NAME_TO_TYPE } from '@omni-post/shared'
+import { PLATFORM_NAME_TO_TYPE, PLATFORM_NAMES, PlatformType } from '@omni-post/shared'
 
 // ─── Frontend-Only: Element Plus Tag Types ──────────────────────────
 export const PLATFORM_TAG_TYPES = Object.freeze({
