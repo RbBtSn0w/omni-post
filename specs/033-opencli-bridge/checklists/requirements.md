@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-25
-**Feature**: [spec.md](file:///Users/snow/Documents/GitHub/omni-post/specs/033-opencli-bridge/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

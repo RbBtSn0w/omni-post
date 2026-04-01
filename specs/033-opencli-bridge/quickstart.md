@@ -8,9 +8,10 @@ Create a new folder in `apps/backend-node/extensions/my_platform/`.
 {
   "ocs_version": "1.0",
   "name": "My Custom Platform",
-  "command": "python3 publisher.py",
+  "executable": "node publisher.js",
   "actions": {
     "publish_article": {
+      "command": "publish",
       "args": {
         "file": "--file",
         "title": "--title"
@@ -29,6 +30,6 @@ Create a new folder in `apps/backend-node/extensions/my_platform/`.
 
 ## 3. Command Line Interface (CLI Format)
 Your internal script will receive parameters like:
-`python3 publisher.py publish_article --file /data/post.md --title "Hello World"`
+`node publisher.js publish --file /data/post.md --title "Hello World"`
 
 The script should output `Progress: N%` to stdout to update the OmniPost frontend.

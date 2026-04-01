@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-25
-**Feature**: [spec.md](file:///Users/snow/Documents/GitHub/omni-post/specs/031-wxchannels-rename/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 
