@@ -10,27 +10,27 @@ import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
 import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
+import { safeJoin } from '../utils/path.js';
 import { lockManager } from './lock-manager.js';
 import {
+    postArticleJuejin,
+    postArticleZhihu,
+    postOpenCLI,
     postVideoBilibili,
     postVideoDouyin,
     postVideoKs,
     postVideoWxChannels,
     postVideoXhs,
-    postArticleZhihu,
-    postArticleJuejin,
-    postOpenCLI,
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
-import { safeJoin } from '../utils/path.js';
 
 /**
  * Concurrency Limit (资源并发限制)
  * 限制同时运行的浏览器实例数量，防止内存溢出。
  */
 let activeTasks = 0;
-const MAX_CONCURRENT_TASKS = 5; 
+const MAX_CONCURRENT_TASKS = 5;
 const taskQueue: (() => void)[] = [];
 
 interface UserNameRow {
@@ -220,7 +220,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             case PlatformType.ZHIHU: await postArticleZhihu(opts, onProgress); break;
             case PlatformType.JUEJIN: await postArticleJuejin(opts, onProgress); break;
             case PlatformType.WX_OFFICIAL_ACCOUNT: await postOpenCLI(opts, onProgress); break;
-            default: 
+            default:
                 if (type >= 100) {
                     await postOpenCLI(opts, onProgress);
                 } else {
