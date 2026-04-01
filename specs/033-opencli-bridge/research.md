@@ -14,8 +14,8 @@
 
 ## R-003: OCS 1.0 vs Omni-Post Extension (T-002)
 - **Problem**: Does OCS 1.0 support "Progress Regex"?
-- **Decision**: Define a proprietary `x-omni-progress-regex` extension field in the OCS manifest if not present in the standard.
-- **Rationale**: Standard OCS focuses on command interface; Omni-Post needs real-time UI updates. By prefixing with `x-`, we remain standard-compliant while adding needed features.
+- **Decision**: Define a standard `progress_regex` field in the OCS manifest if not present in the standard (as a common extension).
+- **Rationale**: Standard OCS focuses on command interface; Omni-Post needs real-time UI updates. By using `progress_regex`, we enable needed UI features in a way compatible with our current implementation.
 
 ## R-004: Dynamic UI Payload (T-004)
 - **Decision**: Use a dedicated `publish_data` field in the Task entity to store OCS-specific parameters.

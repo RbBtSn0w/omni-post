@@ -4,6 +4,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenCLIRunner } from '../../src/core/opencli-runner.js';
 import { dbManager } from '../../src/db/database.js';
@@ -35,6 +36,8 @@ describe('WeChat Official Account Pilot', () => {
 
     it('manifest.ocs.json should exist and be valid JSON', () => {
         // Resolve relative to the workspace root (two levels up from tests/)
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
         const manifestPath = path.resolve(__dirname, '../../extensions/wx_official_account/manifest.ocs.json');
         expect(fs.existsSync(manifestPath)).toBe(true);
 
@@ -50,6 +53,8 @@ describe('WeChat Official Account Pilot', () => {
     });
 
     it('cli.js should exist', () => {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
         const cliPath = path.resolve(__dirname, '../../extensions/wx_official_account/cli.js');
         expect(fs.existsSync(cliPath)).toBe(true);
     });

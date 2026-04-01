@@ -1,7 +1,7 @@
 # Implementation Plan: OmniPost OpenCLI Bridge
 
-**Branch**: `033-opencli-bridge` | **Date**: 2026-03-25 | **Spec**: [spec.md](file:///Users/snow/Documents/GitHub/omni-post/specs/033-opencli-bridge/spec.md)
-**Input**: Feature specification from `/specs/033-opencli-bridge/spec.md`
+**Branch**: `033-opencli-bridge` | **Date**: 2026-03-25 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `./spec.md`
 
 ## Summary
 Implement a plugin-driven extension system for OmniPost using the OpenCLI Specification (OCS). This will allow users to discover, register, and execute external publishing tools (CLI-based) as dynamic platforms within the OmniPost UI. The architecture revolves around a dynamic registry that scans the system path and local extension folders, and a generic execution bridge that handles parameter mapping and real-time status streaming.

@@ -38,7 +38,16 @@ export class OpenCLIUploader extends BaseUploader {
     const args = this.buildArgs(ext.manifest.executable_args, action, mergedOptions);
     const progressRegex = action.progress_regex ? new RegExp(action.progress_regex) : undefined;
 
-    logger.info(`Dispatching OpenCLI publish for ${ext.name}: ${ext.executable} ${args.join(' ')}`.trim());
+    // Mask sensitive arguments for logging (best effort: mask any value following a flag that might contain tokens)
+    const maskedArgs = args.map((arg, i, arr) => {
+      const prev = arr[i - 1];
+      if (prev && (prev.includes('token') || prev.includes('cookie') || prev.includes('pass') || prev.includes('key') || prev.includes('user'))) {
+        return '********';
+      }
+      return arg;
+    });
+
+    logger.info(`Dispatching OpenCLI publish for ${ext.name}: ${ext.executable} ${maskedArgs.join(' ')}`.trim());
 
     const result = await OpenCLIRunner.run(ext.executable, args, {
       onProgress,
@@ -60,6 +69,8 @@ export class OpenCLIUploader extends BaseUploader {
     onProgress: (progress: number) => void
   ): Promise<void> {
     const platformId = options.platform_id;
+    if (!platformId) throw new Error('Missing dynamic platform_id in options');
+
     const ext = extensionService.getExtensionByPlatformId(platformId);
     if (!ext) throw new Error(`Extension with ID ${platformId} not found`);
 
