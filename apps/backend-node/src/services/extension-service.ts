@@ -70,6 +70,7 @@ interface OpenCLIListItem {
 export class ExtensionService {
   private static readonly DYNAMIC_ID_START = 100;
   private static readonly SYSTEM_DYNAMIC_ID_START = 10000;
+  private static readonly SAFE_LOCAL_EXECUTABLES = new Set(['opencli']);
 
   private resolveLocalExtDirs(): string[] {
     const candidates = [
@@ -509,15 +510,41 @@ export class ExtensionService {
 
   private resolveLocalExecutable(token: string, extPath: string): string {
     if (token === 'node') return process.execPath;
-    if (path.isAbsolute(token)) return token;
-    if (token.startsWith('./') || token.startsWith('../')) return path.resolve(extPath, token);
-    return token;
+    if (path.isAbsolute(token)) {
+      const resolved = path.resolve(token);
+      this.assertPathWithinExtension(resolved, extPath, 'executable');
+      return resolved;
+    }
+    if (token.startsWith('./') || token.startsWith('../')) {
+      const resolved = path.resolve(extPath, token);
+      this.assertPathWithinExtension(resolved, extPath, 'executable');
+      return resolved;
+    }
+    if (ExtensionService.SAFE_LOCAL_EXECUTABLES.has(token)) return token;
+    throw new Error(`Unsafe local executable token: ${token}`);
   }
 
   private resolveLocalArgPath(token: string, extPath: string): string {
-    if (path.isAbsolute(token)) return token;
-    if (token.startsWith('./') || token.startsWith('../')) return path.resolve(extPath, token);
+    if (token.startsWith('-')) return token;
+    if (path.isAbsolute(token)) {
+      const resolved = path.resolve(token);
+      this.assertPathWithinExtension(resolved, extPath, 'argument');
+      return resolved;
+    }
+    if (token.startsWith('./') || token.startsWith('../')) {
+      const resolved = path.resolve(extPath, token);
+      this.assertPathWithinExtension(resolved, extPath, 'argument');
+      return resolved;
+    }
     return token;
+  }
+
+  private assertPathWithinExtension(targetPath: string, extPath: string, label: string): void {
+    const extRoot = path.resolve(extPath);
+    const rel = path.relative(extRoot, targetPath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error(`Unsafe local extension ${label} path outside extension directory: ${targetPath}`);
+    }
   }
 
   private tokenizeCommand(command: string): string[] {

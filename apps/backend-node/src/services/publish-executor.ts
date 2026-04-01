@@ -9,6 +9,7 @@ import fs from 'fs';
 import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
 import { logger } from '../core/logger.js';
+import { dbManager } from '../db/database.js';
 import { lockManager } from './lock-manager.js';
 import {
     postVideoBilibili,
@@ -31,6 +32,28 @@ import { safeJoin } from '../utils/path.js';
 let activeTasks = 0;
 const MAX_CONCURRENT_TASKS = 5; 
 const taskQueue: (() => void)[] = [];
+
+interface UserNameRow {
+    userName: string;
+}
+
+function resolveUserNameByAccountFile(platformType: number, accountList: string[]): string {
+    const firstAccountFile = accountList[0];
+    if (!firstAccountFile) return '';
+
+    try {
+        const db = dbManager.getDb();
+        const row = db
+            .prepare('SELECT userName FROM user_info WHERE type = ? AND filePath = ? LIMIT 1')
+            .get(platformType, firstAccountFile) as UserNameRow | undefined;
+        if (row?.userName) return row.userName;
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.warn(`[PUBLISH] Failed to resolve userName from DB: ${message}`);
+    }
+
+    return firstAccountFile.split('.')[0] || '';
+}
 
 async function acquireSlot(taskId: string): Promise<void> {
     if (activeTasks < MAX_CONCURRENT_TASKS) {
@@ -177,7 +200,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             browser_profile_id,
             article,
             platform_id: type,
-            userName: accountList[0]?.split('.')[0] || '', // Guessing userName from cookie filename for now
+            userName: resolveUserNameByAccountFile(type, accountList),
         };
         const onProgress = (progress: number): void => {
             if (!Number.isFinite(progress)) return;

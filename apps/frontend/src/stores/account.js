@@ -49,7 +49,7 @@ export const useAccountStore = defineStore('account', () => {
     platformStore.customExtensions.forEach(ext => {
       combined[ext.platform_id] = ext.name
     })
-    return combined.value ? combined.value : combined
+    return combined
   })
 
   // 状态机映射
