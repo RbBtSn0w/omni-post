@@ -58,9 +58,9 @@ export class MockTestLoginService implements LoginService {
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
     }
 
-    async douyinCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'douyin'); return {}; }
-    async getWxChannelsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'wx_channels'); return {}; }
-    async getKsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'ks'); return {}; }
-    async xiaohongshuCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'xiaohongshu'); return {}; }
-    async bilibiliCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<any> { this.emitResult(emitter, 'bilibili'); return {}; }
+    async douyinCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<Record<string, never>> { this.emitResult(emitter, 'douyin'); return {}; }
+    async getWxChannelsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<Record<string, never>> { this.emitResult(emitter, 'wx_channels'); return {}; }
+    async getKsCookie(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<Record<string, never>> { this.emitResult(emitter, 'ks'); return {}; }
+    async xiaohongshuCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<Record<string, never>> { this.emitResult(emitter, 'xiaohongshu'); return {}; }
+    async bilibiliCookieGen(_id: string, emitter: EventEmitter, _signal: AbortSignal): Promise<Record<string, never>> { this.emitResult(emitter, 'bilibili'); return {}; }
 }

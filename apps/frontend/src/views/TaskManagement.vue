@@ -313,7 +313,7 @@
             </div>
           </el-descriptions-item>
           <el-descriptions-item v-if="selectedTask.publishData" label="执行快照">
-            <pre class="snapshot-pre">{{ JSON.stringify(selectedTask.publishData, null, 2) }}</pre>
+            <pre class="snapshot-pre">{{ formatPublishSnapshot(selectedTask.publishData) }}</pre>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -442,6 +442,30 @@ const formatDate = (dateString) => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+const SENSITIVE_KEY_PATTERN = /(token|secret|password|cookie|credential|authorization|auth)/i
+
+const maskSensitive = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(item => maskSensitive(item))
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, v]) => {
+        if (SENSITIVE_KEY_PATTERN.test(key)) {
+          return [key, '***MASKED***']
+        }
+        return [key, maskSensitive(v)]
+      })
+    )
+  }
+  return value
+}
+
+const formatPublishSnapshot = (publishData) => {
+  const sanitized = maskSensitive(publishData)
+  return JSON.stringify(sanitized, null, 2)
 }
 
 // 分页变化处理

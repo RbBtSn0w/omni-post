@@ -16,11 +16,11 @@ vi.mock('../../src/core/opencli-runner.js', () => ({
     },
 }));
 
-const { execSyncMock } = vi.hoisted(() => ({
-    execSyncMock: vi.fn().mockImplementation(() => { throw new Error('Not found'); }),
+const { execFileSyncMock } = vi.hoisted(() => ({
+    execFileSyncMock: vi.fn().mockImplementation(() => { throw new Error('Not found'); }),
 }));
 vi.mock('child_process', () => ({
-    execSync: execSyncMock,
+    execFileSync: execFileSyncMock,
 }));
 
 describe('WeChat Official Account Pilot', () => {
@@ -29,7 +29,7 @@ describe('WeChat Official Account Pilot', () => {
     beforeEach(() => {
         service = new ExtensionService();
         vi.clearAllMocks();
-        execSyncMock.mockImplementation(() => { throw new Error('Not found'); });
+        execFileSyncMock.mockImplementation(() => { throw new Error('Not found'); });
         vi.mocked(OpenCLIRunner.run).mockResolvedValue({ code: 1, stdout: '', stderr: '' });
     });
 
