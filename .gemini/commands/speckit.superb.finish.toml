@@ -1,5 +1,4 @@
-description = "Development branch completion protocol. Loads the obra/superpowers finishing-a-development-branch SKILL.md at runtime. Guides the user through structured options (merge, PR, keep, discard) after verification passes.
- Call manually after speckit.superb.verify succeeds."
+description = "Development branch completion protocol. Loads the obra/superpowers finishing-a-development-branch SKILL.md at runtime. Guides the user through structured options (merge, PR, keep, discard) after verification passes. Call manually after speckit.superb.verify succeeds."
 
 # Source: superb
 

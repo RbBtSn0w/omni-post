@@ -1,6 +1,4 @@
-description = "Code review response protocol. Loads the obra/superpowers receiving-code-review SKILL.md at runtime. Enforces technical verification before implementing review feedback — no performative agreement, no blind
- fixes. Pairs with speckit.superb.critique as the implementer
-counterpart."
+description = "Code review response protocol. Loads the obra/superpowers receiving-code-review SKILL.md at runtime. Enforces technical verification before implementing review feedback — no performative agreement, no blind fixes. Pairs with speckit.superb.critique as the implementer counterpart."
 
 # Source: superb
 

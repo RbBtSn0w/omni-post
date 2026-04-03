@@ -8,7 +8,7 @@ Create a new folder in `apps/backend-node/extensions/my_platform/`.
 {
   "ocs_version": "1.0",
   "name": "My Custom Platform",
-  "executable": "node publisher.js",
+  "version": "1.0.0",
   "actions": {
     "publish_article": {
       "command": "publish",
@@ -29,7 +29,7 @@ Create a new folder in `apps/backend-node/extensions/my_platform/`.
 4. "My Custom Platform (Local)" will appear in the publish list.
 
 ## 3. Command Line Interface (CLI Format)
-Your internal script will receive parameters like:
-`node publisher.js publish --file /data/post.md --title "Hello World"`
+Your internal script (`cli.js`) will receive parameters like:
+`node cli.js publish --file /data/post.md --title "Hello World"`
 
 The script should output `Progress: N%` to stdout to update the OmniPost frontend.
