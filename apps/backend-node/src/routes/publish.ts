@@ -12,9 +12,74 @@ import { dbManager } from '../db/database.js';
 import { activeQueues, runAsyncFunction } from '../services/login-service.js';
 import { startPublishThread } from '../services/publish-executor.js';
 import { taskService } from '../services/task-service.js';
+import { capabilityService } from '../services/capability-service.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
+
+interface AccountTypeRow {
+    type: number;
+}
+
+function normalizeCapabilityPayload(raw: Record<string, unknown>): Record<string, unknown> {
+    const normalized: Record<string, unknown> = { ...raw };
+    const inputs = raw.inputs;
+    if (inputs && typeof inputs === 'object' && !Array.isArray(inputs)) {
+        Object.assign(normalized, inputs as Record<string, unknown>);
+    }
+
+    const accountList = raw.accountList;
+    if (!Array.isArray(accountList) && Array.isArray(raw.account_file_list)) {
+        normalized.accountList = raw.account_file_list;
+    }
+
+    const fileList = normalized.fileList;
+    if (!Array.isArray(fileList) && typeof normalized.fileList === 'string') {
+        normalized.fileList = String(normalized.fileList)
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+    if (!Array.isArray(normalized.fileList) && Array.isArray(normalized.files)) {
+        normalized.fileList = normalized.files;
+    }
+
+    if (!Array.isArray(normalized.tags) && typeof normalized.tags === 'string') {
+        normalized.tags = String(normalized.tags)
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+
+    return normalized;
+}
+
+function resolveTypeByCapability(data: Record<string, unknown>): { type: number; kind: 'publish.video' | 'publish.article' } | null {
+    const capabilityId = typeof data.capability_id === 'string' ? data.capability_id : '';
+    if (!capabilityId) {
+        const fallbackType = Number(data.type);
+        if (Number.isInteger(fallbackType) && fallbackType > 0) {
+            return { type: fallbackType, kind: (data.content_type === 'article' ? 'publish.article' : 'publish.video') };
+        }
+        return null;
+    }
+
+    const capability = capabilityService.getCapabilityById(capabilityId);
+    if (!capability) return null;
+    return { type: capability.platform_id, kind: capability.kind };
+}
+
+function filterValidAccountsByType(platformType: number, accountList: string[]): string[] {
+    const db = dbManager.getDb();
+    const validAccounts: string[] = [];
+    for (const accountFile of accountList) {
+        const row = db.prepare('SELECT type FROM user_info WHERE filePath = ?').get(accountFile) as AccountTypeRow | undefined;
+        if (row && row.type === platformType) {
+            validAccounts.push(accountFile);
+        }
+    }
+    return validAccounts;
+}
 
 // ─── SSE Login Endpoint (US2) ─────────────────────────────────────────
 
@@ -86,8 +151,9 @@ router.get('/tasks', (_req: Request, res: Response) => {
     try {
         const tasks = taskService.getAllTasks();
         sendSuccess(res, tasks, '获取成功');
-    } catch (error: any) {
-        sendError(res, 500, error.message);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, message);
     }
 });
 
@@ -99,8 +165,9 @@ router.delete('/tasks/:taskId', (req: Request, res: Response) => {
     try {
         const success = taskService.deleteTask(req.params.taskId as string);
         sendSuccess(res, null, success ? 'Deleted' : 'Failed');
-    } catch (error: any) {
-        sendError(res, 500, error.message);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, message);
     }
 });
 
@@ -117,8 +184,9 @@ router.patch('/tasks/:taskId', (req: Request, res: Response) => {
         } else {
             sendError(res, 400, 'Status required');
         }
-    } catch (error: any) {
-        sendError(res, 500, error.message);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, message);
     }
 });
 
@@ -173,8 +241,9 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         // Start async execution
         startPublishThread(taskId, publishData);
         sendSuccess(res, null, 'Task started');
-    } catch (error: any) {
-        sendError(res, 500, error.message);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, message);
     }
 });
 
@@ -184,27 +253,35 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
  */
 router.post('/postVideo', async (req: Request, res: Response) => {
     try {
-        const data = req.body;
-        const platformType = data.type;
-        const accountList: string[] = data.accountList || [];
+        const data = normalizeCapabilityPayload(req.body as Record<string, unknown>);
+        const resolved = resolveTypeByCapability(data);
+        if (!resolved) {
+            sendError(res, 400, '缺少有效的 type 或 capability_id');
+            return;
+        }
+        data.type = resolved.type;
+        data.content_type = resolved.kind === 'publish.article' ? 'article' : 'video';
+        const platformType = resolved.type;
+        const accountList = Array.isArray(data.accountList) ? data.accountList.map((item) => String(item)) : [];
 
-        // Filter accounts by platform type
-        const db = dbManager.getDb();
-        const validAccounts: string[] = [];
-        const invalidAccounts: string[] = [];
-
-        for (const accountFile of accountList) {
-            const row = db.prepare('SELECT type FROM user_info WHERE filePath = ?').get(accountFile) as any;
-            if (row && row.type === platformType) {
-                validAccounts.push(accountFile);
-            } else {
-                invalidAccounts.push(accountFile);
-            }
+        if (resolved.kind === 'publish.article') {
+            const articleTitle = typeof data.title === 'string' ? data.title : '';
+            const articleContent = typeof data.content === 'string' ? data.content : '';
+            const tags = Array.isArray(data.tags) ? data.tags.map((item) => String(item)) : [];
+            data.article = {
+                title: articleTitle,
+                content: articleContent,
+                tags
+            };
         }
 
-        if (invalidAccounts.length > 0) {
+        // Filter accounts by platform type
+        const validAccounts = filterValidAccountsByType(platformType, accountList);
+        const invalidCount = accountList.length - validAccounts.length;
+
+        if (invalidCount > 0) {
             logger.warn(
-                `[PUBLISH] Filtered ${invalidAccounts.length} mismatched accounts for platform ${platformType}`
+                `[PUBLISH] Filtered ${invalidCount} mismatched accounts for platform ${platformType}`
             );
         }
 
@@ -215,9 +292,9 @@ router.post('/postVideo', async (req: Request, res: Response) => {
 
         data.accountList = validAccounts;
 
-        const taskId = taskService.createTask(data);
+        const taskId = taskService.createTask(data as Record<string, unknown>);
         if (taskId) {
-            startPublishThread(taskId, data);
+            startPublishThread(taskId, data as Record<string, unknown>);
             sendSuccess(res, { taskId }, 'Task started');
         } else {
             sendError(res, 500, 'Failed to create task');
@@ -241,7 +318,13 @@ router.post('/postVideoBatch', async (req: Request, res: Response) => {
 
         const createdTasks: string[] = [];
 
-        for (const data of dataList) {
+        for (const raw of dataList) {
+            const data = normalizeCapabilityPayload((raw || {}) as Record<string, unknown>);
+            const resolved = resolveTypeByCapability(data);
+            if (resolved) {
+                data.type = resolved.type;
+                data.content_type = resolved.kind === 'publish.article' ? 'article' : 'video';
+            }
             const taskId = taskService.createTask(data);
             if (taskId) {
                 startPublishThread(taskId, data);
@@ -252,5 +335,47 @@ router.post('/postVideoBatch', async (req: Request, res: Response) => {
         sendSuccess(res, createdTasks, `Created ${createdTasks.length} tasks`);
     } catch (error: any) {
         sendError(res, 500, error.message);
+    }
+});
+
+/**
+ * POST /publish/capability
+ * Generic entrypoint for capability-based publishing (video/article).
+ */
+router.post('/publish/capability', async (req: Request, res: Response) => {
+    try {
+        const data = normalizeCapabilityPayload(req.body as Record<string, unknown>);
+        const resolved = resolveTypeByCapability(data);
+        if (!resolved) {
+            sendError(res, 400, 'capability_id 不存在或 type 无效');
+            return;
+        }
+
+        data.type = resolved.type;
+        data.content_type = resolved.kind === 'publish.article' ? 'article' : 'video';
+        const accountList = Array.isArray(data.accountList) ? data.accountList.map((item) => String(item)) : [];
+        const validAccounts = filterValidAccountsByType(resolved.type, accountList);
+
+        if (validAccounts.length === 0) {
+            sendError(res, 400, '没有匹配平台的有效账号');
+            return;
+        }
+
+        data.accountList = validAccounts;
+        if (resolved.kind === 'publish.article') {
+            const tags = Array.isArray(data.tags) ? data.tags.map((item) => String(item)) : [];
+            data.article = {
+                title: typeof data.title === 'string' ? data.title : '',
+                content: typeof data.content === 'string' ? data.content : '',
+                tags
+            };
+        }
+
+        const taskId = taskService.createTask(data);
+        startPublishThread(taskId, data);
+        sendSuccess(res, { taskId }, 'Task started');
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendError(res, 500, message);
     }
 });

@@ -243,6 +243,7 @@
         <el-descriptions :column="1" border>
           <el-descriptions-item label="任务ID">{{ selectedTask.id }}</el-descriptions-item>
           <el-descriptions-item label="任务名称">{{ selectedTask.title }}</el-descriptions-item>
+          <el-descriptions-item v-if="selectedTask.capabilityId" label="能力ID">{{ selectedTask.capabilityId }}</el-descriptions-item>
           <el-descriptions-item label="平台">
             <el-tag
               v-for="platform in selectedTask.platformNames"
@@ -310,6 +311,9 @@
               </el-tag>
               <div v-if="selectedTask.selectedTopics.length === 0" class="empty-topics">暂无话题</div>
             </div>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="selectedTask.publishData" label="执行快照">
+            <pre class="snapshot-pre">{{ formatPublishSnapshot(selectedTask.publishData) }}</pre>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -438,6 +442,30 @@ const formatDate = (dateString) => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+const SENSITIVE_KEY_PATTERN = /(token|secret|password|cookie|credential|authorization|auth)/i
+
+const maskSensitive = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(item => maskSensitive(item))
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, v]) => {
+        if (SENSITIVE_KEY_PATTERN.test(key)) {
+          return [key, '***MASKED***']
+        }
+        return [key, maskSensitive(v)]
+      })
+    )
+  }
+  return value
+}
+
+const formatPublishSnapshot = (publishData) => {
+  const sanitized = maskSensitive(publishData)
+  return JSON.stringify(sanitized, null, 2)
 }
 
 // 分页变化处理
@@ -787,5 +815,16 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+.snapshot-pre {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 </style>

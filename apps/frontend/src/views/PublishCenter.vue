@@ -222,7 +222,7 @@
           <h3>平台 <span class="selected-count">(已选 {{ tab.selectedPlatforms.length }})</span></h3>
           <el-checkbox-group v-model="tab.selectedPlatforms" class="platform-checkboxes">
             <el-checkbox
-              v-for="platform in platforms.filter(p => isPlatformSelectable(tab, p.key))"
+              v-for="platform in platforms.filter(p => supportsVideoPublishing(p.key) && isPlatformSelectable(tab, p.key))"
               :key="platform.key"
               :label="platform.key"
               class="platform-checkbox"
@@ -232,17 +232,17 @@
           </el-checkbox-group>
         </div>
 
-        <!-- 草稿选项 (仅在视频号可见) -->
-        <div v-if="tab.selectedPlatforms.includes(2)" class="draft-section">
+        <!-- 草稿选项 (仅在微信视频号可见) -->
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.WX_CHANNELS)" class="draft-section">
           <el-checkbox
             v-model="tab.isDraft"
-            label="视频号仅保存草稿(用手机发布)"
+            label="微信视频号仅保存草稿(用手机发布)"
             class="draft-checkbox"
           />
         </div>
 
         <!-- 封面图 (仅在抖音可见) -->
-        <div v-if="tab.selectedPlatforms.includes(3)" class="thumbnail-section">
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.DOUYIN)" class="thumbnail-section">
           <h3>封面图</h3>
           <el-upload
             class="thumbnail-upload"
@@ -269,7 +269,7 @@
         </div>
 
         <!-- 商品链接 (仅在抖音可见) -->
-        <div v-if="tab.selectedPlatforms.includes(3)" class="product-section">
+        <div v-if="tab.selectedPlatforms.includes(PlatformType.DOUYIN)" class="product-section">
           <h3>商品链接</h3>
           <el-input
             v-model="tab.productTitle"
@@ -813,11 +813,13 @@ import { accountApi } from '@/api/account'
 import { groupApi } from '@/api/group'
 import { materialApi } from '@/api/material'
 import { API_BASE_URL, MAX_UPLOAD_SIZE, MAX_UPLOAD_SIZE_MB } from '@/core/config'
-import { PLATFORM_LIST, getPlatformName } from '@/core/platformConstants'
+import { getPlatformName } from '@/core/platformConstants'
+import { PlatformType } from '@omni-post/shared'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 import { useGroupStore } from '@/stores/group'
 import { useTaskStore } from '@/stores/task'
+import { usePlatformStore } from '@/stores/platform'
 import { Close, Delete, Folder, Grid, InfoFilled, Management, Plus, Search, Upload, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
@@ -872,6 +874,7 @@ const currentTab = ref(null)
 // 获取账号状态管理
 const accountStore = useAccountStore()
 const groupStore = useGroupStore()
+const platformStore = usePlatformStore()
 
 // Group selection state for account dialog
 const selectedGroup = ref(null)
@@ -960,6 +963,7 @@ onMounted(async () => {
     await groupStore.fetchGroups()
 
     // 获取任务列表，仅在有活跃任务时开启轮询
+    await platformStore.fetchExtensions()
     await taskStore.fetchTasks()
     if (taskStore.hasActiveTasks()) {
       taskStore.startPolling()
@@ -975,8 +979,8 @@ onUnmounted(() => {
   taskStore.stopPolling()
 })
 
-// Platform list - use centralized constant
-const platforms = PLATFORM_LIST
+// Platform list - dynamic from platform store
+const platforms = computed(() => platformStore.allPlatforms)
 
 // 推荐话题列表
 const recommendedTopics = [
@@ -1014,7 +1018,7 @@ const defaultTabInit = {
   startDays: 0, // 从今天开始计算的发布天数，0表示明天，1表示后天
   publishStatus: null, // 发布状态，包含message和type
   publishing: false, // 发布状态，用于控制按钮loading效果
-  isDraft: false, // 是否保存为草稿，仅视频号平台可见
+  isDraft: false, // 是否保存为草稿，仅微信视频号平台可见
   priority: 1, // 上传优先级 (0: 低, 1: 正常, 2: 高)
   uploadTab: 'local' // 上传选项卡，默认本地上传
 }
@@ -1035,9 +1039,13 @@ const getPlatformAccountCount = (tab, platformKey) => {
     return 0
   }
 
-  // Get platform name using centralized utility
-  const platformName = getPlatformName(platformKey)
-  if (!platformName) return 0
+  // Get platform name - check static then dynamic
+  let platformName = getPlatformName(platformKey)
+  if (platformName === '未知') {
+    const ext = platformStore.customExtensions.find(e => e.platform_id === platformKey)
+    if (ext) platformName = ext.name
+  }
+  if (!platformName || platformName === '未知') return 0
 
   return tab.selectedAccounts.filter(accountId => {
     const account = accountStore.accounts.find(acc => acc.id === accountId)
@@ -1050,11 +1058,18 @@ const isPlatformSelectable = (tab, platformKey) => {
   return getPlatformAccountCount(tab, platformKey) > 0
 }
 
+const supportsVideoPublishing = (platformKey) => {
+  if (platformKey === PlatformType.WX_OFFICIAL_ACCOUNT) return false
+  if (platformKey < 100) return true
+  const ext = platformStore.customExtensions.find(e => e.platform_id === platformKey)
+  return Boolean(ext?.manifest?.actions?.publish_video)
+}
+
 // 当账号选择变化时，自动更新平台选择
 const updatePlatformSelection = (tab) => {
   // 获取所有可选择的平台
-  const selectablePlatforms = platforms
-    .filter(platform => isPlatformSelectable(tab, platform.key))
+  const selectablePlatforms = platforms.value
+    .filter(platform => supportsVideoPublishing(platform.key) && isPlatformSelectable(tab, platform.key))
     .map(platform => platform.key)
 
   // 自动选中所有可选择的平台
@@ -1077,7 +1092,7 @@ const filteredTasks = computed(() => {
       task.title?.toLowerCase().includes(keyword) ||
       task.id?.toLowerCase().includes(keyword) ||
       task.selectedPlatforms.some(platform =>
-        platforms.find(p => p.key === platform)?.name.toLowerCase().includes(keyword)
+        platforms.value.find(p => p.key === platform)?.name.toLowerCase().includes(keyword)
       )
     )
   }
@@ -1520,10 +1535,14 @@ const confirmPublish = async (tab) => {
         accountList: tab.selectedAccounts
           .filter(accountId => {
             const account = accountStore.accounts.find(acc => acc.id === accountId)
-            // Filter accounts by platform: platform is key (1-5)
-            // Account platform is stored as string name (e.g. "小红书")
-            // So we need to match account.platform === PLATFORM_NAMES[platformKey]
-            return account && account.platform === getPlatformName(platform)
+            // Filter accounts by platform: match name or ID
+            if (!account) return false
+            let pName = getPlatformName(platform)
+            if (pName === '未知') {
+                const ext = platformStore.customExtensions.find(e => e.platform_id === platform)
+                if (ext) pName = ext.name
+            }
+            return account.platform === pName
           })
           .map(accountId => {
             const account = accountStore.accounts.find(acc => acc.id === accountId)
@@ -1534,10 +1553,10 @@ const confirmPublish = async (tab) => {
         dailyTimes: tab.scheduleEnabled ? tab.dailyTimes || ['10:00'] : ['10:00'],
         startDays: tab.scheduleEnabled ? tab.startDays || 0 : 0,
         category: 0,
-        productLink: platform === 3 ? tab.productLink.trim() || '' : '',
-        productTitle: platform === 3 ? tab.productTitle.trim() || '' : '',
-        thumbnail: platform === 3 ? tab.thumbnail || '' : '',
-        isDraft: platform === 2 ? tab.isDraft : false
+        productLink: platform === PlatformType.DOUYIN ? tab.productLink.trim() || '' : '',
+        productTitle: platform === PlatformType.DOUYIN ? tab.productTitle.trim() || '' : '',
+        thumbnail: platform === PlatformType.DOUYIN ? tab.thumbnail || '' : '',
+        isDraft: platform === PlatformType.WX_CHANNELS ? tab.isDraft : false
       }
 
       return fetch(`${apiBaseUrl}/postVideo`, {

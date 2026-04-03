@@ -1,6 +1,12 @@
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
 import Home from '@/views/Home.vue'
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@element-plus/icons-vue', () => ({
+  Lightning: { template: '<i />' },
+  Star: { template: '<i />' },
+  Setting: { template: '<i />' }
+}))
 
 describe('Home.vue', () => {
   it('should mount successfully', () => {

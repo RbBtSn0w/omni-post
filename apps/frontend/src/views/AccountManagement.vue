@@ -317,7 +317,7 @@
           </div>
         </el-tab-pane>
 
-        <el-tab-pane label="视频号" name="channels">
+        <el-tab-pane label="微信视频号" name="channels">
           <div class="account-list-container">
             <div class="account-search">
               <GroupSelector v-model="selectedGroupId" @change="handleGroupChange" />
@@ -387,7 +387,7 @@
             </div>
 
             <div v-else class="empty-data">
-              <el-empty description="暂无视频号账号数据" />
+              <el-empty description="暂无微信视频号账号数据" />
             </div>
           </div>
         </el-tab-pane>
@@ -561,11 +561,12 @@
             style="width: 100%"
             :disabled="dialogType === 'edit' || sseConnecting"
           >
-            <el-option label="快手" value="快手" />
-            <el-option label="抖音" value="抖音" />
-            <el-option label="视频号" value="视频号" />
-            <el-option label="小红书" value="小红书" />
-            <el-option label="Bilibili" value="Bilibili" />
+            <el-option
+              v-for="p in platformStore.allPlatforms"
+              :key="p.key"
+              :label="p.name"
+              :value="p.name"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="登录模式" prop="session_source">
@@ -612,6 +613,16 @@
               :value="group.name"
             />
           </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="isDynamicPlatform" label="平台凭证" prop="credentials">
+          <el-input
+            v-model="accountForm.credentials"
+            type="textarea"
+            :rows="4"
+            placeholder='请输入凭证JSON (例如: {"appid": "...", "secret": "..."})'
+            :disabled="sseConnecting"
+          />
         </el-form-item>
 
         <!-- 二维码显示区域 -->
@@ -724,6 +735,8 @@ import { useBrowserStore } from '@/stores/browser'
 import { ArrowDown, CircleCheckFilled, CircleCloseFilled, Download, Loading, Refresh, Setting, Upload } from '@element-plus/icons-vue'
 import { ElAlert, ElCard, ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { usePlatformStore } from '@/stores/platform'
+import { PlatformType } from '@/core/platformConstants'
 // 导入全局数据缓存服务
 import { useAccountActions } from '@/composables/useAccountActions'
 import { useAccountFilter } from '@/composables/useAccountFilter'
@@ -738,6 +751,8 @@ const appStore = useAppStore()
 const groupStore = useGroupStore()
 // 获取浏览器配置管理
 const browserStore = useBrowserStore()
+// 获取平台管理
+const platformStore = usePlatformStore()
 
 const {
   activeTab,
@@ -927,7 +942,8 @@ let autoRefreshTimer = null
 let exceptionRefreshTimer = null
 
 // 页面加载时获取账号数据
-onMounted(() => {
+onMounted(async () => {
+  await platformStore.fetchExtensions()
   // 快速获取 & 后台验证
   fetchAccountsQuick()
   setTimeout(() => {
@@ -968,14 +984,8 @@ onBeforeUnmount(() => {
 
 // 获取平台标签类型
 const getPlatformTagType = (platform) => {
-  const typeMap = {
-    '快手': 'success',
-    '抖音': 'danger',
-    '视频号': 'warning',
-    '小红书': 'info',
-    'Bilibili': 'primary'
-  }
-  return typeMap[platform] || 'info'
+  // platform could be a name or a type ID
+  return import('@/core/platformConstants').then(m => m.getPlatformTagType(platform))
 }
 
 // 判断状态是否可点击（异常状态可点击）
@@ -1129,7 +1139,18 @@ const accountForm = reactive({
   platform: '',
   status: '正常',
   session_source: 'managed',
-  browser_profile_id: null
+  browser_profile_id: null,
+  credentials: '' // JSON string for credentials
+})
+
+// Whether the current platform is dynamic and needs credentials
+const isDynamicPlatform = computed(() => {
+  if (!accountForm.platform) return false
+  const platform = platformStore.allPlatforms.find(p => p.name === accountForm.platform)
+  if (!platform) return false
+  
+  // WX Official Account (8) or OCS extensions (100+)
+  return platform.key === PlatformType.WX_OFFICIAL_ACCOUNT || platform.key >= 100
 })
 
 // 表单验证规则
@@ -1309,11 +1330,12 @@ const connectSSE = (platform, name, groupName) => {
 
   // 获取平台类型编号
   const platformTypeMap = {
-    '小红书': '1',
-    '视频号': '2',
-    '抖音': '3',
-    '快手': '4',
-    'Bilibili': '5'
+    '小红书': PlatformType.XIAOHONGSHU.toString(),
+    '微信视频号': PlatformType.WX_CHANNELS.toString(),
+    '视频号': PlatformType.WX_CHANNELS.toString(), // Legacy support during migration
+    '抖音': PlatformType.DOUYIN.toString(),
+    '快手': PlatformType.KUAISHOU.toString(),
+    'Bilibili': PlatformType.BILIBILI.toString()
   }
 
   const type = platformTypeMap[platform] || '1'
@@ -1406,32 +1428,73 @@ const submitAccountForm = () => {
   accountFormRef.value.validate(async (valid) => {
     if (valid) {
       if (dialogType.value === 'add') {
-        // 建立SSE连接，使用 groupName 作为 accountName (id)
-        connectSSE(accountForm.platform, accountForm.groupName, accountForm.groupName)
+        if (isDynamicPlatform.value) {
+          // Dynamic platform direct addition
+          try {
+            const platform = platformStore.allPlatforms.find(p => p.name === accountForm.platform)
+            const type = platform ? platform.key : 1
+            const group = groupStore.groups.find(g => g.name === accountForm.groupName)
+            const group_id = group ? group.id : 0
+
+            let creds = {}
+            try {
+              if (accountForm.credentials) {
+                creds = JSON.parse(accountForm.credentials)
+              }
+            } catch {
+              ElMessage.error('凭证格式错误，请输入有效的JSON')
+              return
+            }
+
+            const res = await accountApi.addAccount({
+              type,
+              userName: accountForm.groupName, // Use groupName as initial userName for display
+              group_id,
+              credentials: creds
+            })
+
+            if (res.code === 200) {
+              ElMessage.success('账号添加成功')
+              dialogVisible.value = false
+              await refreshAccountsAfterMutation('account_add')
+              groupStore.fetchGroups()
+            } else {
+              ElMessage.error(res.msg || '添加失败')
+            }
+          } catch (error) {
+            console.error('添加账号失败:', error)
+            ElMessage.error('添加账号失败')
+          }
+        } else {
+          // Standard SSE login flow
+          connectSSE(accountForm.platform, accountForm.groupName, accountForm.groupName)
+        }
       } else {
         // 编辑账号逻辑
         try {
-          // 将平台名称转换为类型数字
-          // 注意：映射必须与 stores/account.js 中的 platformTypes 保持一致
-          // 1=小红书, 2=视频号, 3=抖音, 4=快手
-          const platformTypeMap = {
-            '小红书': 1,
-            '视频号': 2,
-            '抖音': 3,
-            '快手': 4,
-            'Bilibili': 5
-          };
-          const type = platformTypeMap[accountForm.platform] || 1;
+          const platform = platformStore.allPlatforms.find(p => p.name === accountForm.platform)
+          const type = platform ? platform.key : 1
+          
+          let creds = undefined
+          if (isDynamicPlatform.value && accountForm.credentials) {
+            try {
+              creds = JSON.parse(accountForm.credentials)
+            } catch {
+              ElMessage.error('凭证格式错误，请输入有效的JSON')
+              return
+            }
+          }
 
           // 获取选中的组 ID
           const group = groupStore.groups.find(g => g.name === accountForm.groupName);
-          const group_id = group ? group.id : 0; // 如果是新输入的组名且尚未刷新，之后获取时会更新
+          const group_id = group ? group.id : 0; 
 
           const res = await accountApi.updateAccount({
             id: accountForm.id,
             type: type,
             userName: accountForm.name,
-            group_id: group_id
+            group_id: group_id,
+            credentials: creds
           })
           if (res.code === 200) {
             // 更新状态管理中的账号

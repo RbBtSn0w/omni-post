@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Mock login-impl to avoid Playwright
 vi.mock('../src/services/login-impl.js', () => ({
     douyinCookieGen: vi.fn().mockResolvedValue({}),
-    getTencentCookie: vi.fn().mockResolvedValue({}),
+    getWxChannelsCookie: vi.fn().mockResolvedValue({}),
     getKsCookie: vi.fn().mockResolvedValue({}),
     xiaohongshuCookieGen: vi.fn().mockResolvedValue({}),
     bilibiliCookieGen: vi.fn().mockResolvedValue({}),
@@ -32,12 +32,12 @@ describe('runAsyncFunction dispatch', () => {
         expect(service.xiaohongshuCookieGen).toHaveBeenCalled();
     });
 
-    it('should dispatch type 2 (tencent)', async () => {
+    it('should dispatch type 2 (wx_channels)', async () => {
         const service = new DefaultLoginService();
         const controller = new AbortController();
-        service.getTencentCookie = vi.fn().mockResolvedValue({});
-        await service.getTencentCookie('test_id', new EventEmitter(), controller.signal);
-        expect(service.getTencentCookie).toHaveBeenCalled();
+        service.getWxChannelsCookie = vi.fn().mockResolvedValue({});
+        await service.getWxChannelsCookie('test_id', new EventEmitter(), controller.signal);
+        expect(service.getWxChannelsCookie).toHaveBeenCalled();
     });
 
     it('should dispatch type 3 (douyin)', async () => {

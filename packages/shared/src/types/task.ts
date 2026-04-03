@@ -17,6 +17,7 @@ export interface UserInfo {
     group_id: number | null;
     session_source: 'managed' | 'local';
     browser_profile_id: string | null;
+    credentials: string | null; // JSON string
     created_at: string;
     last_validated_at: string | null;
 }
@@ -64,4 +65,6 @@ export interface UploadOptions {
     isDraft?: boolean;
     publishDatetimes?: (Date | number | 0)[];
     browser_profile_id?: string | null;
+    platform_id?: number; // For dynamic platforms
+    userName?: string; // Current publishing user
 }

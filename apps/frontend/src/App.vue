@@ -32,6 +32,10 @@
               <el-icon><Upload /></el-icon>
               <span>发布中心</span>
             </el-menu-item>
+            <el-menu-item index="/publish-wizard">
+              <el-icon><Operation /></el-icon>
+              <span>发布向导</span>
+            </el-menu-item>
             <el-menu-item index="/article-publish">
               <el-icon><Document /></el-icon>
               <span>文章发布</span>
@@ -39,6 +43,10 @@
             <el-menu-item index="/task-management">
               <el-icon><List /></el-icon>
               <span>任务管理</span>
+            </el-menu-item>
+            <el-menu-item index="/extension">
+              <el-icon><Setting /></el-icon>
+              <span>扩展中心</span>
             </el-menu-item>
           </el-menu>
         </div>
@@ -67,7 +75,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
   HomeFilled, User,
-  Fold, VideoCamera, Upload, List, Document
+  Fold, VideoCamera, Upload, List, Document, Setting, Operation
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

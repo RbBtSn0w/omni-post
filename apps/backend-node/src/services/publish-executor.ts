@@ -9,27 +9,51 @@ import fs from 'fs';
 import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
 import { logger } from '../core/logger.js';
+import { dbManager } from '../db/database.js';
+import { safeJoin } from '../utils/path.js';
 import { lockManager } from './lock-manager.js';
 import {
+    postArticleJuejin,
+    postArticleZhihu,
+    postOpenCLI,
     postVideoBilibili,
     postVideoDouyin,
     postVideoKs,
-    postVideoTencent,
+    postVideoWxChannels,
     postVideoXhs,
-    postArticleZhihu,
-    postArticleJuejin,
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
-import { safeJoin } from '../utils/path.js';
 
 /**
  * Concurrency Limit (资源并发限制)
  * 限制同时运行的浏览器实例数量，防止内存溢出。
  */
 let activeTasks = 0;
-const MAX_CONCURRENT_TASKS = 5; 
+const MAX_CONCURRENT_TASKS = 5;
 const taskQueue: (() => void)[] = [];
+
+interface UserNameRow {
+    userName: string;
+}
+
+function resolveUserNameByAccountFile(platformType: number, accountList: string[]): string {
+    const firstAccountFile = accountList[0];
+    if (!firstAccountFile) return '';
+
+    try {
+        const db = dbManager.getDb();
+        const row = db
+            .prepare('SELECT userName FROM user_info WHERE type = ? AND filePath = ? LIMIT 1')
+            .get(platformType, firstAccountFile) as UserNameRow | undefined;
+        if (row?.userName) return row.userName;
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.warn(`[PUBLISH] Failed to resolve userName from DB: ${message}`);
+    }
+
+    return firstAccountFile.split('.')[0] || '';
+}
 
 async function acquireSlot(taskId: string): Promise<void> {
     if (activeTasks < MAX_CONCURRENT_TASKS) {
@@ -65,6 +89,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
     const contentType: 'video' | 'article' = publishData.content_type || 'video';
     const browser_profile_id = publishData.browser_profile_id || null;
     const lockKeys: string[] = [];
+    let lastProgress = 0;
 
     try {
         const resourcesToLock = [...accountList];
@@ -174,18 +199,33 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             isDraft,
             browser_profile_id,
             article,
+            platform_id: type,
+            userName: resolveUserNameByAccountFile(type, accountList),
+        };
+        const onProgress = (progress: number): void => {
+            if (!Number.isFinite(progress)) return;
+            const normalized = Math.max(0, Math.min(100, Math.trunc(progress)));
+            if (normalized <= lastProgress || normalized >= 100) return;
+            lastProgress = normalized;
+            taskService.updateTaskStatus(taskId, 'uploading', normalized);
         };
 
         // Dispatch to appropriate uploader
         switch (type) {
-            case PlatformType.XIAOHONGSHU: await postVideoXhs(opts); break;
-            case PlatformType.TENCENT: await postVideoTencent(opts); break;
-            case PlatformType.DOUYIN: await postVideoDouyin(opts); break;
-            case PlatformType.KUAISHOU: await postVideoKs(opts); break;
-            case PlatformType.BILIBILI: await postVideoBilibili(opts); break;
-            case PlatformType.ZHIHU: await postArticleZhihu(opts); break;
-            case PlatformType.JUEJIN: await postArticleJuejin(opts); break;
-            default: throw new Error(`Unknown platform type: ${type}`);
+            case PlatformType.XIAOHONGSHU: await postVideoXhs(opts, onProgress); break;
+            case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts, onProgress); break;
+            case PlatformType.DOUYIN: await postVideoDouyin(opts, onProgress); break;
+            case PlatformType.KUAISHOU: await postVideoKs(opts, onProgress); break;
+            case PlatformType.BILIBILI: await postVideoBilibili(opts, onProgress); break;
+            case PlatformType.ZHIHU: await postArticleZhihu(opts, onProgress); break;
+            case PlatformType.JUEJIN: await postArticleJuejin(opts, onProgress); break;
+            case PlatformType.WX_OFFICIAL_ACCOUNT: await postOpenCLI(opts, onProgress); break;
+            default:
+                if (type >= 100) {
+                    await postOpenCLI(opts, onProgress);
+                } else {
+                    throw new Error(`Unknown platform type: ${type}`);
+                }
         }
 
         logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);

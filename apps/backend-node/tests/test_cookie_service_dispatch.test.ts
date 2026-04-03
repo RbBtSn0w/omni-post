@@ -19,7 +19,7 @@ describe('CookieService Dispatch', () => {
 
         // Mock individual methods
         service.cookieAuthXhs = vi.fn().mockResolvedValue(true);
-        service.cookieAuthTencent = vi.fn().mockResolvedValue(true);
+        service.cookieAuthWxChannels = vi.fn().mockResolvedValue(true);
         service.cookieAuthDouyin = vi.fn().mockResolvedValue(true);
         service.cookieAuthKs = vi.fn().mockResolvedValue(true);
         service.cookieAuthBilibili = vi.fn().mockResolvedValue(true);
@@ -27,8 +27,8 @@ describe('CookieService Dispatch', () => {
         expect(await service.checkCookie(PlatformType.XIAOHONGSHU, 'test.json')).toBe(true);
         expect(service.cookieAuthXhs).toHaveBeenCalled();
 
-        expect(await service.checkCookie(PlatformType.TENCENT, 'test.json')).toBe(true);
-        expect(service.cookieAuthTencent).toHaveBeenCalled();
+        expect(await service.checkCookie(PlatformType.WX_CHANNELS, 'test.json')).toBe(true);
+        expect(service.cookieAuthWxChannels).toHaveBeenCalled();
 
         expect(await service.checkCookie(PlatformType.DOUYIN, 'test.json')).toBe(true);
         expect(service.cookieAuthDouyin).toHaveBeenCalled();

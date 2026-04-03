@@ -11,7 +11,7 @@ describe('MockAuthService', () => {
     it('should return true when cookieValid is true', async () => {
         const service = new MockAuthService(true);
         expect(await service.cookieAuthDouyin('test.json')).toBe(true);
-        expect(await service.cookieAuthTencent('test.json')).toBe(true);
+        expect(await service.cookieAuthWxChannels('test.json')).toBe(true);
         expect(await service.cookieAuthKs('test.json')).toBe(true);
         expect(await service.cookieAuthXhs('test.json')).toBe(true);
         expect(await service.cookieAuthBilibili('test.json')).toBe(true);

@@ -12,18 +12,19 @@ import {
 describe('PlatformType enum', () => {
   it('should have correct integer IDs for all platforms', () => {
     expect(PlatformType.XIAOHONGSHU).toBe(1);
-    expect(PlatformType.TENCENT).toBe(2);
+    expect(PlatformType.WX_CHANNELS).toBe(2);
     expect(PlatformType.DOUYIN).toBe(3);
     expect(PlatformType.KUAISHOU).toBe(4);
     expect(PlatformType.BILIBILI).toBe(5);
     expect(PlatformType.ZHIHU).toBe(6);
     expect(PlatformType.JUEJIN).toBe(7);
+    expect(PlatformType.WX_OFFICIAL_ACCOUNT).toBe(8);
   });
 
-  it('should have exactly 7 platforms', () => {
+  it('should have exactly 8 platforms', () => {
     // Numeric enum values (filter out reverse mappings)
     const numericValues = Object.values(PlatformType).filter(v => typeof v === 'number');
-    expect(numericValues).toHaveLength(7);
+    expect(numericValues).toHaveLength(8);
   });
 });
 
@@ -38,12 +39,13 @@ describe('PLATFORM_NAMES', () => {
 
   it('should have correct display names', () => {
     expect(PLATFORM_NAMES[PlatformType.XIAOHONGSHU]).toBe('小红书');
-    expect(PLATFORM_NAMES[PlatformType.TENCENT]).toBe('视频号');
+    expect(PLATFORM_NAMES[PlatformType.WX_CHANNELS]).toBe('微信视频号');
     expect(PLATFORM_NAMES[PlatformType.DOUYIN]).toBe('抖音');
     expect(PLATFORM_NAMES[PlatformType.KUAISHOU]).toBe('快手');
     expect(PLATFORM_NAMES[PlatformType.BILIBILI]).toBe('Bilibili');
     expect(PLATFORM_NAMES[PlatformType.ZHIHU]).toBe('知乎');
     expect(PLATFORM_NAMES[PlatformType.JUEJIN]).toBe('掘金');
+    expect(PLATFORM_NAMES[PlatformType.WX_OFFICIAL_ACCOUNT]).toBe('微信公众号');
   });
 
   it('should have same count as PlatformType enum', () => {
@@ -102,14 +104,14 @@ describe('getPlatformType()', () => {
 
 describe('isValidPlatform()', () => {
   it('should return true for valid platform IDs', () => {
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 8; i++) {
       expect(isValidPlatform(i)).toBe(true);
     }
   });
 
   it('should return false for invalid platform IDs', () => {
     expect(isValidPlatform(0)).toBe(false);
-    expect(isValidPlatform(8)).toBe(false);
+    expect(isValidPlatform(9)).toBe(false);
     expect(isValidPlatform(-1)).toBe(false);
     expect(isValidPlatform(100)).toBe(false);
   });

@@ -4,7 +4,7 @@
  *
  * Platform constants are now sourced from @omni-post/shared (SSOT).
  * This file re-exports them for backwards compatibility and adds
- * backend-only constants (TencentZoneTypes, VideoZoneTypes).
+ * backend-only constants (WxChannelsZoneTypes, VideoZoneTypes).
  */
 
 // Re-export all shared platform constants
@@ -18,8 +18,8 @@ export {
     isValidPlatform,
 } from '@omni-post/shared';
 
-// ─── Tencent Zone Types (Backend-Only) ───────────────────────────────
-export enum TencentZoneTypes {
+// ─── WXChannels Zone Types (Backend-Only) ──────────────────────────────
+export enum WxChannelsZoneTypes {
     LIFESTYLE = '生活',
     CUTE_KIDS = '萌娃',
     MUSIC = '音乐',

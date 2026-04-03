@@ -1,11 +1,10 @@
 /// <reference lib="dom" />
 /**
- * Tencent Video (WeChat Channels) video uploader.
- * Mirrors: apps/backend/src/uploader/tencent_uploader/main.py
+ * WXChannels (WeChat Channels) video uploader.
+ * Mirrors: apps/backend/src/uploader/wx_channels_uploader/main.py
  */
 
 import * as fs from 'node:fs';
-import path from 'path';
 import { type BrowserContext, type Page } from 'playwright';
 import { createScreenshotDir, debugScreenshot } from '../../core/browser.js';
 import { VIDEOS_DIR } from '../../core/config.js';
@@ -16,33 +15,33 @@ import { BaseUploader } from '../base-uploader.js';
 
 const UPLOAD_TIMEOUT_MINUTES = 30;
 
-export class TencentUploader extends BaseUploader {
-    protected platformName = 'Tencent';
+export class WxChannelsUploader extends BaseUploader {
+    protected platformName = 'WxChannels';
 
     private async waitForUploadComplete(page: Page): Promise<void> {
         this.log('等待上传解析 (Shadow DOM 类名与物理特征探测)...');
         const maxRetries = (UPLOAD_TIMEOUT_MINUTES * 60) / 2;
-        
+
         for (let i = 0; i < maxRetries; i++) {
             const status = await page.evaluate(() => {
                 const wujie = (document as any).querySelector('wujie-app');
                 const root = (wujie as any)?.shadowRoot;
                 if (!root) return { isReady: false, msg: 'Wujie Not Ready' };
-                
+
                 // 1. 查找发表按钮
                 const buttons = Array.from(root.querySelectorAll('button')) as any[];
                 const publishBtn = buttons.find(b => b.textContent?.includes('发表') || b.textContent?.includes('存草稿'));
-                
+
                 // 2. 查找物理特征：上传成功后通常会出现“删除”或“重新上传”按钮
                 const hasDeleteBtn = buttons.some(b => b.textContent?.includes('删除') || b.id === '删除');
-                
+
                 // 3. 检查锁定类名
                 const classes = publishBtn?.className || '';
                 const isLocked = classes.includes('weui-desktop-btn_disabled');
-                
+
                 // 真正就绪的判定：按钮存在、锁定类名消失、且物理删除按钮已渲染
                 const isReady = !!publishBtn && !isLocked && hasDeleteBtn;
-                
+
                 return { isReady, isLocked, hasDeleteBtn, classes, msg: `Locked: ${isLocked}, Delete: ${hasDeleteBtn}` };
             });
 
@@ -78,7 +77,7 @@ export class TencentUploader extends BaseUploader {
             this.log('发布验证成功 (后端已入账)');
         } catch (error: any) {
             this.log(`注意: ${error.message}，尝试通过列表状态判定`, 'warn');
-            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
         }
     }
 
@@ -96,7 +95,7 @@ export class TencentUploader extends BaseUploader {
 
         this.log(`开始上传 - 标题: ${title}, 文件数: ${fileList.length}`);
         const page = await this.createPage(context);
-        const screenshotDir = createScreenshotDir('tencent');
+        const screenshotDir = createScreenshotDir('wx_channels');
         const uploadUrl = 'https://channels.weixin.qq.com/platform/post/create';
 
         try {
@@ -189,8 +188,8 @@ export class TencentUploader extends BaseUploader {
                 try {
                     page.on('request', uploadProgressListener);
                     const fileInput = page.locator('wujie-app >> input[type="file"]').first();
-                await fileInput.setInputFiles(videoPath);
-                this.log(`文件已选择，COS 分片上传中...`);
+                    await fileInput.setInputFiles(videoPath);
+                    this.log(`文件已选择，COS 分片上传中...`);
 
                     // 等待 UI 文字 100% + 发送按钮启用 (SC-006 fix)
                     await this.waitForUploadComplete(page);
@@ -205,12 +204,12 @@ export class TencentUploader extends BaseUploader {
                     // 清空原有内容
                     await page.keyboard.press('ControlOrMeta+a');
                     await page.keyboard.press('Backspace');
-                    
+
                     // 话题处理：输入话题后必须跟空格，且一次性填入
                     let finalTitle = title;
                     if (opts.tags && opts.tags.length > 0) {
                         for (const tag of opts.tags) {
-                            finalTitle += ` #${tag} `; 
+                            finalTitle += ` #${tag} `;
                         }
                     }
                     await titleInput.fill(finalTitle);
@@ -219,7 +218,7 @@ export class TencentUploader extends BaseUploader {
 
                 // 添加短标题
                 await this.addShortTitle(page, title);
-                
+
                 // 原创声明
                 await this.addOriginal(page, opts.category ?? undefined);
 
@@ -233,7 +232,7 @@ export class TencentUploader extends BaseUploader {
                 }
 
                 await debugScreenshot(page, screenshotDir, `before_publish_${i}.png`, '发布前');
-                
+
                 const publishBtn = page.locator('wujie-app').getByRole('button', { name: isDraft ? '存草稿' : '发表' }).first();
                 this.log(`正在点击${isDraft ? '存草稿' : '发表'}并等待后端确认...`);
 
@@ -267,7 +266,7 @@ export class TencentUploader extends BaseUploader {
         opts: UploadOptions,
         onProgress: (progress: number) => void
     ): Promise<void> {
-        this.log('Tencent article upload not implemented yet', 'warn');
+        this.log('WxChannels article upload not implemented yet', 'warn');
     }
 
     /**
@@ -284,7 +283,7 @@ export class TencentUploader extends BaseUploader {
                 formatted += ' ';
             }
         }
-        
+
         if (formatted.length > 16) {
             formatted = formatted.slice(0, 16);
         } else if (formatted.length < 6) {
@@ -301,7 +300,7 @@ export class TencentUploader extends BaseUploader {
         try {
             // 穿透 Shadow DOM 寻找短标题输入框 (Placeholder: 概括视频主要内容...)
             const shortTitleElement = page.locator('wujie-app >> input.weui-desktop-form__input[placeholder*="概括视频"]').first();
-            
+
             if (await shortTitleElement.count() > 0) {
                 const shortTitle = this.formatStrForShortTitle(title);
                 await shortTitleElement.fill(shortTitle);
@@ -323,7 +322,7 @@ export class TencentUploader extends BaseUploader {
             '5': '体育', '6': '职场', '7': '美食', '8': '游戏'
         };
         const categoryText = typeof category === 'string' ? category : (category ? categoryMap[String(category)] : '');
-        
+
         try {
             const originalCheckbox = page.locator('wujie-app >> label:has-text("视频为原创")').first();
             if (await originalCheckbox.count() > 0) {

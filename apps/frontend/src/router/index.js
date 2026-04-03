@@ -3,9 +3,11 @@ import Dashboard from '../views/Dashboard.vue'
 import AccountManagement from '../views/AccountManagement.vue'
 import MaterialManagement from '../views/MaterialManagement.vue'
 import PublishCenter from '../views/PublishCenter.vue'
+import CapabilityPublishWizard from '../views/CapabilityPublishWizard.vue'
 import ArticlePublish from '../views/ArticlePublish.vue'
 import TaskManagement from '../views/TaskManagement.vue'
 import About from '../views/About.vue'
+import Extensions from '../views/Extensions.vue'
 
 const routes = [
   {
@@ -29,6 +31,11 @@ const routes = [
     component: PublishCenter
   },
   {
+    path: '/publish-wizard',
+    name: 'PublishWizard',
+    component: CapabilityPublishWizard
+  },
+  {
     path: '/article-publish',
     name: 'ArticlePublish',
     component: ArticlePublish
@@ -47,6 +54,11 @@ const routes = [
     path: '/about',
     name: 'About',
     component: About
+  },
+  {
+    path: '/extension',
+    name: 'Extensions',
+    component: Extensions
   }
 ]
 

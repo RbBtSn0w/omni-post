@@ -7,7 +7,7 @@ import path from 'path';
 import { launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
 import { PlatformType } from '../core/constants.js';
-import { bilibiliLogger, douyinLogger, kuaishouLogger, tencentLogger, xhsLogger } from '../core/logger.js';
+import { bilibiliLogger, douyinLogger, kuaishouLogger, wxChannelsLogger, xhsLogger } from '../core/logger.js';
 import { safeJoin } from '../utils/path.js';
 
 /**
@@ -15,7 +15,7 @@ import { safeJoin } from '../utils/path.js';
  */
 export interface CookieService {
     cookieAuthDouyin(accountFile: string): Promise<boolean>;
-    cookieAuthTencent(accountFile: string): Promise<boolean>;
+    cookieAuthWxChannels(accountFile: string): Promise<boolean>;
     cookieAuthKs(accountFile: string): Promise<boolean>;
     cookieAuthXhs(accountFile: string): Promise<boolean>;
     cookieAuthBilibili(accountFile: string): Promise<boolean>;
@@ -68,7 +68,7 @@ export class DefaultCookieService implements CookieService {
         }
     }
 
-    async cookieAuthTencent(accountFile: string): Promise<boolean> {
+    async cookieAuthWxChannels(accountFile: string): Promise<boolean> {
         const browser = await launchBrowser();
         let context = null;
         let page = null;
@@ -82,10 +82,10 @@ export class DefaultCookieService implements CookieService {
             );
             try {
                 await page.waitForSelector('div.title-name:has-text("微信小店")', { timeout: 5000 });
-                tencentLogger.error('[+] 等待5秒 cookie 失效');
+                wxChannelsLogger.error('[+] 等待5秒 cookie 失效');
                 return false;
             } catch {
-                tencentLogger.info('[+] cookie 有效');
+                wxChannelsLogger.info('[+] cookie 有效');
                 return true;
             }
         } finally {
@@ -201,7 +201,7 @@ export class DefaultCookieService implements CookieService {
 
         switch (platformType) {
             case PlatformType.XIAOHONGSHU: return this.cookieAuthXhs(cookiePath);
-            case PlatformType.TENCENT: return this.cookieAuthTencent(cookiePath);
+            case PlatformType.WX_CHANNELS: return this.cookieAuthWxChannels(cookiePath);
             case PlatformType.DOUYIN: return this.cookieAuthDouyin(cookiePath);
             case PlatformType.KUAISHOU: return this.cookieAuthKs(cookiePath);
             case PlatformType.BILIBILI: return this.cookieAuthBilibili(cookiePath);

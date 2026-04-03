@@ -62,7 +62,7 @@ function createBusinessLogger(logName: string, fileName: string): winston.Logger
 
 // Create business loggers (matching Python's per-platform loggers)
 export const douyinLogger = createBusinessLogger('douyin', 'douyin.log');
-export const tencentLogger = createBusinessLogger('tencent', 'tencent.log');
+export const wxChannelsLogger = createBusinessLogger('wx_channels', 'wx_channels.log');
 export const xhsLogger = createBusinessLogger('xhs', 'xhs.log');
 export const bilibiliLogger = createBusinessLogger('bilibili', 'bilibili.log');
 export const kuaishouLogger = createBusinessLogger('kuaishou', 'kuaishou.log');

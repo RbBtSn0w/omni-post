@@ -23,11 +23,18 @@ describe('Uploader Classes', () => {
         expect(typeof uploader.upload).toBe('function');
     });
 
-    it('TencentUploader should have upload method', async () => {
-        const { TencentUploader } = await import('../src/uploader/tencent/main.js');
-        const uploader = new TencentUploader();
+    it('WxChannelsUploader should have upload method', async () => {
+        const { WxChannelsUploader } = await import('../src/uploader/wx_channels/main.js');
+        const uploader = new WxChannelsUploader();
         expect(uploader).toHaveProperty('upload');
         expect(typeof uploader.upload).toBe('function');
+    });
+
+    it('OpenCLIUploader should have postVideo method', async () => {
+        const { OpenCLIUploader } = await import('../src/uploader/opencli/main.js');
+        const uploader = new OpenCLIUploader();
+        expect(uploader).toHaveProperty('postVideo');
+        expect(typeof uploader.postVideo).toBe('function');
     });
 
     it('XiaohongshuUploader should have upload method', async () => {

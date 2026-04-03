@@ -14,12 +14,13 @@ import {
 describe('PlatformType Constants', () => {
     it('should have correct enum values', () => {
         expect(PlatformType.XIAOHONGSHU).toBe(1);
-        expect(PlatformType.TENCENT).toBe(2);
+        expect(PlatformType.WX_CHANNELS).toBe(2);
         expect(PlatformType.DOUYIN).toBe(3);
         expect(PlatformType.KUAISHOU).toBe(4);
         expect(PlatformType.BILIBILI).toBe(5);
         expect(PlatformType.ZHIHU).toBe(6);
         expect(PlatformType.JUEJIN).toBe(7);
+        expect(PlatformType.WX_OFFICIAL_ACCOUNT).toBe(8);
     });
 });
 
@@ -59,7 +60,7 @@ describe('isValidPlatform', () => {
     });
 
     it('should reject invalid platforms', () => {
-        expect(isValidPlatform(8)).toBe(false);
+        expect(isValidPlatform(9)).toBe(false);
         expect(isValidPlatform(0)).toBe(false);
     });
 });

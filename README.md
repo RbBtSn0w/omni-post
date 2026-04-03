@@ -42,6 +42,7 @@
 - ✅ **Cookie Management**: Multi-account cookie storage and management
 - ✅ **Comprehensive Testing**: Extensive test suite for reliability
 - ✅ **Automated CI/CD**: GitHub Actions workflows for continuous integration
+- ✅ **OpenCLI Extensions**: Plug-in architecture for adding new platforms via CLI tools (New!)
 
 ### Platform Support Status
 
@@ -83,10 +84,46 @@ This project implements video upload functionality through platform-specific `up
 | Platform Name | Primary Uploader Module |
 |--------------|--------------------------|
 | Douyin | `apps/backend-node/src/uploader/douyin/main.ts` |
-| WeChat Channels | `apps/backend-node/src/uploader/weixin/main.ts` |
+| WXChannels (WeChat Channels) | `apps/backend-node/src/uploader/wx_channels/main.ts` |
 | Xiaohongshu | `apps/backend-node/src/uploader/xiaohongshu/main.ts` |
 | Kuaishou | `apps/backend-node/src/uploader/kuaishou/main.ts` |
 | Bilibili | `apps/backend-node/src/uploader/bilibili/main.ts` |
+
+## 🔌 OpenCLI Extensions
+
+OmniPost supports dynamically adding new platform uploaders through **OpenCLI extensions**. Each extension is a self-contained CLI tool with a JSON manifest that declares its capabilities.
+
+### Extension Structure
+
+```
+apps/backend-node/extensions/<platform_slug>/
+├── cli.js              # CLI entry point (Commander-based)
+└── manifest.ocs.json   # OCS capability manifest
+```
+
+### Creating an Extension
+
+1. **Create the directory** under `apps/backend-node/extensions/` using the platform slug (e.g., `wx_official_account`)
+2. **Write `manifest.ocs.json`** declaring the platform ID, supported actions, and required arguments:
+   ```json
+   {
+     "name": "my-platform",
+     "version": "1.0.0",
+     "platform_id": 8,
+      "actions": {
+        "publish_article": {
+          "command": "publish",
+          "args": {
+            "title": "--title",
+            "content": "--content"
+          }
+        }
+      }
+   ```
+3. **Write `cli.js`** implementing the declared actions. The runner invokes it with `node cli.js <action> --<arg> <value>`.
+4. **Sync extensions** via the API: `POST /api/opencli/sync`
+
+The backend will automatically discover the extension and make it available for publishing through the standard task pipeline.
 
 ## 💾 Installation Guide
 
@@ -153,13 +190,16 @@ cd apps/backend
 npx playwright install chromium
 ```
 
-### 4. Initialize Database
+### 5. 🛠 Upgrade Notice (v1->v2)
+
+If you are upgrading from a version older than v1.3.1, please run the one-time data migration script to sync your historical WeChat Channels (Tencent) tasks to the new **WXChannels** standard:
 
 ```bash
-npm run db:init -w apps/backend-node
+cd apps/backend-node
+node scripts/migrate-wx-channels.mjs
 ```
 
-### 5. Start the Services
+### 6. Start the Services
 
 ```bash
 # Start the maintained backend and frontend
@@ -202,6 +242,7 @@ omni-post/
 │   │   │   ├── routes/         # HTTP Route Layer
 │   │   │   ├── services/       # Business Logic & Task Execution
 │   │   │   └── uploader/       # TS Playwright Uploaders
+│   │   ├── extensions/         # OpenCLI extension plugins
 │   │   └── tests/              # Vitest suite
 │   │
 │   └── frontend/               # Vue.js 3 Frontend (Shared)

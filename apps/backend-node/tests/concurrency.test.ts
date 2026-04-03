@@ -20,8 +20,9 @@ vi.mock('../src/services/publish-service.js', () => ({
     postVideoDouyin: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoBilibili: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoKs: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
-    postVideoTencent: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
+    postVideoWxChannels: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
     postVideoXhs: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
+    postOpenCLI: vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10))),
 }));
 
 // Import after mocks
@@ -78,7 +79,7 @@ describe('Concurrency: Account Locking (SC-003)', () => {
         const account = 'account-fail.json';
         const taskId = 'task-fail';
         const publishData = {
-            type: 999, // Unknown type to trigger error
+            type: 50, // Unknown type to trigger error (not >= 100)
             accountList: [account],
             fileList: ['video-fail.mp4'],
         };

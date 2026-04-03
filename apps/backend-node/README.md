@@ -77,10 +77,21 @@ tests/
 | `/api/postVideo` | POST | 发布视频 |
 | `/api/postVideoBatch` | POST | 批量发布 |
 
+## 数据库迁移 (Data Migration)
+
+在版本升级后，如果你的数据库中存在旧的微信视频号（Tencent）发布记录，请运行以下一次性脚本进行数据同步：
+
+```bash
+cd apps/backend-node
+node scripts/migrate-wx-channels.mjs
+```
+
+该脚本会将历史任务中的 `tencent` 标识更新为新的 `wx_channels` 标准。所有新生成的任务将自动遵循新标准，无需再次运行。
+
 ## 测试
 
 ```bash
-npm test           # 运行全部 98 个测试
+npm test           # 运行全部测试
 npm run test:watch # 监听模式
 ```
 
