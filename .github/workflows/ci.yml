@@ -114,7 +114,7 @@ jobs:
         run: pytest tests/ -v --cov=src --cov-report=xml:test-results/coverage/coverage.xml
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           files: ./apps/backend/test-results/coverage/coverage.xml
@@ -235,7 +235,7 @@ jobs:
         run: npm run build
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           files: ./apps/frontend/test-results/coverage/coverage-final.json
@@ -291,7 +291,7 @@ jobs:
         run: npm test -w apps/backend-node -- --coverage
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           files: ./apps/backend-node/coverage/coverage-final.json
