@@ -298,3 +298,30 @@ jobs:
           flags: backend-node
           name: backend-node-coverage
           fail_ci_if_error: false
+
+  ci-success:
+    name: CI Success
+    needs: [changes, backend-ci, shared-ci, cli-ci, frontend-ci, backend-node-ci]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Verify all jobs passed
+        run: |
+          results=(
+            "${{ needs.changes.result }}"
+            "${{ needs.backend-ci.result }}"
+            "${{ needs.shared-ci.result }}"
+            "${{ needs.cli-ci.result }}"
+            "${{ needs.frontend-ci.result }}"
+            "${{ needs.backend-node-ci.result }}"
+          )
+          for r in "${results[@]}"; do
+            if [[ "$r" == "failure" || "$r" == "cancelled" ]]; then
+              echo "::error::CI job failed or was cancelled ($r)"
+              exit 1
+            fi
+          done
+          echo "✅ All CI jobs passed or were skipped"
