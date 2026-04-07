@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import fs from 'fs';
 import { PlatformType } from '../src/core/constants.js';
 import { DefaultCookieService } from '../src/services/cookie-service.js';
 
@@ -16,6 +17,9 @@ vi.mock('../src/core/browser.js', () => ({
 describe('CookieService Dispatch', () => {
     it('should dispatch checkCookie to correct platform methods', async () => {
         const service = new DefaultCookieService();
+        
+        // Use spyOn for existsSync to return true
+        vi.spyOn(fs, 'existsSync').mockReturnValue(true);
 
         // Mock individual methods
         service.cookieAuthXhs = vi.fn().mockResolvedValue(true);
