@@ -94,7 +94,7 @@ vi.mock('@/utils/dataCache', () => ({
 }))
 
 vi.mock('@/core/platformConstants', () => ({
-  PLATFORM_NAMES: { 1: '小红书', 2: '视频号', 3: '抖音', 4: '快手', 5: 'B站' },
+  PLATFORM_NAMES: { 1: '小红书', 2: '微信视频号', 3: '抖音', 4: '快手', 5: 'B站' },
   PlatformType: { XIAOHONGSHU: 1, WX_CHANNELS: 2, DOUYIN: 3, KUAISHOU: 4, BILIBILI: 5 },
   getPlatformTagType: vi.fn(() => '')
 }))
