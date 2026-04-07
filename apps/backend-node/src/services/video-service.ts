@@ -2,11 +2,35 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import fs from 'node:fs';
+import { EventEmitter } from 'node:events';
 import { logger } from '../core/logger.js';
 
 const execFileAsync = promisify(execFile);
 
 export class VideoService {
+    private activeOptimizations: Set<string> = new Set();
+    private eventEmitter = new EventEmitter();
+
+    /**
+     * 等待指定视频文件优化完成
+     */
+    public async waitForReadiness(filePath: string): Promise<void> {
+        if (!this.activeOptimizations.has(filePath)) {
+            return;
+        }
+
+        logger.info(`[VideoService] 文件正在优化中，等待就绪: ${filePath}`);
+        return new Promise((resolve) => {
+            const check = (finishedPath: string) => {
+                if (finishedPath === filePath) {
+                    this.eventEmitter.off('finished', check);
+                    resolve();
+                }
+            };
+            this.eventEmitter.on('finished', check);
+        });
+    }
+
     /**
      * 检查并修复视频轨道结构
      * 
@@ -28,6 +52,7 @@ export class VideoService {
         }
 
         try {
+            this.activeOptimizations.add(filePath);
             logger.info(`[VideoService] 开始检测并优化视频: ${filePath}`);
 
             // 1. 获取视频流信息
@@ -108,6 +133,9 @@ export class VideoService {
             const msg = error instanceof Error ? error.message : String(error);
             logger.error(`[VideoService] 视频处理异常: ${msg}`);
             return false;
+        } finally {
+            this.activeOptimizations.delete(filePath);
+            this.eventEmitter.emit('finished', filePath);
         }
     }
 }

@@ -35,24 +35,27 @@ class BrowserService {
     const db = dbManager.getDb();
     const id = `profile_${uuidv4().slice(0, 8)}`;
 
-    if (data.is_default) {
-      db.prepare('UPDATE browser_profiles SET is_default = 0').run();
-    }
+    const createAction = db.transaction(() => {
+      if (data.is_default) {
+        db.prepare('UPDATE browser_profiles SET is_default = 0').run();
+      }
 
-    const stmt = db.prepare(`
-      INSERT INTO browser_profiles (id, name, browser_type, user_data_dir, profile_name, is_default)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+      const stmt = db.prepare(`
+        INSERT INTO browser_profiles (id, name, browser_type, user_data_dir, profile_name, is_default)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
 
-    stmt.run(
-      id,
-      data.name,
-      data.browser_type || 'chrome',
-      data.user_data_dir,
-      data.profile_name || 'Default',
-      data.is_default ? 1 : 0
-    );
+      stmt.run(
+        id,
+        data.name,
+        data.browser_type || 'chrome',
+        data.user_data_dir,
+        data.profile_name || 'Default',
+        data.is_default ? 1 : 0
+      );
+    });
 
+    createAction();
     return id;
   }
 
@@ -62,26 +65,30 @@ class BrowserService {
   updateProfile(id: string, data: Partial<BrowserProfile>): boolean {
     const db = dbManager.getDb();
     
-    if (data.is_default) {
-      db.prepare('UPDATE browser_profiles SET is_default = 0 WHERE id != ?').run(id);
-    }
+    const updateAction = db.transaction(() => {
+      if (data.is_default) {
+        db.prepare('UPDATE browser_profiles SET is_default = 0 WHERE id != ?').run(id);
+      }
 
-    const fields = Object.keys(data).filter(f => !['id', 'created_at', 'updated_at'].includes(f));
-    if (fields.length === 0) return false;
+      const fields = Object.keys(data).filter(f => !['id', 'created_at', 'updated_at'].includes(f));
+      if (fields.length === 0) return false;
 
-    const setClause = fields.map(f => `${f} = ?`).join(', ');
-    const values = fields.map(f => {
-      const val = (data as Record<string, unknown>)[f];
-      return f === 'is_default' ? (val ? 1 : 0) : val;
+      const setClause = fields.map(f => `${f} = ?`).join(', ');
+      const values = fields.map(f => {
+        const val = (data as Record<string, unknown>)[f];
+        return f === 'is_default' ? (val ? 1 : 0) : val;
+      });
+
+      const result = db.prepare(`
+        UPDATE browser_profiles 
+        SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(...values, id);
+
+      return result.changes > 0;
     });
 
-    const result = db.prepare(`
-      UPDATE browser_profiles 
-      SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `).run(...values, id);
-
-    return result.changes > 0;
+    return updateAction();
   }
 
   /**

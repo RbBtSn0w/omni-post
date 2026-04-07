@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 
 export interface Task {
@@ -61,6 +62,7 @@ class TaskService {
 
     /**
      * Update task status and progress.
+     * Includes protection logic: 'uploading' updates won't overwrite 'completed' or 'failed' status.
      */
     updateTaskStatus(
         taskId: string,
@@ -69,6 +71,24 @@ class TaskService {
         errorMsg?: string | null
     ): void {
         const db = dbManager.getDb();
+
+        // 1. Fetch current status to decide if transition is allowed
+        const current = db.prepare('SELECT status, progress FROM tasks WHERE id = ?').get(taskId) as { status: string, progress: number } | undefined;
+        if (!current) {
+            logger.warn(`[TaskService] Attempted to update status for non-existent task: ${taskId}`);
+            return;
+        }
+
+        // 2. Protection: Transition from terminal states ('completed', 'failed') back to intermediate states is NOT allowed
+        // unless it's a manual status reset (not handled here) or a complete task failure.
+        if (['completed', 'failed'].includes(current.status) && (status === 'uploading' || status === 'waiting')) {
+            return;
+        }
+
+        // 3. Progress Guard: Avoid overwriting higher progress with lower progress for same status
+        if (status === current.status && progress !== undefined && progress < current.progress) {
+            return;
+        }
 
         if (progress !== undefined && errorMsg !== undefined) {
             db.prepare(
