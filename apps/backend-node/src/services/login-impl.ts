@@ -167,42 +167,40 @@ export async function getWxChannelsCookie(
         // Wait for URL change or new page (login success)
         try {
             await new Promise<void>((resolve, reject) => {
+                let settled = false; // 防止并发的轮询和事件多次 resolve
                 const timeoutId = setTimeout(() => {
-                    reject(new Error('TIMEOUT'));
+                    if (!settled) { settled = true; reject(new Error('TIMEOUT')); }
                 }, 60000);
 
                 const checkSuccessStatus = async (p: Page) => {
+                    if (settled) return false;
                     const currentUrl = p.url();
                     // 核心判定：URL 包含 platform 路径
                     if (currentUrl.includes('/platform')) {
                         debugPrint(`[DEBUG] 检测到目标 URL: ${currentUrl}，正在等待组件渲染...`);
                         try {
-                            // 给予 5 秒时间等待 wujie-app 或其它核心布局组件出现
                             await p.waitForSelector('wujie-app, .channels-layout', { timeout: 5000 });
                             debugPrint(`[DEBUG] 登录成功检测命中 (Component Ready): ${currentUrl}`);
-                            clearTimeout(timeoutId);
-                            resolve();
-                            return true;
-                        } catch (e) {
-                            // 兜底判定：如果 URL 已经在 platform 但组件未在 5s 内出现，也视为成功（防止标签名变动）
+                        } catch {
                             debugPrint(`[DEBUG] 登录成功检测命中 (URL Fallback): ${currentUrl}`);
-                            clearTimeout(timeoutId);
-                            resolve();
-                            return true;
                         }
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timeoutId);
+                            clearInterval(pollId);
+                            resolve();
+                        }
+                        return true;
                     }
                     return false;
                 };
 
                 // --- 主动轮询机制：应对 SPA 路由跳转不触发事件的问题 ---
                 const pollId = setInterval(async () => {
+                    if (settled) { clearInterval(pollId); return; }
                     const pages = context.pages();
                     for (const p of pages) {
-                        const isSuccess = await checkSuccessStatus(p);
-                        if (isSuccess) {
-                            clearInterval(pollId);
-                            return;
-                        }
+                        if (await checkSuccessStatus(p)) return;
                     }
                 }, 1000);
 
@@ -211,17 +209,12 @@ export async function getWxChannelsCookie(
                     debugPrint(`[DEBUG] 新窗口创建，URL：${newPage.url()}`);
                     newPage.on('load', async () => {
                         debugPrint(`[DEBUG] 新窗口加载完成，URL：${newPage.url()}`);
-                        if (await checkSuccessStatus(newPage)) {
-                            clearInterval(pollId);
-                        }
+                        await checkSuccessStatus(newPage);
                     });
-
                     newPage.on('framenavigated', async (frame) => {
                         if (frame === newPage.mainFrame()) {
                             debugPrint(`[DEBUG] 新窗口导航，当前URL：${frame.url()}`);
-                            if (await checkSuccessStatus(newPage)) {
-                                clearInterval(pollId);
-                            }
+                            await checkSuccessStatus(newPage);
                         }
                     });
                 });
@@ -230,16 +223,17 @@ export async function getWxChannelsCookie(
                 page.on('framenavigated', async (frame) => {
                     if (frame === page.mainFrame()) {
                         debugPrint(`[DEBUG] 主窗口framenavigated事件触发，当前URL：${frame.url()}`);
-                        if (await checkSuccessStatus(page)) {
-                            clearInterval(pollId);
-                        }
+                        await checkSuccessStatus(page);
                     }
                 });
 
                 signal.addEventListener('abort', () => {
-                    clearInterval(pollId);
-                    clearTimeout(timeoutId);
-                    reject(new Error('AbortError'));
+                    if (!settled) {
+                        settled = true;
+                        clearInterval(pollId);
+                        clearTimeout(timeoutId);
+                        reject(new Error('AbortError'));
+                    }
                 });
             });
             debugPrint('[DEBUG] 监听页面跳转或登录检测成功');
@@ -250,10 +244,11 @@ export async function getWxChannelsCookie(
             } else {
                 debugPrint('[WARN] 未检测到设备指纹 _finger_print_device_id，这可能导致后续验证失败');
             }
-            // 额外等待 5 秒以确保所有重定向完成且异步 Cookie 写入完成
-            await page.waitForTimeout(5000);
-        } catch (err: any) {
-            if (err.message === 'AbortError') throw err;
+            // 等待 2 秒确保异步 Cookie 写入完成（从 5 秒缩短，组件渲染后 Cookie 已基本就绪）
+            await page.waitForTimeout(2000);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg === 'AbortError') throw err;
             emitter.emit('message', '500');
             logger.warn('视频号 监听页面跳转超时，登录失败');
             return { success: false, error: 'TIMEOUT' };
@@ -261,17 +256,32 @@ export async function getWxChannelsCookie(
 
         if (signal.aborted) throw new Error('AbortError');
 
+        // --- 内联验证：复用当前已认证的 context，省掉重新启动浏览器 ---
+        const verifyPage = await context.newPage();
+        try {
+            await verifyPage.goto(
+                'https://channels.weixin.qq.com/platform/post/create',
+                { waitUntil: 'domcontentloaded', timeout: 15000 }
+            );
+            await verifyPage.waitForFunction(() => {
+                const url = window.location.href;
+                const hasWujie = !!document.querySelector('wujie-app');
+                const hasText = document.body.innerText.includes('视频号') && document.body.innerText.includes('助手');
+                return url.includes('/platform') && (hasWujie || hasText);
+            }, { timeout: 10000 });
+            debugPrint(`[DEBUG] 内联验证通过: ${verifyPage.url()}`);
+        } catch {
+            emitter.emit('message', '500');
+            logger.warn('视频号 Cookie内联验证失败，登录状态无效');
+            return {};
+        } finally {
+            await verifyPage.close();
+        }
+
         const cookieId = uuidv1();
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
         await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
         debugPrint(`[DEBUG] Cookie 保存到: ${COOKIES_DIR}/${cookieId}.json`);
-
-        const result = await getCookieService().checkCookie(PlatformType.WX_CHANNELS, `${cookieId}.json`);
-        if (!result) {
-            emitter.emit('message', '500');
-            logger.warn('视频号 Cookie验证失败，登录状态无效');
-            return {};
-        }
 
         const groupId = getOrCreateGroup(groupName);
         saveUserInfo(PlatformType.WX_CHANNELS, `${cookieId}.json`, id, groupId);
