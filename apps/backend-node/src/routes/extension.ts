@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { extensionService } from '../services/extension-service.js';
 import { capabilityService } from '../services/capability-service.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+import { logger } from '../core/logger.js';
 
 const router = Router();
 
@@ -16,17 +18,11 @@ router.get(['/opencli/status', '/api/opencli/status'], async (_req: Request, res
       await extensionService.syncExtensions();
       platforms = extensionService.getAllExtensions();
     }
-    res.json({ 
-      code: 200, 
-      msg: 'success', 
-      data: { ...envStatus, platforms, capabilities: capabilityService.getAllCapabilities() } 
-    });
+    sendSuccess(res, { ...envStatus, platforms, capabilities: capabilityService.getAllCapabilities() });
   } catch (error) {
-    res.status(500).json({ 
-      code: 500, 
-      msg: error instanceof Error ? error.message : 'Unknown error', 
-      data: null 
-    });
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`[Extension Route] Error checking status: ${msg}`);
+    sendError(res, 500, 'Internal server error while fetching OpenCLI status');
   }
 });
 
@@ -37,17 +33,11 @@ router.get(['/opencli/status', '/api/opencli/status'], async (_req: Request, res
 router.get(['/capabilities', '/api/capabilities'], async (_req: Request, res: Response) => {
   try {
     const capabilities = capabilityService.getAllCapabilities();
-    res.json({
-      code: 200,
-      msg: 'success',
-      data: capabilities
-    });
+    sendSuccess(res, capabilities);
   } catch (error) {
-    res.status(500).json({
-      code: 500,
-      msg: error instanceof Error ? error.message : 'Unknown error',
-      data: null
-    });
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`[Extension Route] Error fetching capabilities: ${msg}`);
+    sendError(res, 500, 'Internal server error while fetching capabilities');
   }
 });
 
@@ -58,17 +48,11 @@ router.get(['/capabilities', '/api/capabilities'], async (_req: Request, res: Re
 router.post(['/opencli/sync', '/api/opencli/sync'], async (_req: Request, res: Response) => {
   try {
     const count = await extensionService.syncExtensions();
-    res.json({ 
-      code: 200, 
-      msg: 'Sync completed', 
-      data: { count } 
-    });
+    sendSuccess(res, { count }, 'Sync completed');
   } catch (error) {
-    res.status(500).json({ 
-      code: 500, 
-      msg: error instanceof Error ? error.message : 'Sync failed', 
-      data: null 
-    });
+    const msg = error instanceof Error ? error.message : 'Sync failed';
+    logger.error(`[Extension Route] Error syncing extensions: ${msg}`);
+    sendError(res, 500, 'Internal server error while syncing extensions');
   }
 });
 
