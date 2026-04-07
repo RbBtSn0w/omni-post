@@ -314,7 +314,7 @@ import {
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import VChart from 'vue-echarts'
 import { useRouter } from 'vue-router'; // 导入图标
 
@@ -347,38 +347,61 @@ const accountStore = useAccountStore()
 // 获取任务状态管理
 const taskStore = useTaskStore()
 
-// 账号统计数据 - 从accountStore计算
-const accountStats = computed(() => {
-  const accounts = accountStore.accounts
-  const total = accounts.length
-  const normal = accounts.filter(acc => acc.status === '正常').length
-  const abnormal = accounts.filter(acc => acc.status === '异常').length
-  return {
-    total,
-    normal,
-    abnormal
-  }
+// 账号统计数据 - 使用 ref 以支持从 API 更新和本地计算
+const accountStats = ref({
+  total: 0,
+  normal: 0,
+  abnormal: 0
 })
 
-// 平台统计数据 - 从accountStore计算
-const platformStats = computed(() => {
+// 平台统计数据 - 使用 ref 以支持从 API 更新和本地计算
+const platformStats = ref({
+  kuaishou: 0,
+  douyin: 0,
+  wx_channels: 0,
+  xiaohongshu: 0,
+  bilibili: 0
+})
+
+// 任务统计数据 - 使用 ref
+const taskStats = ref({
+  total: 0,
+  completed: 0,
+  inProgress: 0,
+  failed: 0
+})
+
+// 同步 Store 数据到本地 Ref 的函数
+const syncFromStores = () => {
   const accounts = accountStore.accounts
-  return {
+  accountStats.value = {
+    total: accounts.length,
+    normal: accounts.filter(acc => acc.status === '正常').length,
+    abnormal: accounts.filter(acc => acc.status === '异常').length
+  }
+
+  platformStats.value = {
     kuaishou: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.KUAISHOU]).length,
     douyin: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.DOUYIN]).length,
     wx_channels: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.WX_CHANNELS]).length,
     xiaohongshu: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.XIAOHONGSHU]).length,
     bilibili: accounts.filter(acc => acc.platform === PLATFORM_NAMES[PlatformType.BILIBILI]).length
   }
-})
+
+  const storeStats = taskStore.taskStats
+  taskStats.value = { ...storeStats }
+}
+
+// 监听 Store 变化以保持数据同步
+watch(() => accountStore.accounts, syncFromStores, { deep: true })
+watch(() => taskStore.taskStats, (newStats) => {
+  taskStats.value = { ...newStats }
+}, { deep: true })
 
 // 计算平台总数
 const platformTotal = computed(() => {
   return Object.values(platformStats.value).reduce((a, b) => a + b, 0)
 })
-
-// 任务统计数据 - 从taskStore获取
-const taskStats = computed(() => taskStore.taskStats)
 
 // 内容统计数据 - TODO: 需要后端API支持
 const contentStats = ref({
@@ -537,33 +560,44 @@ const loading = ref(false)
 // 数据有效性验证
 const validateStatsData = () => {
   // 验证账号统计数据
-  accountStats.value.total = Math.max(0, accountStats.value.total)
-  accountStats.value.normal = Math.max(0, Math.min(accountStats.value.normal, accountStats.value.total))
-  accountStats.value.abnormal = Math.max(0, accountStats.value.total - accountStats.value.normal)
+  accountStats.value = {
+    total: Math.max(0, accountStats.value.total),
+    normal: Math.max(0, Math.min(accountStats.value.normal, accountStats.value.total)),
+    abnormal: Math.max(0, accountStats.value.total - accountStats.value.normal)
+  }
 
   // 验证平台统计数据
-  platformStats.value.kuaishou = Math.max(0, platformStats.value.kuaishou)
-  platformStats.value.douyin = Math.max(0, platformStats.value.douyin)
-  platformStats.value.wx_channels = Math.max(0, platformStats.value.wx_channels)
-  platformStats.value.xiaohongshu = Math.max(0, platformStats.value.xiaohongshu)
-  platformStats.value.bilibili = Math.max(0, platformStats.value.bilibili)
+  platformStats.value = {
+    kuaishou: Math.max(0, platformStats.value.kuaishou),
+    douyin: Math.max(0, platformStats.value.douyin),
+    wx_channels: Math.max(0, platformStats.value.wx_channels),
+    xiaohongshu: Math.max(0, platformStats.value.xiaohongshu),
+    bilibili: Math.max(0, platformStats.value.bilibili)
+  }
 
   // 验证任务统计数据
-  taskStats.value.total = Math.max(0, taskStats.value.total)
-  taskStats.value.completed = Math.max(0, taskStats.value.completed)
-  taskStats.value.inProgress = Math.max(0, taskStats.value.inProgress)
-  taskStats.value.failed = Math.max(0, taskStats.value.total - taskStats.value.completed - taskStats.value.inProgress)
+  const completed = Math.max(0, taskStats.value.completed)
+  const inProgress = Math.max(0, taskStats.value.inProgress)
+  const failed = Math.max(0, taskStats.value.total - completed - inProgress)
+  const total = completed + inProgress + failed
 
-  // 确保任务总数等于各状态任务之和
-  const taskSum = taskStats.value.completed + taskStats.value.inProgress + taskStats.value.failed
-  if (taskStats.value.total !== taskSum) {
-    taskStats.value.total = taskSum
+  taskStats.value = {
+    total,
+    completed,
+    inProgress,
+    failed
   }
 
   // 验证内容统计数据
-  contentStats.value.total = Math.max(0, contentStats.value.total)
-  contentStats.value.published = Math.max(0, Math.min(contentStats.value.published, contentStats.value.total))
-  contentStats.value.draft = Math.max(0, contentStats.value.total - contentStats.value.published)
+  const cTotal = Math.max(0, contentStats.value.total)
+  const cPublished = Math.max(0, Math.min(contentStats.value.published, cTotal))
+  const cDraft = Math.max(0, cTotal - cPublished)
+  
+  contentStats.value = {
+    total: cPublished + cDraft,
+    published: cPublished,
+    draft: cDraft
+  }
 }
 
 // 从API获取统计数据
@@ -635,31 +669,57 @@ const fetchStatsData = async () => {
 // 更新仪表盘数据
 const updateDashboardData = (data) => {
   // 更新账号统计
-  accountStats.value.total = data.accountStats.total
-  accountStats.value.normal = data.accountStats.normal
-  accountStats.value.abnormal = data.accountStats.abnormal
+  if (data.accountStats) {
+    accountStats.value = {
+      total: data.accountStats.total,
+      normal: data.accountStats.normal,
+      abnormal: data.accountStats.abnormal
+    }
+  }
 
   // 更新平台统计
-  platformStats.value.kuaishou = data.platformStats.kuaishou
-  platformStats.value.douyin = data.platformStats.douyin
-  platformStats.value.wx_channels = data.platformStats.wx_channels
-  platformStats.value.xiaohongshu = data.platformStats.xiaohongshu
-  platformStats.value.bilibili = data.platformStats.bilibili || 0
+  if (data.platformStats) {
+    platformStats.value = {
+      kuaishou: data.platformStats.kuaishou,
+      douyin: data.platformStats.douyin,
+      wx_channels: data.platformStats.wx_channels,
+      xiaohongshu: data.platformStats.xiaohongshu,
+      bilibili: data.platformStats.bilibili || 0
+    }
+  }
+
+  // 更新任务统计
+  if (data.taskStats) {
+    taskStats.value = {
+      total: data.taskStats.total,
+      completed: data.taskStats.completed,
+      inProgress: data.taskStats.inProgress,
+      failed: data.taskStats.failed
+    }
+  }
 
   // 更新内容统计
-  contentStats.value.total = data.contentStats.total
-  contentStats.value.published = data.contentStats.published
-  contentStats.value.draft = data.contentStats.draft
+  if (data.contentStats) {
+    contentStats.value = {
+      total: data.contentStats.total,
+      published: data.contentStats.published,
+      draft: data.contentStats.draft
+    }
+  }
 
   // 更新任务趋势图表数据
-  taskTrendData.value.xAxis.data = data.taskTrend.xAxis
-  taskTrendData.value.series[0].data = data.taskTrend.series[0].data
-  taskTrendData.value.series[1].data = data.taskTrend.series[1].data
+  if (data.taskTrend) {
+    taskTrendData.value.xAxis.data = data.taskTrend.xAxis
+    taskTrendData.value.series[0].data = data.taskTrend.series[0].data
+    taskTrendData.value.series[1].data = data.taskTrend.series[1].data
+  }
 
   // 更新内容发布统计图表数据
-  contentStatsData.value.xAxis.data = data.contentStatsData.xAxis
-  contentStatsData.value.series[0].data = data.contentStatsData.series[0].data
-  contentStatsData.value.series[1].data = data.contentStatsData.series[1].data
+  if (data.contentStatsData) {
+    contentStatsData.value.xAxis.data = data.contentStatsData.xAxis
+    contentStatsData.value.series[0].data = data.contentStatsData.series[0].data
+    contentStatsData.value.series[1].data = data.contentStatsData.series[1].data
+  }
 
   // 更新最近任务列表 - 使用taskStore
   if (data.recentTasks) {
@@ -669,6 +729,7 @@ const updateDashboardData = (data) => {
 
 // 初始化数据
 const initData = async () => {
+  syncFromStores() // 先从本地 Store 同步初始数据
   await fetchStatsData()
 }
 
