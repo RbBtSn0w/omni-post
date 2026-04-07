@@ -196,6 +196,9 @@ All features fetching external URLs must provide SSRF protection.
 - **File Access**: File system operations MUST prioritize safe path helpers (e.g., `utils/path.ts`).
 - **Persistence**: Task persistence fields (`platforms`, `file_list`, `account_list`, `schedule_data`, `publish_data`) MUST maintain structural stability and strictly align with shared types during read/write operations.
 
+### 6. Strict Return Types (No Implicit Nulls)
+- **Rule**: When a TypeScript function's return type includes `void` (e.g., `Promise<void | Record<string, unknown>>`), use an empty `return;` to exit early. Do NOT use `return null;` unless `null` is explicitly declared in the return type signature. This prevents `TS2322` typecheck failures during CI.
+
 ## Critical Files by Purpose
 
 **System Overview:**
