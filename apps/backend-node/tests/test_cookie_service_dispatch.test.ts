@@ -3,7 +3,7 @@
  * Mirrors: apps/backend/tests/test_cookie_service_dispatch.py
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import fs from 'fs';
 import { PlatformType } from '../src/core/constants.js';
 import { DefaultCookieService } from '../src/services/cookie-service.js';
@@ -15,6 +15,10 @@ vi.mock('../src/core/browser.js', () => ({
 }));
 
 describe('CookieService Dispatch', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('should dispatch checkCookie to correct platform methods', async () => {
         const service = new DefaultCookieService();
         
