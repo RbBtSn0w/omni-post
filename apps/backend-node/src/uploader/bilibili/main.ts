@@ -704,7 +704,12 @@ export class BilibiliUploader extends BaseUploader {
                     }
                 };
 
+                let uploadCompleteDetected = false;
                 const uploadResponseListener = (response: Response) => {
+                    // Check for Bilibili multipart complete response
+                    if (response.url().includes('upload/multipart/complete') && response.status() === 200) {
+                        uploadCompleteDetected = true;
+                    }
                     void this.logResponseDiagnostics(response);
                 };
 
@@ -733,6 +738,14 @@ export class BilibiliUploader extends BaseUploader {
                     // A. 先尝试点击唤醒上传组件 (拦截 FileChooser)
                     let injected = false;
                     const bigUploadBtn = page.getByText('上传视频').or(page.locator('.bcc-upload-wrapper')).first();
+                    
+                    try {
+                        this.log('等待 B 站上传组件渲染...');
+                        await bigUploadBtn.waitFor({ state: 'visible', timeout: 30000 });
+                    } catch(e) {
+                         this.log('在 30s 内未等到上传按钮，可能是网络太慢或无需点击...', 'warn');
+                    }
+
                     if (await bigUploadBtn.isVisible()) {
                         this.log('尝试点击大按钮以合法拦截 FileChooser...');
                         try {
@@ -803,20 +816,23 @@ export class BilibiliUploader extends BaseUploader {
                     this.log('文件已选定，开始并行处理表单预填与进度监控...');
 
                     const fillFormPromise = this.prepareFormWhileUploading(page, opts);
-                    const uploadFinishPromise = page.waitForResponse(
-                        resp => resp.url().includes('complete') && resp.status() === 200,
-                        { timeout: 1200000 }
-                    ).then(async resp => {
-                        this.log(`[UPLOAD COMPLETE] 命中完成响应: ${resp.url()}`);
-                        await this.logResponseDiagnostics(resp);
-                        return resp;
-                    }).catch((error: any) => {
-                        if (page.isClosed() || /has been closed/i.test(error.message)) {
-                            throw new Error('[UPLOAD COMPLETE] 页面已关闭，上传流程中断');
+                    const uploadFinishPromise = (async () => {
+                        let elapsed = 0;
+                        while (!uploadCompleteDetected && elapsed < 1200000) { // 20 minutes timeout
+                            if (page.isClosed()) {
+                                throw new Error('[UPLOAD COMPLETE] 页面已关闭，上传流程中断');
+                            }
+                            await page.waitForTimeout(1000);
+                            elapsed += 1000;
                         }
-                        this.log(`[UPLOAD COMPLETE] 等待 complete 响应超时或失败: ${error.message}`, 'warn');
-                        return null;
-                    });
+                        if (uploadCompleteDetected) {
+                            this.log(`[UPLOAD COMPLETE] 命中完成响应 (via listener)`);
+                            return true;
+                        } else {
+                            this.log(`[UPLOAD COMPLETE] 等待 complete 响应超时或失败`, 'warn');
+                            return null;
+                        }
+                    })();
 
                     // 在这里并行：填表 + 等待上传完成
                     const [, uploadFinishResponse] = await Promise.all([fillFormPromise, uploadFinishPromise]);
