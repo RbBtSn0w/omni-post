@@ -6,6 +6,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExtensionService } from '../../src/services/extension-service.js';
+import type { dbManager as DbManagerInstance } from '../../src/db/database.js';
+import type { OpenCLIRunner as OpenCLIRunnerClass } from '../../src/core/opencli-runner.js';
 
 vi.mock('../../src/db/database.js');
 vi.mock('../../src/core/opencli-runner.js', () => ({
@@ -22,9 +25,9 @@ vi.mock('child_process', () => ({
 }));
 
 describe('WeChat Official Account Pilot', () => {
-    let service: any;
-    let dbManager: any;
-    let OpenCLIRunner: any;
+    let service: ExtensionService;
+    let dbManager: typeof DbManagerInstance;
+    let OpenCLIRunner: typeof OpenCLIRunnerClass;
 
     beforeEach(async () => {
         const extModule = await import('../../src/services/extension-service.js');

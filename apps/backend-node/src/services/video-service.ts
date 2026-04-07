@@ -35,8 +35,7 @@ export class VideoService {
             const metadata = JSON.parse(probeData);
             const streams = metadata.streams || [];
 
-            const videoStreams = streams.filter((s: any) => s.codec_type === 'video');
-            const audioStreams = streams.filter((s: any) => s.codec_type === 'audio');
+            const videoStreams = streams.filter((s: Record<string, unknown>) => s.codec_type === 'video');
 
             if (videoStreams.length === 0) {
                 logger.warn(`[VideoService] 无视频流，跳过优化: ${filePath}`);
@@ -89,8 +88,9 @@ export class VideoService {
             }
 
             return false;
-        } catch (error: any) {
-            logger.error(`[VideoService] 视频处理异常: ${error.message || error}`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logger.error(`[VideoService] 视频处理异常: ${msg}`);
             return false;
         }
     }
