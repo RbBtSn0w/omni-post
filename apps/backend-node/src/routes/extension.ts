@@ -47,7 +47,7 @@ router.get(['/capabilities', '/api/capabilities'], async (_req: Request, res: Re
  */
 router.post(['/opencli/sync', '/api/opencli/sync'], async (_req: Request, res: Response) => {
   try {
-    const count = await extensionService.syncExtensions();
+    const count = await extensionService.syncExtensions(true);
     sendSuccess(res, { count }, 'Sync completed');
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Sync failed';
