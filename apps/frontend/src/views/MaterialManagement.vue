@@ -334,11 +334,17 @@ const submitUpload = async () => {
 
   isUploading.value = true
 
+  let successCount = 0;
+  let failCount = 0;
+  const failedFiles = [];
+
   for (const file of filesToUpload) {
     try {
       // 确保文件对象存在
       if (!file || !file.raw) {
         ElMessage.warning(`文件 ${file.name} 对象无效，已跳过`)
+        failCount++;
+        failedFiles.push(file.name);
         continue
       }
 
@@ -377,21 +383,34 @@ const submitUpload = async () => {
       })
 
       if (response.code === 200) {
-        ElMessage.success(`文件 ${file.name} 上传成功`)
+        successCount++;
         const progressData = uploadProgress.value[file.uid];
         if(progressData) progressData.speed = '完成';
       } else {
+        failCount++;
+        failedFiles.push(file.name);
         ElMessage.error(`文件 ${file.name} 上传失败: ${response.msg || '未知错误'}`)
       }
     } catch (error) {
+      failCount++;
+      failedFiles.push(file.name);
       console.error(`上传文件 ${file.name} 出错:`, error)
       ElMessage.error(`文件 ${file.name} 上传失败: ${error.message || '未知错误'}`)
     }
   }
 
   isUploading.value = false
-  // Keep dialog open to show results
-  // uploadDialogVisible.value = false
+
+  if (failCount === 0) {
+    // 全部成功：自动关闭对话框 + 成功提示
+    uploadDialogVisible.value = false
+    ElMessage.success(`${successCount} 个文件上传成功`)
+  } else if (successCount > 0) {
+    // 部分成功：保持对话框，显示结果
+    ElMessage.warning(`${successCount} 个成功，${failCount} 个失败: ${failedFiles.join(', ')}`)
+  }
+  // 全部失败：保持对话框，错误已经在循环中提示
+
   await fetchMaterials()
 }
 
