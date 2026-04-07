@@ -240,4 +240,3 @@ All features fetching external URLs must provide SSRF protection.
 8. **SSOT Compliance**: All platform IDs and shared entity interfaces MUST be imported from `@omni-post/shared`. Do not define local interfaces for `Task`, `UploadOptions`, or `PlatformType`.
 9. **Strict Linting Compliance**: Always resolve `any` violations and use type-safe error handling. CI will block any push that adds new `any` keywords.
 10. **Security First**: Default to blocking private network access for any outbound crawler/fetcher logic.
-d crawler/fetcher logic.

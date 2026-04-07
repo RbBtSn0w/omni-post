@@ -151,8 +151,8 @@ export class OpenCLIUploader extends BaseUploader {
         const stringValue = Array.isArray(value) ? value.join(',') : String(value);
         
         if (stringValue.length > LARGE_FIELD_THRESHOLD) {
-          const tempPath = path.join(os.tmpdir(), `omnipost-${key}-${Date.now()}.tmp`);
-          fs.writeFileSync(tempPath, stringValue);
+          const tempPath = path.join(os.tmpdir(), `omnipost-${key}-${crypto.randomUUID()}.tmp`);
+          fs.writeFileSync(tempPath, stringValue, { mode: 0o600 });
           tempFiles.push(tempPath);
           
           args.push(flag);
