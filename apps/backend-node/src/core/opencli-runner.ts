@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { StringDecoder } from 'string_decoder';
 import { logger } from './logger.js';
 
 /**
@@ -33,6 +34,8 @@ export interface RunResult {
  * Ensures safe execution by avoiding shell interpolation.
  */
 export class OpenCLIRunner {
+  private static readonly MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB limit
+
   /**
    * Execute a command with provided arguments.
    */
@@ -49,6 +52,9 @@ export class OpenCLIRunner {
     return new Promise((resolve, reject) => {
       let stdout = '';
       let stderr = '';
+      let stdoutBuffer = '';
+      const stdoutDecoder = new StringDecoder('utf8');
+      const stderrDecoder = new StringDecoder('utf8');
 
       const child = spawn(command, args, {
         cwd,
@@ -61,24 +67,39 @@ export class OpenCLIRunner {
         reject(new Error(`Command timed out after ${timeout}ms: ${command} ${args.join(' ')}`));
       }, timeout);
 
-      const processLine = (data: Buffer, stream: 'stdout' | 'stderr') => {
-        const line = data.toString();
+      const processLine = (chunk: Buffer, stream: 'stdout' | 'stderr') => {
+        const text = (stream === 'stdout' ? stdoutDecoder : stderrDecoder).write(chunk);
+        
         if (stream === 'stdout') {
-          stdout += line;
-          // Progress parsing
-          if (onProgress && progressRegex) {
-            const match = line.match(progressRegex);
-            if (match && match[1]) {
-              const p = parseInt(match[1], 10);
-              if (!isNaN(p)) onProgress(p);
+          if (stdout.length < this.MAX_LOG_SIZE) {
+            stdout += text;
+          }
+          
+          // Line-buffering for progress and logging
+          stdoutBuffer += text;
+          const lines = stdoutBuffer.split('\n');
+          stdoutBuffer = lines.pop() || ''; // Keep remainder
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine && onLog) onLog(trimmedLine);
+            if (trimmedLine) logger.debug(`[OpenCLI][stdout] ${trimmedLine}`);
+
+            if (onProgress && progressRegex) {
+              const match = trimmedLine.match(progressRegex);
+              if (match && match[1]) {
+                const p = parseInt(match[1], 10);
+                if (!isNaN(p)) onProgress(p);
+              }
             }
           }
         } else {
-          stderr += line;
+          if (stderr.length < this.MAX_LOG_SIZE) {
+            stderr += text;
+          }
+          if (onLog) onLog(text.trim());
+          logger.debug(`[OpenCLI][stderr] ${text.trim()}`);
         }
-
-        if (onLog) onLog(line.trim());
-        logger.debug(`[OpenCLI][${stream}] ${line.trim()}`);
       };
 
       child.stdout.on('data', (data) => processLine(data, 'stdout'));
@@ -86,6 +107,19 @@ export class OpenCLIRunner {
 
       child.on('close', (code) => {
         clearTimeout(timer);
+        // Flush remainders
+        const lastStdout = stdoutDecoder.end() + stdoutBuffer;
+        if (lastStdout) {
+          if (onLog) onLog(lastStdout.trim());
+          if (onProgress && progressRegex) {
+            const match = lastStdout.match(progressRegex);
+            if (match && match[1]) {
+              const p = parseInt(match[1], 10);
+              if (!isNaN(p)) onProgress(p);
+            }
+          }
+        }
+        
         if (code === 0) {
           resolve({ code, stdout, stderr });
         } else {
