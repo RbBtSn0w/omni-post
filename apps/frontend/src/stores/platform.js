@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { PLATFORM_LIST, PLATFORM_TAG_TYPES } from '@/core/platformConstants';
 import axios from '@/utils/request';
+import { ElMessage } from 'element-plus';
 
 export const usePlatformStore = defineStore('platform', () => {
   const customExtensions = ref([]);
@@ -11,9 +12,12 @@ export const usePlatformStore = defineStore('platform', () => {
       const res = await axios.get('/opencli/status');
       if (res.code === 200) {
         customExtensions.value = res.data.platforms || [];
+      } else {
+        ElMessage.error(res.msg || '获取平台扩展列表失败');
       }
     } catch (err) {
       console.error('Failed to fetch extensions:', err);
+      ElMessage.error('无法连接到扩展服务，请检查网络或后端状态');
     }
   }
 

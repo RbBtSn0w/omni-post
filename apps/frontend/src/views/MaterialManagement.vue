@@ -342,9 +342,10 @@ const submitUpload = async () => {
     try {
       // 确保文件对象存在
       if (!file || !file.raw) {
-        ElMessage.warning(`文件 ${file.name} 对象无效，已跳过`)
+        const fallbackName = file?.name ?? '<unknown>';
+        ElMessage.warning(`文件 ${fallbackName} 对象无效，已跳过`)
         failCount++;
-        failedFiles.push(file.name);
+        failedFiles.push(fallbackName);
         continue
       }
 
