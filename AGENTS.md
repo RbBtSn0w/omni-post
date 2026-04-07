@@ -15,6 +15,17 @@ Current baseline:
 - **Backend (Legacy/Deprecated):** Python 3.10 + Flask (kept for compatibility/reference)
 - **Dev Commands:** `npm run dev:node`, `npm run dev:frontend`, `npm run test:node`, `npm run test:frontend`
 
+## OmniPost Constitution (Core Principles)
+
+The following principles from the project constitution MUST govern all code generation and architectural decisions:
+
+1. **Node.js First, Python by Exception**: `apps/backend-node` is the primary target for all new features and fixes. `apps/backend` (Python) is strictly legacy.
+2. **Route-Service-Uploader Boundaries**: Strict separation of concerns. Routes handle HTTP; Services handle orchestration; Uploaders handle platform automation. Do not mix layer responsibilities.
+3. **Platform Isolation & Automation Discipline**: Uploaders must be cohesive and isolated per platform. UI automation fixes must be empirically verified before patching selectors.
+4. **Shared Package SSOT & Monorepo Discipline**: `@omni-post/shared` is the Single Source of Truth for types, IDs, and constants. Do not duplicate these definitions locally.
+5. **Asynchronous Execution & Real-Time State**: Long-running tasks (publish, login) must run asynchronously in the background. Use SSE or polling for real-time status.
+6. **Test Coverage & Regression Gates (NON-NEGOTIABLE)**: Node.js changes must include tests. Cross-layer or automation changes require regression verification.
+
 ## Architecture Patterns
 
 ### Monorepo Structure
@@ -173,6 +184,7 @@ All features fetching external URLs must provide SSRF protection.
 ## Critical Files by Purpose
 
 **System Overview:**
+- [Constitution (.specify)](./.specify/memory/constitution.md) - Deep project background, architectural mandates, and spec-kit governance rules.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - architecture and data flow
 - [README.md](./README.md) - latest project-level setup
 - [packages/shared/src/index.ts](./packages/shared/src/index.ts) - SSOT for shared types and constants
