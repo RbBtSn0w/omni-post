@@ -192,6 +192,14 @@ cd apps/backend
 npx playwright install chromium
 ```
 
+### 4. Initialize Database
+
+If this is a fresh installation, initialize the database (not needed if upgrading):
+
+```bash
+npm run db:init -w apps/backend-node
+```
+
 ### 5. 🛠 Upgrade Notice (v1->v2)
 
 If you are upgrading from a version older than v1.3.1, please run the one-time data migration script to sync your historical WeChat Channels (Tencent) tasks to the new **WXChannels** standard:
