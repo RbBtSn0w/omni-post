@@ -210,7 +210,7 @@ export class DefaultCookieService implements CookieService {
             const currentUrl = page.url();
             const urlObj = new URL(currentUrl);
 
-            if (urlObj.hostname.includes('passport.bilibili.com')) {
+            if (urlObj.hostname === 'passport.bilibili.com') {
                 bilibiliLogger.error(`[+] bilibili cookie 失效 (已重定向至登录页: ${currentUrl})`);
                 return false;
             }
