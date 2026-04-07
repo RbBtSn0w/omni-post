@@ -13,6 +13,7 @@ import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { safeJoin } from '../utils/path.js';
 import { sendError, sendSuccess } from '../utils/response.js';
+import { videoService } from '../services/video-service.js';
 
 export const router = Router();
 
@@ -38,18 +39,26 @@ const upload = multer({
  * POST /upload
  * Upload a file to the videos directory.
  */
-router.post('/upload', upload.single('file'), (req: Request, res: Response) => {
+router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
     try {
         if (!req.file) {
             sendError(res, 400, '没有选择文件');
             return;
         }
 
+        // 先立即返回上传成功响应，不阻塞前端
+        const filePath = safeJoin(VIDEOS_DIR, req.file.filename);
+
         sendSuccess(res, {
             filename: req.file.originalname,
             file_path: req.file.filename,
             filesize: (req.file.size / (1024 * 1024)).toFixed(2),
         }, '上传成功');
+
+        // 异步后台优化视频轨道（不阻塞响应）
+        videoService.autoFixVideo(filePath).catch((err: unknown) => {
+            logger.error(`[FileRoute] 视频后台优化失败: ${err instanceof Error ? err.message : String(err)}`);
+        });
     } catch (error: unknown) {
         sendError(res, 500, `上传失败: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -116,12 +125,14 @@ router.get('/download/:filename', (req: Request, res: Response) => {
  * POST /uploadSave
  * Upload and save file record to database.
  */
-router.post('/uploadSave', upload.single('file'), (req: Request, res: Response) => {
+router.post('/uploadSave', upload.single('file'), async (req: Request, res: Response) => {
     try {
         if (!req.file) {
             sendError(res, 400, '没有选择文件');
             return;
         }
+
+        const filePath = safeJoin(VIDEOS_DIR, req.file.filename);
 
         const db = dbManager.getDb();
         const originalName = (req.body.filename as string) || req.file.originalname;
@@ -136,6 +147,11 @@ router.post('/uploadSave', upload.single('file'), (req: Request, res: Response) 
             file_path: req.file.filename,
             filesize: fileSize,
         }, '上传成功');
+
+        // 异步后台优化视频轨道（不阻塞响应）
+        videoService.autoFixVideo(filePath).catch((err: unknown) => {
+            logger.error(`[FileRoute] 视频后台优化失败: ${err instanceof Error ? err.message : String(err)}`);
+        });
     } catch (error: unknown) {
         sendError(res, 500, `上传失败: ${error instanceof Error ? error.message : String(error)}`);
     }

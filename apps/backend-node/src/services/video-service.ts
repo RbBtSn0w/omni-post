@@ -1,0 +1,99 @@
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+import fs from 'node:fs';
+import { logger } from '../core/logger.js';
+
+const execAsync = promisify(exec);
+
+export class VideoService {
+    /**
+     * 检查并修复视频轨道结构
+     * 
+     * 主要目标：
+     * 1. 确保主视频流位于 index 0
+     * 2. 移除可能干扰平台解析的 mjpeg 流（通常是封面图）
+     * 3. 启用 moov atom faststart 相关元数据前置
+     */
+    public async autoFixVideo(filePath: string): Promise<boolean> {
+        if (!fs.existsSync(filePath)) {
+            logger.warn(`[VideoService] 文件不存在: ${filePath}`);
+            return false;
+        }
+
+        const ext = path.extname(filePath).toLowerCase();
+        const videoExts = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm'];
+        if (!videoExts.includes(ext)) {
+            return false;
+        }
+
+        try {
+            logger.info(`[VideoService] 开始检测并优化视频: ${filePath}`);
+
+            // 1. 获取视频流信息
+            const { stdout: probeData } = await execAsync(`ffprobe -v error -show_streams -of json "${filePath}"`);
+            const metadata = JSON.parse(probeData);
+            const streams = metadata.streams || [];
+
+            const videoStreams = streams.filter((s: any) => s.codec_type === 'video');
+            const audioStreams = streams.filter((s: any) => s.codec_type === 'audio');
+
+            if (videoStreams.length === 0) {
+                logger.warn(`[VideoService] 无视频流，跳过优化: ${filePath}`);
+                return false;
+            }
+
+            // 2. 检测是否存在 mjpeg 封面流占用了首位
+            const needsFix = videoStreams.length > 1 && videoStreams[0].codec_name === 'mjpeg' && videoStreams[1].codec_name !== 'mjpeg';
+            
+            // 3. 始终启用 faststart 以优化 web 播放性能
+            // 如果不需要重排流，仅执行 faststart
+            const tempFile = `${filePath}.optimized${ext}`;
+
+            let command: string;
+            if (needsFix) {
+                logger.info(`[VideoService] 检测到 MJPEG 封面轨道在前台且有后置 H.264，执行流重映射同步优化。`);
+                // 方案：将第 0:v:1 (通常是 H.264) 排到首位，删除 mjpeg 封面流(0:v:0)
+                // 这种情况下，0:v:1 是真正的视频内容
+                command = `ffmpeg -i "${filePath}" -map 0:v:1 -map 0:a? -c copy -movflags +faststart -y "${tempFile}"`;
+            } else {
+                // 默认仅执行 faststart 处理且确保元数据在前
+                command = `ffmpeg -i "${filePath}" -c copy -movflags +faststart -y "${tempFile}"`;
+            }
+
+            const { stderr } = await execAsync(command);
+            if (stderr && stderr.includes('Error')) {
+                // 有些 stderr 输出非报错，需要检查文件生成情况
+                if (!fs.existsSync(tempFile)) {
+                   logger.error(`[VideoService] ffmpeg 优化失败: ${stderr}`);
+                   return false;
+                }
+            }
+
+            // 4. 用优化后的文件替换原文件
+            if (fs.existsSync(tempFile)) {
+                // 比较文件大小，防止极端异常下变空 (流拷贝通常不应该变太大或太小)
+                const originalSize = fs.statSync(filePath).size;
+                const optimizedSize = fs.statSync(tempFile).size;
+
+                if (optimizedSize > originalSize * 0.1) { // 简单检查文件是否包含核心数据
+                    fs.unlinkSync(filePath);
+                    fs.renameSync(tempFile, filePath);
+                    logger.info(`[VideoService] 视频优化成功: ${filePath} (${(optimizedSize / 1024 / 1024).toFixed(2)} MB)`);
+                    return true;
+                } else {
+                    logger.error(`[VideoService] 优化后文件比例异常 (疑似流丢失)，放弃替换。Original: ${originalSize}, Optimized: ${optimizedSize}`);
+                    fs.unlinkSync(tempFile);
+                    return false;
+                }
+            }
+
+            return false;
+        } catch (error: any) {
+            logger.error(`[VideoService] 视频处理异常: ${error.message || error}`);
+            return false;
+        }
+    }
+}
+
+export const videoService = new VideoService();
