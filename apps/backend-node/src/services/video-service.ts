@@ -76,10 +76,26 @@ export class VideoService {
                 const optimizedSize = fs.statSync(tempFile).size;
 
                 if (optimizedSize > originalSize * 0.1) { // 简单检查文件是否包含核心数据
-                    fs.unlinkSync(filePath);
-                    fs.renameSync(tempFile, filePath);
-                    logger.info(`[VideoService] 视频优化成功: ${filePath} (${(optimizedSize / 1024 / 1024).toFixed(2)} MB)`);
-                    return true;
+                    const backupFile = `${filePath}.bak`;
+                    try {
+                        // 1. 将原文件重命名为备份文件 (filePath 现在不再指向原内容)
+                        fs.renameSync(filePath, backupFile);
+                        // 2. 将优化后的文件重命名为原文件名 (filePath 现在指向优化后的内容)
+                        fs.renameSync(tempFile, filePath);
+                        // 3. 删除备份文件
+                        fs.unlinkSync(backupFile);
+                        logger.info(`[VideoService] 视频优化成功: ${filePath} (${(optimizedSize / 1024 / 1024).toFixed(2)} MB)`);
+                        return true;
+                    } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        logger.error(`[VideoService] 原子替换失败: ${msg}`);
+                        // 尝试恢复原状
+                        if (fs.existsSync(backupFile) && !fs.existsSync(filePath)) {
+                            fs.renameSync(backupFile, filePath);
+                        }
+                        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+                        return false;
+                    }
                 } else {
                     logger.error(`[VideoService] 优化后文件比例异常 (疑似流丢失)，放弃替换。Original: ${originalSize}, Optimized: ${optimizedSize}`);
                     fs.unlinkSync(tempFile);
