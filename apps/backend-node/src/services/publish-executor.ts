@@ -24,6 +24,7 @@ import {
     type UploadOptions,
 } from './publish-service.js';
 import { taskService } from './task-service.js';
+import { videoService } from './video-service.js';
 
 /**
  * Concurrency Limit (资源并发限制)
@@ -148,6 +149,8 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
                 }
 
                 if (fs.existsSync(filePath)) {
+                    // 等待视频优化（ffmpeg 任务）就绪，防止文件占位符被原子替换时导致的 File not found
+                    await videoService.waitForReadiness(filePath);
                     logger.info(`  ✓ Video exists: ${f}`);
                 } else {
                     logger.error(`  ✗ Video MISSING: ${f}`);

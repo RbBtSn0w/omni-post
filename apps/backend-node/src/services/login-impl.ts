@@ -5,7 +5,7 @@
  * Contains actual Playwright automation logic for 5 platform logins.
  */
 
-import { type Page } from 'playwright';
+import { type Page, type Frame } from 'playwright';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import path from 'path';
@@ -427,13 +427,22 @@ export async function getKsCookie(
         // Wait for login success via framenavigated events
         try {
             await new Promise<void>((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
+                let settled = false;
+                const cleanup = () => {
+                    settled = true;
                     page.off('framenavigated', onFrameNavigated);
-                    reject(new Error('TIMEOUT'));
+                    clearTimeout(timeoutId);
+                };
+
+                const timeoutId = setTimeout(() => {
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('TIMEOUT'));
+                    }
                 }, 30000); // Strict 30s timeout matching Python
 
-                const onFrameNavigated = async (frame: any) => {
-                    if (frame !== page.mainFrame()) return;
+                const onFrameNavigated = async (frame: Frame) => {
+                    if (settled || frame !== page.mainFrame()) return;
 
                     const currentUrl = frame.url();
                     const urlObj = new URL(currentUrl);
@@ -450,10 +459,9 @@ export async function getKsCookie(
                         loginSuccess = await verifyLoginSuccess();
                     }
 
-                    if (loginSuccess) {
+                    if (loginSuccess && !settled) {
                         await logWithTimestamp('基于页面内容验证：登录成功');
-                        clearTimeout(timeoutId);
-                        page.off('framenavigated', onFrameNavigated);
+                        cleanup();
                         resolve();
                     }
                 };
@@ -461,9 +469,10 @@ export async function getKsCookie(
                 page.on('framenavigated', onFrameNavigated);
 
                 signal.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    page.off('framenavigated', onFrameNavigated);
-                    reject(new Error('AbortError'));
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('AbortError'));
+                    }
                 });
             });
             await logWithTimestamp('快手登录检测成功');
@@ -561,27 +570,39 @@ export async function xiaohongshuCookieGen(
         // Wait for login success via framenavigated events
         try {
             await new Promise<void>((resolve, reject) => {
+                let settled = false;
+                const cleanup = () => {
+                    settled = true;
+                    page.off('framenavigated', onFrameNavigated);
+                    clearTimeout(timeoutId);
+                };
+
                 const timeoutId = setTimeout(() => {
-                    reject(new Error('TIMEOUT'));
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('TIMEOUT'));
+                    }
                 }, 30000);
 
-                const onFrameNavigated = async (frame: any) => {
-                    if (frame !== page.mainFrame()) return;
+                const onFrameNavigated = async (frame: Frame) => {
+                    if (settled || frame !== page.mainFrame()) return;
 
                     if (page.url() !== originalUrl) {
                         debugPrint(`[DEBUG] 小红书原页面URL变化: ${originalUrl} -> ${page.url()}`);
-                        clearTimeout(timeoutId);
-                        page.off('framenavigated', onFrameNavigated);
-                        resolve();
+                        if (!settled) {
+                            cleanup();
+                            resolve();
+                        }
                     }
                 };
 
                 page.on('framenavigated', onFrameNavigated);
 
                 signal.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    page.off('framenavigated', onFrameNavigated);
-                    reject(new Error('AbortError'));
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('AbortError'));
+                    }
                 });
             });
             logger.info('小红书 监听页面跳转成功');
@@ -662,28 +683,44 @@ export async function bilibiliCookieGen(
         // Wait for login redirect (not to passport page)
         try {
             await new Promise<void>((resolve, reject) => {
+                let settled = false;
+                const cleanup = () => {
+                    settled = true;
+                    page.off('framenavigated', onFrameNavigated);
+                    clearTimeout(timeoutId);
+                };
+
                 const timeoutId = setTimeout(() => {
-                    reject(new Error('TIMEOUT'));
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('TIMEOUT'));
+                    }
                 }, 60000);
 
                 const onUrlChange = async () => {
+                    if (settled) return;
                     const currentUrl = page.url();
                     const urlObj = new URL(currentUrl);
                     if (currentUrl !== originalUrl && urlObj.hostname !== 'passport.bilibili.com') {
-                        clearTimeout(timeoutId);
-                        resolve();
+                        if (!settled) {
+                            cleanup();
+                            resolve();
+                        }
                     }
                 };
 
-                page.on('framenavigated', async (frame) => {
-                    if (frame === page.mainFrame()) {
-                        await onUrlChange();
-                    }
-                });
+                const onFrameNavigated = async (frame: Frame) => {
+                    if (settled || frame !== page.mainFrame()) return;
+                    await onUrlChange();
+                };
+
+                page.on('framenavigated', onFrameNavigated);
 
                 signal.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error('AbortError'));
+                    if (!settled) {
+                        cleanup();
+                        reject(new Error('AbortError'));
+                    }
                 });
             });
             debugPrint('[DEBUG] Bilibili登录检测成功');

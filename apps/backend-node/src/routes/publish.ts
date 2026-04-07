@@ -13,6 +13,7 @@ import { activeQueues, runAsyncFunction } from '../services/login-service.js';
 import { startPublishThread } from '../services/publish-executor.js';
 import { taskService } from '../services/task-service.js';
 import { capabilityService } from '../services/capability-service.js';
+import { v4 as uuidv4 } from 'uuid';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 export const router = Router();
@@ -105,10 +106,12 @@ router.get('/login', (req: Request, res: Response) => {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // Create communication and cancellation tokens (FR-005)
+    // Create communication and cancellation tokens with session isolation
     const emitter = new EventEmitter();
     const abortController = new AbortController();
-    activeQueues.set(id, { emitter, abortController });
+    const sessionId = uuidv4().slice(0, 8);
+    const queueKey = `${id}:${sessionId}`;
+    activeQueues.set(queueKey, { emitter, abortController });
 
     // Listen for messages and send as SSE
     emitter.on('message', (msg: string) => {
@@ -118,8 +121,8 @@ router.get('/login', (req: Request, res: Response) => {
     });
 
     emitter.on('end', () => {
-        logger.info(`任务结束，关闭 SSE: ${id}`);
-        activeQueues.delete(id);
+        logger.info(`任务结束，关闭 SSE: ${queueKey}`);
+        activeQueues.delete(queueKey);
         emitter.removeAllListeners();
         if (!res.writableEnded) {
             res.end();
@@ -128,11 +131,11 @@ router.get('/login', (req: Request, res: Response) => {
 
     // Handle client disconnect
     req.on('close', () => {
-        const handle = activeQueues.get(id);
+        const handle = activeQueues.get(queueKey);
         if (handle) {
-            logger.info(`客户端断开连接，中止任务: ${id}`);
+            logger.info(`客户端断开连接，中止任务: ${queueKey}`);
             handle.abortController.abort();
-            activeQueues.delete(id);
+            activeQueues.delete(queueKey);
             handle.emitter.removeAllListeners();
         }
     });

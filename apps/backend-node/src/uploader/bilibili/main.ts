@@ -28,6 +28,7 @@ interface UploadStartProbeResult {
 export class BilibiliUploader extends BaseUploader {
     protected platformName = 'Bilibili';
     private readonly blockedPublishTextPattern = /上传中|处理中|转码中|请稍候|不可投稿|暂不可用|刷新中|加载中|准备中|提交中/i;
+    private static readonly DIAGNOSTIC_TEXT_LIMIT = 50;
 
     /**
      * Bilibili 目前暂未实现文章发布
@@ -274,9 +275,16 @@ export class BilibiliUploader extends BaseUploader {
             }
             const getStyle = (globalThis as any).getComputedStyle;
             const parent = target.parentElement as any;
+            
+            let textResult = target.innerText?.trim() ?? '';
+            textResult = textResult.replace(/\n| /g, ' ');
+            if (textResult.length > BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) {
+                textResult = textResult.substring(0, BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) + '...';
+            }
+
             return {
                 tagName: target.tagName,
-                text: target.innerText?.trim() ?? '',
+                text: textResult,
                 className: target.className ?? '',
                 disabled: Boolean(target.disabled),
                 ariaDisabled: target.getAttribute('aria-disabled'),
