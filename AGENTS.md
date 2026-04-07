@@ -88,12 +88,13 @@ Platform type mapping is maintained in `@omni-post/shared` (exported via `apps/b
 Each uploader in `apps/backend-node/src/uploader/<platform>/main.ts` exposes platform publish capabilities (`postVideo` / `postArticle` / `upload` depending on platform).
 
 Implemented platforms include:
-- Video: Douyin, WeChat Channels, Xiaohongshu, Kuaishou, Bilibili
-- Article: Zhihu, Juejin
+- Video (Playwright): Douyin, Xiaohongshu, Kuaishou, Bilibili
+- Article (Playwright): Zhihu, Juejin
+- **Dynamic (OpenCLI Bridge)**: Uses `uploader/opencli/main.ts` to shell out to CLI binaries defined by OCS manifests (e.g., WeChat Official Account `wx_official_account`).
 
 `publish-service.ts` dispatches by platform type and runs with one of two strategies:
-1. local browser profile (`browser_profile_id`)
-2. managed cookie fallback (`accountList`)
+1. Playwright automation using local browser profile (`browser_profile_id`) or managed cookie fallback (`accountList`)
+2. OpenCLI dynamic execution using `OpenCLIRunner` and external binaries.
 
 ## Development Workflows
 
@@ -212,3 +213,4 @@ All features fetching external URLs must provide SSRF protection.
 8. **SSOT Compliance**: All platform IDs and shared entity interfaces MUST be imported from `@omni-post/shared`. Do not define local interfaces for `Task`, `UploadOptions`, or `PlatformType`.
 9. **Strict Linting Compliance**: Always resolve `any` violations and use type-safe error handling. CI will block any push that adds new `any` keywords.
 10. **Security First**: Default to blocking private network access for any outbound crawler/fetcher logic.
+d crawler/fetcher logic.
