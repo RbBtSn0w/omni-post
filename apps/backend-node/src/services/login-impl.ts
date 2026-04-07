@@ -113,7 +113,7 @@ export async function douyinCookieGen(
         const result = await getCookieService().checkCookie(PlatformType.DOUYIN, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
-            return null;
+            return;
         }
 
         const groupId = getOrCreateGroup(groupName);
@@ -601,7 +601,7 @@ export async function xiaohongshuCookieGen(
         const result = await getCookieService().checkCookie(PlatformType.XIAOHONGSHU, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
-            return null;
+            return;
         }
 
         const groupId = getOrCreateGroup(groupName);
@@ -703,7 +703,7 @@ export async function bilibiliCookieGen(
         const result = await getCookieService().checkCookie(PlatformType.BILIBILI, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
-            return null;
+            return;
         }
 
         const groupId = getOrCreateGroup(groupName);
