@@ -5,12 +5,14 @@
  * Contains actual Playwright automation logic for 5 platform logins.
  */
 
+import { type Page } from 'playwright';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import path from 'path';
 import { v1 as uuidv1 } from 'uuid';
 import { createScreenshotDir, debugPrint, debugScreenshot, launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
+import { PlatformType } from '../core/constants.js';
 import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { getCookieService } from './cookie-service.js';
@@ -108,14 +110,14 @@ export async function douyinCookieGen(
         await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
 
         // Validate cookie
-        const result = await getCookieService().checkCookie(3, `${cookieId}.json`);
+        const result = await getCookieService().checkCookie(PlatformType.DOUYIN, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
             return null;
         }
 
         const groupId = getOrCreateGroup(groupName);
-        saveUserInfo(3, `${cookieId}.json`, id, groupId);
+        saveUserInfo(PlatformType.DOUYIN, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
         signal.removeEventListener('abort', abortHandler);
@@ -167,30 +169,59 @@ export async function getWxChannelsCookie(
             await new Promise<void>((resolve, reject) => {
                 const timeoutId = setTimeout(() => {
                     reject(new Error('TIMEOUT'));
-                }, 30000);
+                }, 60000);
 
-                const onUrlChange = async () => {
-                    if (page.url() !== originalUrl) {
-                        clearTimeout(timeoutId);
-                        resolve();
+                const checkSuccessStatus = async (p: Page) => {
+                    const currentUrl = p.url();
+                    // 核心判定：URL 包含 platform 路径
+                    if (currentUrl.includes('/platform')) {
+                        debugPrint(`[DEBUG] 检测到目标 URL: ${currentUrl}，正在等待组件渲染...`);
+                        try {
+                            // 给予 5 秒时间等待 wujie-app 或其它核心布局组件出现
+                            await p.waitForSelector('wujie-app, .channels-layout', { timeout: 5000 });
+                            debugPrint(`[DEBUG] 登录成功检测命中 (Component Ready): ${currentUrl}`);
+                            clearTimeout(timeoutId);
+                            resolve();
+                            return true;
+                        } catch (e) {
+                            // 兜底判定：如果 URL 已经在 platform 但组件未在 5s 内出现，也视为成功（防止标签名变动）
+                            debugPrint(`[DEBUG] 登录成功检测命中 (URL Fallback): ${currentUrl}`);
+                            clearTimeout(timeoutId);
+                            resolve();
+                            return true;
+                        }
                     }
+                    return false;
                 };
+
+                // --- 主动轮询机制：应对 SPA 路由跳转不触发事件的问题 ---
+                const pollId = setInterval(async () => {
+                    const pages = context.pages();
+                    for (const p of pages) {
+                        const isSuccess = await checkSuccessStatus(p);
+                        if (isSuccess) {
+                            clearInterval(pollId);
+                            return;
+                        }
+                    }
+                }, 1000);
 
                 // Handle new page popups
                 context.on('page', async (newPage) => {
                     debugPrint(`[DEBUG] 新窗口创建，URL：${newPage.url()}`);
-
-                    newPage.on('load', () => {
+                    newPage.on('load', async () => {
                         debugPrint(`[DEBUG] 新窗口加载完成，URL：${newPage.url()}`);
-                        clearTimeout(timeoutId);
-                        resolve();
+                        if (await checkSuccessStatus(newPage)) {
+                            clearInterval(pollId);
+                        }
                     });
 
-                    newPage.on('framenavigated', (frame) => {
+                    newPage.on('framenavigated', async (frame) => {
                         if (frame === newPage.mainFrame()) {
                             debugPrint(`[DEBUG] 新窗口导航，当前URL：${frame.url()}`);
-                            clearTimeout(timeoutId);
-                            resolve();
+                            if (await checkSuccessStatus(newPage)) {
+                                clearInterval(pollId);
+                            }
                         }
                     });
                 });
@@ -199,16 +230,28 @@ export async function getWxChannelsCookie(
                 page.on('framenavigated', async (frame) => {
                     if (frame === page.mainFrame()) {
                         debugPrint(`[DEBUG] 主窗口framenavigated事件触发，当前URL：${frame.url()}`);
-                        await onUrlChange();
+                        if (await checkSuccessStatus(page)) {
+                            clearInterval(pollId);
+                        }
                     }
                 });
 
                 signal.addEventListener('abort', () => {
+                    clearInterval(pollId);
                     clearTimeout(timeoutId);
                     reject(new Error('AbortError'));
                 });
             });
             debugPrint('[DEBUG] 监听页面跳转或登录检测成功');
+            // 验证关键 LocalStorage 指纹是否存在
+            const fingerPrint = await page.evaluate(() => localStorage.getItem('_finger_print_device_id'));
+            if (fingerPrint) {
+                debugPrint(`[DEBUG] 检测到设备指纹: ${fingerPrint.slice(0, 8)}...`);
+            } else {
+                debugPrint('[WARN] 未检测到设备指纹 _finger_print_device_id，这可能导致后续验证失败');
+            }
+            // 额外等待 5 秒以确保所有重定向完成且异步 Cookie 写入完成
+            await page.waitForTimeout(5000);
         } catch (err: any) {
             if (err.message === 'AbortError') throw err;
             emitter.emit('message', '500');
@@ -223,7 +266,7 @@ export async function getWxChannelsCookie(
         await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
         debugPrint(`[DEBUG] Cookie 保存到: ${COOKIES_DIR}/${cookieId}.json`);
 
-        const result = await getCookieService().checkCookie(2, `${cookieId}.json`);
+        const result = await getCookieService().checkCookie(PlatformType.WX_CHANNELS, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
             logger.warn('视频号 Cookie验证失败，登录状态无效');
@@ -231,7 +274,7 @@ export async function getWxChannelsCookie(
         }
 
         const groupId = getOrCreateGroup(groupName);
-        saveUserInfo(2, `${cookieId}.json`, id, groupId);
+        saveUserInfo(PlatformType.WX_CHANNELS, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
         return {};
     } finally {
@@ -442,7 +485,7 @@ export async function getKsCookie(
         await context.storageState({ path: cookiePath });
         await logWithTimestamp(`Cookie信息已保存到: ${cookiePath}`);
 
-        const result = await getCookieService().checkCookie(4, `${cookieId}.json`);
+        const result = await getCookieService().checkCookie(PlatformType.KUAISHOU, `${cookieId}.json`);
         if (!result) {
             await logWithTimestamp('Cookie验证失败，登录状态无效', 'ERROR');
             emitter.emit('message', '500');
@@ -452,7 +495,7 @@ export async function getKsCookie(
         }
 
         const groupId = getOrCreateGroup(groupName);
-        saveUserInfo(4, `${cookieId}.json`, id, groupId);
+        saveUserInfo(PlatformType.KUAISHOU, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } catch (error: any) {
         if (error.message === 'AbortError') throw error;
@@ -545,14 +588,14 @@ export async function xiaohongshuCookieGen(
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
         await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
 
-        const result = await getCookieService().checkCookie(1, `${cookieId}.json`);
+        const result = await getCookieService().checkCookie(PlatformType.XIAOHONGSHU, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
             return null;
         }
 
         const groupId = getOrCreateGroup(groupName);
-        saveUserInfo(1, `${cookieId}.json`, id, groupId);
+        saveUserInfo(PlatformType.XIAOHONGSHU, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
         signal.removeEventListener('abort', abortHandler);
@@ -647,14 +690,14 @@ export async function bilibiliCookieGen(
         fs.mkdirSync(COOKIES_DIR, { recursive: true });
         await context.storageState({ path: path.join(COOKIES_DIR, `${cookieId}.json`) });
 
-        const result = await getCookieService().checkCookie(5, `${cookieId}.json`);
+        const result = await getCookieService().checkCookie(PlatformType.BILIBILI, `${cookieId}.json`);
         if (!result) {
             emitter.emit('message', '500');
             return null;
         }
 
         const groupId = getOrCreateGroup(groupName);
-        saveUserInfo(5, `${cookieId}.json`, id, groupId);
+        saveUserInfo(PlatformType.BILIBILI, `${cookieId}.json`, id, groupId);
         emitter.emit('message', '200');
     } finally {
         signal.removeEventListener('abort', abortHandler);

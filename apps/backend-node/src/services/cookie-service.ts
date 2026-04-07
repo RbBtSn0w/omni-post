@@ -3,11 +3,12 @@
  * Mirrors: apps/backend/src/services/cookie_service.py
  */
 
+import fs from 'fs';
 import path from 'path';
-import { launchBrowser, setInitScript } from '../core/browser.js';
+import { createScreenshotDir, debugScreenshot, launchBrowser, setInitScript } from '../core/browser.js';
 import { COOKIES_DIR } from '../core/config.js';
 import { PlatformType } from '../core/constants.js';
-import { bilibiliLogger, douyinLogger, kuaishouLogger, wxChannelsLogger, xhsLogger } from '../core/logger.js';
+import { logger, bilibiliLogger, douyinLogger, kuaishouLogger, wxChannelsLogger, xhsLogger } from '../core/logger.js';
 import { safeJoin } from '../utils/path.js';
 
 /**
@@ -79,18 +80,42 @@ export class DefaultCookieService implements CookieService {
             context = await browser.newContext({ storageState: accountFile });
             context = await setInitScript(context);
             page = await context.newPage();
-            await page.goto(
+            const screenshotDir = createScreenshotDir('wx_channels_auth');
+            
+            // 捕获导航响应
+            const response = await page.goto(
                 'https://channels.weixin.qq.com/platform/post/create',
-                { waitUntil: 'domcontentloaded' }
-            );
-            try {
-                await page.waitForSelector('div.title-name:has-text("微信小店")', { timeout: 5000 });
-                wxChannelsLogger.error('[+] 等待5秒 cookie 失效');
-                return false;
-            } catch {
-                wxChannelsLogger.info('[+] cookie 有效');
-                return true;
+                { waitUntil: 'networkidle', timeout: 30000 }
+            ).catch(e => {
+                logger.error(`[DEBUG] 视频号验证页面 goto 失败: ${e.message}`);
+                return null;
+            });
+
+            if (response) {
+                logger.info(`[DEBUG] 视频号验证页面响应码: ${response.status()}`);
             }
+
+            try {
+                // 更宽松的成功判定：URL 包含 platform 且 (渲染了 wujie-app 或 包含“视频号助手”)
+                await page.waitForFunction(() => {
+                    const url = window.location.href;
+                    const hasWujie = !!document.querySelector('wujie-app');
+                    const hasText = document.body.innerText.includes('视频号') && document.body.innerText.includes('助手');
+                    return url.includes('/platform') && (hasWujie || hasText);
+                }, { timeout: 25000 });
+                
+                logger.info(`[+] 视频号：cookie 有效, 当前 URL: ${page.url()}, 标题: ${await page.title()}`);
+                return true;
+            } catch (err) {
+                const currentUrl = page.url();
+                const pageTitle = await page.title();
+                logger.error(`[+] 视频号：cookie 失效 (判定条件未达成), 当前 URL: ${currentUrl}, 标题: ${pageTitle}`);
+                await debugScreenshot(page, screenshotDir, 'auth_fail.png', `验证失败: ${currentUrl}`);
+                return false;
+            }
+        } catch (outerError: any) {
+            logger.error(`[DEBUG] 视频号验证逻辑外部崩溃: ${outerError.message}`);
+            return false;
         } finally {
             if (page) await page.close();
             if (context) await context.close();
@@ -216,7 +241,14 @@ export class DefaultCookieService implements CookieService {
         let cookiePath: string;
         try {
             cookiePath = safeJoin(this.cookiesDir, filePath);
-        } catch (error) {
+            logger.info(`[DEBUG] 开始进行 Cookie 验证: 平台=${platformType}, 相对路径=${filePath}, 绝对路径=${cookiePath}`);
+            
+            if (!fs.existsSync(cookiePath)) {
+                logger.error(`[DEBUG] 验证中止：Cookie 文件不存在! ${cookiePath}`);
+                return false;
+            }
+        } catch (error: any) {
+            logger.error(`[DEBUG] 路径解析错误: ${error.message}`);
             return false;
         }
 
@@ -226,7 +258,9 @@ export class DefaultCookieService implements CookieService {
             case PlatformType.DOUYIN: return this.cookieAuthDouyin(cookiePath);
             case PlatformType.KUAISHOU: return this.cookieAuthKs(cookiePath);
             case PlatformType.BILIBILI: return this.cookieAuthBilibili(cookiePath);
-            default: return false;
+            default: 
+                logger.warn(`[DEBUG] 未知的平台类型: ${platformType}`);
+                return false;
         }
     }
 }
