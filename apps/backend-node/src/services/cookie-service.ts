@@ -45,20 +45,23 @@ export class DefaultCookieService implements CookieService {
                 { waitUntil: 'domcontentloaded' }
             );
             try {
-                await page.waitForURL(
-                    'https://creator.douyin.com/creator-micro/content/upload',
-                    { timeout: 5000 }
-                );
+                await page.waitForURL(url => url.href.includes('creator-micro'), { timeout: 15000 });
                 try {
-                    await page.getByText('扫码登录').waitFor({ timeout: 5000 });
-                    douyinLogger.error('[+] cookie 失效，需要扫码登录');
-                    return false;
+                    await page.waitForSelector('#header-avatar', { timeout: 5000 });
+                    douyinLogger.info('[+] cookie 有效 (Detected header avatar)');
+                    return true;
                 } catch {
-                    douyinLogger.info('[+] cookie 有效');
+                    // Avatar not found, but it's creator-micro URL, check for Scan QR code element
+                    if (await page.getByText('扫码登录').count() > 0) {
+                        douyinLogger.error('[+] cookie 失效，页面包含“扫码登录”');
+                        return false;
+                    }
+                    // Or maybe it's still loading
+                    douyinLogger.info('[+] cookie 有效 (Inside creator-micro URL)');
                     return true;
                 }
             } catch {
-                douyinLogger.error('[+] 等待5秒 cookie 失效');
+                douyinLogger.error(`[+] 等待15秒 cookie 失效, 当前 URL: ${page.url()}`);
                 return false;
             }
         } finally {
