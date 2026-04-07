@@ -105,7 +105,7 @@ apps/backend-node/extensions/<platform_slug>/
 
 1. **Create the directory** under `apps/backend-node/extensions/` using the platform slug (e.g., `wx_official_account`)
 2. **Write `manifest.ocs.json`** declaring the platform ID, supported actions, and required arguments:
-   ```json
+   ```jsonc
    {
      "ocs_version": "1.0",
      "name": "my-platform",
@@ -394,6 +394,12 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 > If this project has been helpful to you, please give it a ⭐ Star to show your support!
+
+Last Updated: March 2026
+has been helpful to you, please give it a ⭐ Star to show your support!
+
+Last Updated: March 2026
+ it a ⭐ Star to show your support!
 
 Last Updated: March 2026
 has been helpful to you, please give it a ⭐ Star to show your support!

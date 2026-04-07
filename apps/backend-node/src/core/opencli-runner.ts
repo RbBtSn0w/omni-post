@@ -108,7 +108,13 @@ export class OpenCLIRunner {
       child.on('close', (code) => {
         clearTimeout(timer);
         // Flush remainders
-        const lastStdout = stdoutDecoder.end() + stdoutBuffer;
+        const stdoutRemainder = stdoutDecoder.end();
+        const stderrRemainder = stderrDecoder.end();
+
+        if (stdout.length < this.MAX_LOG_SIZE) stdout += stdoutRemainder;
+        if (stderr.length < this.MAX_LOG_SIZE) stderr += stderrRemainder;
+
+        const lastStdout = stdoutRemainder + stdoutBuffer;
         if (lastStdout) {
           if (onLog) onLog(lastStdout.trim());
           if (onProgress && progressRegex) {
@@ -119,7 +125,11 @@ export class OpenCLIRunner {
             }
           }
         }
-        
+
+        if (stderrRemainder && onLog) {
+          onLog(stderrRemainder.trim());
+        }
+
         if (code === 0) {
           resolve({ code, stdout, stderr });
         } else {
@@ -127,7 +137,6 @@ export class OpenCLIRunner {
           resolve({ code, stdout, stderr });
         }
       });
-
       child.on('error', (err) => {
         clearTimeout(timer);
         logger.error(`OpenCLI spawn error: ${err.message}`);
