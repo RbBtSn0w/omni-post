@@ -199,7 +199,17 @@ All features fetching external URLs must provide SSRF protection.
 ### 6. Strict Return Types (No Implicit Nulls)
 - **Rule**: When a TypeScript function's return type includes `void` (e.g., `Promise<void | Record<string, unknown>>`), use an empty `return;` to exit early. Do NOT use `return null;` unless `null` is explicitly declared in the return type signature. This prevents `TS2322` typecheck failures during CI.
 
-## Critical Files by Purpose
+## CI-Aligned Quality Gates (Mandatory Pre-push)
+
+To ensure high success rates in CI, all agents MUST run the following validations before declaring a task "Execution" complete:
+
+1. **Incremental Any Check**: `node tools/scripts/check-no-new-any.mjs --base main --head HEAD` (Blocks new `explicit any`).
+2. **Strict Typecheck**: `npm run typecheck -w apps/backend-node` (Validates TS compilation).
+3. **Workspace Integrity**: `npm run check:workspace` (Validates dependency alignment).
+4. **Security Scan**: `npm audit --audit-level=high --omit=dev` (Blocks high-severity vulnerabilities).
+5. **Full Lint & Test**: `npm run lint` and `npm run test` (Ensures baseline stability).
+
+## Architecture Patterns
 
 **System Overview:**
 - [Constitution (.specify)](./.specify/memory/constitution.md) - Deep project background, architectural mandates, and spec-kit governance rules.
