@@ -109,6 +109,15 @@ Implemented platforms include:
 
 ## Development Workflows
 
+### Spec-Kit Development Workflow & Quality Gates
+All non-trivial modifications MUST follow a `Research -> Strategy -> Execution` flow. Specs, plans, and task documents MUST explicitly declare:
+1. Target area (`apps/backend-node`, `apps/frontend`, `packages/shared`, or legacy scope).
+2. Changes to shared types, platform mappings, DB structure, background tasks, or automation diagnostics.
+3. A "Constitution Check" verifying adherence to Node.js primary, SSOT, layer boundaries, async state, and test coverage.
+4. Documentation updates needed (README, ARCHITECTURE.md).
+
+Commits MUST follow Conventional Commits and pass relevant linting/tests before submission.
+
 ### Recommended (Node Primary)
 ```bash
 npm run install:node
@@ -180,6 +189,12 @@ All features fetching external URLs must provide SSRF protection.
 ### 4. Workspace & Build Integrity
 - **Command**: `npm run check:workspace` (via `tools/scripts/check-workspace.mjs`) ensures dependency version alignment.
 - **ESM Compatibility**: Use extensionless imports (`../src/index`) in TypeScript tests to ensure Vitest handles module resolution correctly.
+
+### 5. Security & Data Integrity (Constitution)
+- **Data Protection**: Cookies, browser profiles, credentials, and local data files MUST be stored in controlled directories and excluded via `.gitignore`.
+- **No Secrets**: NEVER hardcode keys, tokens, or personal credentials.
+- **File Access**: File system operations MUST prioritize safe path helpers (e.g., `utils/path.ts`).
+- **Persistence**: Task persistence fields (`platforms`, `file_list`, `account_list`, `schedule_data`, `publish_data`) MUST maintain structural stability and strictly align with shared types during read/write operations.
 
 ## Critical Files by Purpose
 
