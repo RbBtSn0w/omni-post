@@ -1,7 +1,7 @@
 import { taskApi } from '@/api'
 import { usePlatformStore } from './platform'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 // 任务状态映射
 const taskStatusMap = {
@@ -24,9 +24,17 @@ export const useTaskStore = defineStore('task', () => {
   const platformStore = usePlatformStore()
 
   const getPlatformName = (id) => {
-    const platform = platformStore.allPlatforms.find(p => p.key === id)
+    const platformId = Number(id)
+    const platform = platformStore.allPlatforms.find(p => Number(p.key) === platformId)
     return platform ? platform.name : '未知'
   }
+
+  // 监听插件变化，更新所有任务的平台名称
+  watch(() => platformStore.customExtensions, () => {
+    tasks.value.forEach(task => {
+      task.platformNames = (task.selectedPlatforms || []).map(key => getPlatformName(key))
+    })
+  }, { deep: true })
 
   // 存储所有任务信息
   const tasks = ref([])

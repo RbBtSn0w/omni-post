@@ -71,6 +71,8 @@ export class ExtensionService {
   private static readonly DYNAMIC_ID_START = 100;
   private static readonly SYSTEM_DYNAMIC_ID_START = 10000;
   private static readonly SAFE_LOCAL_EXECUTABLES = new Set(['opencli']);
+  private lastSyncAttempt = 0;
+  private static readonly SYNC_COOLDOWN_MS = 30000; // 30 seconds cooldown
 
   private resolveLocalExtDirs(): string[] {
     const candidates = [
@@ -87,9 +89,21 @@ export class ExtensionService {
   /**
    * Sync all extensions from system and local directory.
    */
-  async syncExtensions(): Promise<number> {
-    logger.info('Syncing OpenCLI extensions...');
+  async syncExtensions(force = false): Promise<number> {
+    const now = Date.now();
     const db = dbManager.getDb();
+    
+    // If not forced and we tried recently and have no extensions, skip to avoid overhead.
+    if (!force && (now - this.lastSyncAttempt < ExtensionService.SYNC_COOLDOWN_MS)) {
+      const existing = this.getAllExtensions();
+      if (existing.length === 0) {
+        logger.debug('Skipping redundant OpenCLI sync (cooldown active)');
+        return 0;
+      }
+    }
+    
+    this.lastSyncAttempt = now;
+    logger.info('Syncing OpenCLI extensions...');
     const systemExtensions = await this.discoverSystemExtensions();
     const localExtensions = await this.discoverLocalExtensions();
     const mergedByPlatformId = new Map<number, ExtensionInfo>();

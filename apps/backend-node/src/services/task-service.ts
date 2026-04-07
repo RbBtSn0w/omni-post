@@ -68,7 +68,8 @@ class TaskService {
         taskId: string,
         status: string,
         progress?: number,
-        errorMsg?: string | null
+        errorMsg?: string | null,
+        force = false
     ): void {
         const db = dbManager.getDb();
 
@@ -80,13 +81,16 @@ class TaskService {
         }
 
         // 2. Protection: Transition from terminal states ('completed', 'failed') back to intermediate states is NOT allowed
-        // unless it's a manual status reset (not handled here) or a complete task failure.
-        if (['completed', 'failed'].includes(current.status) && (status === 'uploading' || status === 'waiting')) {
+        // unless it's a manual status reset (progress === 0 or force === true)
+        const isTerminal = ['completed', 'failed'].includes(current.status);
+        const isRestart = (status === 'uploading' || status === 'waiting') && (progress === 0 || force);
+        
+        if (isTerminal && (status === 'uploading' || status === 'waiting') && !isRestart) {
             return;
         }
 
         // 3. Progress Guard: Avoid overwriting higher progress with lower progress for same status
-        if (status === current.status && progress !== undefined && progress < current.progress) {
+        if (!force && status === current.status && progress !== undefined && progress < current.progress) {
             return;
         }
 
