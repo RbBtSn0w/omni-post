@@ -82,10 +82,10 @@ export class DefaultCookieService implements CookieService {
             page = await context.newPage();
             const screenshotDir = createScreenshotDir('wx_channels_auth');
             
-            // 捕获导航响应
+            // 捕获导航响应（使用 domcontentloaded 而非 networkidle，因为视频号有持久 WebSocket 连接）
             const response = await page.goto(
                 'https://channels.weixin.qq.com/platform/post/create',
-                { waitUntil: 'networkidle', timeout: 30000 }
+                { waitUntil: 'domcontentloaded', timeout: 15000 }
             ).catch(e => {
                 logger.error(`[DEBUG] 视频号验证页面 goto 失败: ${e.message}`);
                 return null;
