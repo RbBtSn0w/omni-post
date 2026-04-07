@@ -139,7 +139,7 @@ export function createTables(): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS system_extensions (
       id TEXT PRIMARY KEY,
-      platform_id INTEGER,
+      platform_id INTEGER NOT NULL UNIQUE,
       name TEXT NOT NULL,
       manifest TEXT NOT NULL,
       executable TEXT NOT NULL,
