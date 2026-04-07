@@ -1,8 +1,8 @@
 # Feature Specification: OmniPost OpenCLI Bridge Integration
 
-**Feature Branch**: `033-opencli-bridge`  
-**Created**: 2026-03-25  
-**Status**: Draft  
+**Feature Branch**: `033-opencli-bridge`
+**Created**: 2026-03-25
+**Status**: completed
 **Input**: User description: "OmniPost 与 OpenCLI 集成方案：在 OmniPost 中引入插件化扩展能力，通过 OpenCLI 规范 (OCS) 标准化接入外部发布工具（如小红书、微信公众号等），实现“核心调度 + 动态执行”的解耦架构。"
 
 ## Clarifications
