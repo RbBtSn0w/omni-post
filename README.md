@@ -107,18 +107,20 @@ apps/backend-node/extensions/<platform_slug>/
 2. **Write `manifest.ocs.json`** declaring the platform ID, supported actions, and required arguments:
    ```json
    {
+     "ocs_version": "1.0",
      "name": "my-platform",
      "version": "1.0.0",
      "platform_id": 8,
-      "actions": {
-        "publish_article": {
-          "command": "publish",
-          "args": {
-            "title": "--title",
-            "content": "--content"
-          }
-        }
-      }
+     "actions": {
+       "publish_article": {
+         "command": "publish",
+         "args": {
+           "title": "--title",
+           "content": "--content"
+         }
+       }
+     }
+   }
    ```
 3. **Write `cli.js`** implementing the declared actions. The runner invokes it with `node cli.js <action> --<arg> <value>`.
 4. **Sync extensions** via the API: `POST /api/opencli/sync`

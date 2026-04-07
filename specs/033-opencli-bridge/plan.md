@@ -22,7 +22,7 @@ Implement a plugin-driven extension system for OmniPost using the OpenCLI Specif
 
 ### Unknowns & Resolved Decisions
 - **Environment Detection**: **Resolved**. Use `child_process.execSync('which opencli')` for robustness.
-- **OCS Schema Specifics**: **Resolved**. Use standard OCS 1.0 but add a proprietary `x-omni-progress-regex` field for progress tracking.
+- **OCS Schema Specifics**: **Resolved**. Use standard OCS 1.0 but add a proprietary `progress_regex` field for progress tracking.
 - **Dynamic UI Payload**: **Resolved**. Use the `publish_data` field in the Task entity to store metadata.
 - **Dynamic Platform ID Strategy**: **Resolved**. Local extensions starting at 100, system-discovered extensions starting at 10000.
 

@@ -47,9 +47,10 @@ async function runMigration() {
 
             let modified = false;
 
-            // Example: some old versions might have used { platform_type: 'tencent' }
-            if (data.platform === 'tencent') {
-                data.platform = 'wx_channels';
+            // Example: some old versions might have used { platform_type: 'tencent' } or { platform: 'tencent' }
+            if (data.platform === 'tencent' || data.platform_type === 'tencent') {
+                if (data.platform === 'tencent') data.platform = 'wx_channels';
+                if (data.platform_type === 'tencent') data.platform_type = 'wx_channels';
                 modified = true;
             }
 
