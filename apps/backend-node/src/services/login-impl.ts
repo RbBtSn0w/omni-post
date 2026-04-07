@@ -24,7 +24,7 @@ function getOrCreateGroup(groupName?: string | null): number | null {
     if (!groupName) return null;
 
     const db = dbManager.getDb();
-    const existing = db.prepare('SELECT id FROM account_groups WHERE name = ?').get(groupName) as any;
+    const existing = db.prepare('SELECT id FROM account_groups WHERE name = ?').get(groupName) as { id: number } | undefined;
     if (existing) return existing.id;
 
     const result = db.prepare(
@@ -63,7 +63,7 @@ export async function douyinCookieGen(
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
-): Promise<any> {
+): Promise<void | Record<string, unknown>> {
     const screenshotDir = createScreenshotDir('douyin');
 
     const browser = await launchBrowser();
@@ -135,7 +135,7 @@ export async function getWxChannelsCookie(
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
-): Promise<any> {
+): Promise<void | Record<string, unknown>> {
     const screenshotDir = createScreenshotDir('wx_channels');
 
     const browser = await launchBrowser();
@@ -304,7 +304,7 @@ export async function getKsCookie(
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
-): Promise<any> {
+): Promise<void | Record<string, unknown>> {
     const browser = await launchBrowser();
     const abortHandler = () => {
         logger.info('[Login:Kuaishou] Detected abort signal, closing browser...');
@@ -528,7 +528,7 @@ export async function xiaohongshuCookieGen(
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
-): Promise<any> {
+): Promise<void | Record<string, unknown>> {
     const screenshotDir = createScreenshotDir('xiaohongshu');
 
     const browser = await launchBrowser();
@@ -623,7 +623,7 @@ export async function bilibiliCookieGen(
     emitter: EventEmitter,
     signal: AbortSignal,
     groupName?: string | null
-): Promise<any> {
+): Promise<void | Record<string, unknown>> {
     const screenshotDir = createScreenshotDir('bilibili');
 
     const browser = await launchBrowser();

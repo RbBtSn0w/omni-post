@@ -113,8 +113,9 @@ export class DefaultCookieService implements CookieService {
                 await debugScreenshot(page, screenshotDir, 'auth_fail.png', `验证失败: ${currentUrl}`);
                 return false;
             }
-        } catch (outerError: any) {
-            logger.error(`[DEBUG] 视频号验证逻辑外部崩溃: ${outerError.message}`);
+        } catch (outerError: unknown) {
+            const msg = outerError instanceof Error ? outerError.message : String(outerError);
+            logger.error(`[DEBUG] 视频号验证逻辑外部崩溃: ${msg}`);
             return false;
         } finally {
             if (page) await page.close();
@@ -247,8 +248,9 @@ export class DefaultCookieService implements CookieService {
                 logger.error(`[DEBUG] 验证中止：Cookie 文件不存在! ${cookiePath}`);
                 return false;
             }
-        } catch (error: any) {
-            logger.error(`[DEBUG] 路径解析错误: ${error.message}`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            logger.error(`[DEBUG] 路径解析错误: ${msg}`);
             return false;
         }
 

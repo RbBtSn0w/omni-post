@@ -225,7 +225,7 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         const validAccounts: string[] = [];
 
         for (const accountFile of accountList) {
-            const row = db.prepare('SELECT type FROM user_info WHERE filePath = ?').get(accountFile) as any;
+            const row = db.prepare('SELECT type FROM user_info WHERE filePath = ?').get(accountFile) as { type: number } | undefined;
             if (row && row.type === platformType) {
                 validAccounts.push(accountFile);
             }
@@ -234,7 +234,7 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         if (validAccounts.length === 0) {
             // [IMPROVEMENT] If no valid accounts from task, try to find ANY valid account for this platform
             logger.warn(`[PUBLISH] Task ${taskId} has no valid assigned accounts. Searching for substitutes...`);
-            const substitutes = db.prepare('SELECT filePath FROM user_info WHERE type = ?').all(platformType) as any[];
+            const substitutes = db.prepare('SELECT filePath FROM user_info WHERE type = ?').all(platformType) as { filePath: string }[];
             if (substitutes.length > 0) {
                 const subAccount = substitutes[0].filePath;
                 logger.info(`[PUBLISH] Found substitute account for platform ${platformType}: ${subAccount}`);
