@@ -176,16 +176,34 @@ export class DefaultCookieService implements CookieService {
             page = await context.newPage();
             await page.goto(
                 'https://member.bilibili.com/platform/home',
-                { waitUntil: 'domcontentloaded' }
+                { waitUntil: 'domcontentloaded', timeout: 30000 }
             );
-            
-            const urlObj = new URL(page.url());
-            if (urlObj.hostname === 'passport.bilibili.com') {
-                bilibiliLogger.error('[+] bilibili cookie 失效');
+
+            // Wait a bit to ensure potential redirects have happened
+            await page.waitForTimeout(3000);
+
+            const currentUrl = page.url();
+            const urlObj = new URL(currentUrl);
+
+            if (urlObj.hostname.includes('passport.bilibili.com')) {
+                bilibiliLogger.error(`[+] bilibili cookie 失效 (已重定向至登录页: ${currentUrl})`);
                 return false;
-            } else {
+            }
+
+            // Check for common logged-in indicators in Bilibili Creative Center
+            // .avatar, a[href*="space.bilibili.com"], or .nav-item-avatar
+            const avatarVisible = await page
+                .locator('.avatar, .nav-item-avatar, a[href*="space.bilibili.com"]')
+                .first()
+                .isVisible({ timeout: 5000 })
+                .catch(() => false);
+
+            if (avatarVisible) {
                 bilibiliLogger.info('[+] bilibili cookie 有效');
                 return true;
+            } else {
+                bilibiliLogger.error(`[+] bilibili cookie 失效 (未检测到登录特征), 当前 URL: ${currentUrl}`);
+                return false;
             }
         } finally {
             if (page) await page.close();
