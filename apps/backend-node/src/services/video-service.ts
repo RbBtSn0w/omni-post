@@ -1,10 +1,10 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import fs from 'node:fs';
 import { logger } from '../core/logger.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export class VideoService {
     /**
@@ -31,7 +31,7 @@ export class VideoService {
             logger.info(`[VideoService] 开始检测并优化视频: ${filePath}`);
 
             // 1. 获取视频流信息
-            const { stdout: probeData } = await execAsync(`ffprobe -v error -show_streams -of json "${filePath}"`);
+            const { stdout: probeData } = await execFileAsync('ffprobe', ['-v', 'error', '-show_streams', '-of', 'json', filePath]);
             const metadata = JSON.parse(probeData);
             const streams = metadata.streams || [];
 
@@ -50,18 +50,18 @@ export class VideoService {
             // 如果不需要重排流，仅执行 faststart
             const tempFile = `${filePath}.optimized${ext}`;
 
-            let command: string;
+            let args: string[];
             if (needsFix) {
                 logger.info(`[VideoService] 检测到 MJPEG 封面轨道在前台且有后置 H.264，执行流重映射同步优化。`);
                 // 方案：将第 0:v:1 (通常是 H.264) 排到首位，删除 mjpeg 封面流(0:v:0)
                 // 这种情况下，0:v:1 是真正的视频内容
-                command = `ffmpeg -i "${filePath}" -map 0:v:1 -map 0:a? -c copy -movflags +faststart -y "${tempFile}"`;
+                args = ['-i', filePath, '-map', '0:v:1', '-map', '0:a?', '-c', 'copy', '-movflags', '+faststart', '-y', tempFile];
             } else {
                 // 默认仅执行 faststart 处理且确保元数据在前
-                command = `ffmpeg -i "${filePath}" -c copy -movflags +faststart -y "${tempFile}"`;
+                args = ['-i', filePath, '-c', 'copy', '-movflags', '+faststart', '-y', tempFile];
             }
 
-            const { stderr } = await execAsync(command);
+            const { stderr } = await execFileAsync('ffmpeg', args);
             if (stderr && stderr.includes('Error')) {
                 // 有些 stderr 输出非报错，需要检查文件生成情况
                 if (!fs.existsSync(tempFile)) {
