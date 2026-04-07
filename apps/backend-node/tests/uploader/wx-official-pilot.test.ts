@@ -6,9 +6,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { OpenCLIRunner } from '../../src/core/opencli-runner.js';
-import { dbManager } from '../../src/db/database.js';
-import { ExtensionService } from '../../src/services/extension-service.js';
 
 vi.mock('../../src/db/database.js');
 vi.mock('../../src/core/opencli-runner.js', () => ({
@@ -25,10 +22,19 @@ vi.mock('child_process', () => ({
 }));
 
 describe('WeChat Official Account Pilot', () => {
-    let service: ExtensionService;
+    let service: any;
+    let dbManager: any;
+    let OpenCLIRunner: any;
 
-    beforeEach(() => {
-        service = new ExtensionService();
+    beforeEach(async () => {
+        const extModule = await import('../../src/services/extension-service.js');
+        const dbModule = await import('../../src/db/database.js');
+        const runnerModule = await import('../../src/core/opencli-runner.js');
+
+        service = new extModule.ExtensionService();
+        dbManager = dbModule.dbManager;
+        OpenCLIRunner = runnerModule.OpenCLIRunner;
+
         vi.clearAllMocks();
         execFileSyncMock.mockImplementation(() => { throw new Error('Not found'); });
         vi.mocked(OpenCLIRunner.run).mockResolvedValue({ code: 1, stdout: '', stderr: '' });

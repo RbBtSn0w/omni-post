@@ -10,14 +10,11 @@ export const usePlatformStore = defineStore('platform', () => {
   async function fetchExtensions() {
     try {
       const res = await axios.get('/opencli/status');
-      if (res.code === 200) {
-        customExtensions.value = res.data.platforms || [];
-      } else {
-        ElMessage.error(res.msg || '获取平台扩展列表失败');
-      }
+      // Interceptor guarantees success here
+      customExtensions.value = res.data?.platforms || [];
     } catch (err) {
       console.error('Failed to fetch extensions:', err);
-      ElMessage.error('无法连接到扩展服务，请检查网络或后端状态');
+      ElMessage.error(err.message || err.response?.data?.msg || '无法连接到扩展服务，请检查网络或后端状态');
     }
   }
 
