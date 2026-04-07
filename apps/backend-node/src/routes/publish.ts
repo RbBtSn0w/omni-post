@@ -232,8 +232,17 @@ router.post('/tasks/:taskId/start', async (req: Request, res: Response) => {
         }
 
         if (validAccounts.length === 0) {
-            sendError(res, 400, `Task has no valid accounts for platform ${platformType}`);
-            return;
+            // [IMPROVEMENT] If no valid accounts from task, try to find ANY valid account for this platform
+            logger.warn(`[PUBLISH] Task ${taskId} has no valid assigned accounts. Searching for substitutes...`);
+            const substitutes = db.prepare('SELECT filePath FROM user_info WHERE type = ?').all(platformType) as any[];
+            if (substitutes.length > 0) {
+                const subAccount = substitutes[0].filePath;
+                logger.info(`[PUBLISH] Found substitute account for platform ${platformType}: ${subAccount}`);
+                validAccounts.push(subAccount);
+            } else {
+                sendError(res, 400, `平台 ${platformType} 未发现已登录的有效账号 (无可用 cookie 文件)`);
+                return;
+            }
         }
 
         publishData.accountList = validAccounts;

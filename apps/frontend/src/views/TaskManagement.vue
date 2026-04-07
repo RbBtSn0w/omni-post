@@ -444,7 +444,7 @@ const formatDate = (dateString) => {
   })
 }
 
-const SENSITIVE_KEY_PATTERN = /(token|secret|password|cookie|credential|authorization|auth)/i
+const SENSITIVE_KEY_PATTERN = /(^|[_-])(token|secret|password|cookie|credential|authorization|auth)([_-]|$)/i
 
 const maskSensitive = (value) => {
   if (Array.isArray(value)) {
