@@ -24,12 +24,12 @@ export class WxChannelsUploader extends BaseUploader {
 
         for (let i = 0; i < maxRetries; i++) {
             const status = await page.evaluate(() => {
-                const wujie = (document as any).querySelector('wujie-app');
-                const root = (wujie as any)?.shadowRoot;
+                const wujie = document.querySelector('wujie-app') as HTMLElement & { shadowRoot: ShadowRoot | null };
+                const root = wujie?.shadowRoot;
                 if (!root) return { isReady: false, msg: 'Wujie Not Ready' };
 
                 // 1. 查找发表按钮
-                const buttons = Array.from(root.querySelectorAll('button')) as any[];
+                const buttons = Array.from(root.querySelectorAll('button'));
                 const publishBtn = buttons.find(b => b.textContent?.includes('发表') || b.textContent?.includes('存草稿'));
 
                 // 2. 查找物理特征：上传成功后通常会出现“删除”或“重新上传”按钮
@@ -75,8 +75,9 @@ export class WxChannelsUploader extends BaseUploader {
                 page.waitForURL(url => url.pathname.includes('/post/list'), { timeout: 60 * 1000 })
             ]);
             this.log('发布验证成功 (后端已入账)');
-        } catch (error: any) {
-            this.log(`注意: ${error.message}，尝试通过列表状态判定`, 'warn');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`注意: ${msg}，尝试通过列表状态判定`, 'warn');
             await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
         }
     }
@@ -104,8 +105,9 @@ export class WxChannelsUploader extends BaseUploader {
                     waitUntil: 'domcontentloaded',
                     timeout: 90_000,
                 });
-            } catch (error: any) {
-                this.log(`页面首跳超时，降级重试: ${error.message}`, 'warn');
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                this.log(`页面首跳超时，降级重试: ${msg}`, 'warn');
                 await page.goto(uploadUrl, {
                     waitUntil: 'commit',
                     timeout: 90_000,
@@ -128,7 +130,7 @@ export class WxChannelsUploader extends BaseUploader {
                 const totalSizes = stats.size;
                 let uploadedBytes = 0;
 
-                const uploadProgressListener = (request: any) => {
+                const uploadProgressListener = (request: import('playwright').Request) => {
                     const url = request.url();
                     let hostname = '';
                     try {
@@ -354,8 +356,9 @@ export class WxChannelsUploader extends BaseUploader {
                     }
                 }
             }
-        } catch (error: any) {
-            this.log(`处理原创声明失败: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`处理原创声明失败: ${msg}`, 'error');
         }
     }
 

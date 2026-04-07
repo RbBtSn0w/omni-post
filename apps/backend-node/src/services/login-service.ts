@@ -44,11 +44,11 @@ export interface LoginService {
     pollTimeout: number;
     pollInterval: number;
 
-    douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
-    getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
-    getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
-    xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
-    bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any>;
+    douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>>;
+    getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>>;
+    getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>>;
+    xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>>;
+    bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>>;
 }
 
 /**
@@ -72,35 +72,35 @@ export class MockLoginService implements LoginService {
         this.pollInterval = pollInterval;
     }
 
-    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/douyin');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         if (signal.aborted) return;
         emitter.emit('message', 'https://channels.weixin.qq.com/platform/login/qr');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/ks');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/xiaohongshu');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
         return {};
     }
 
-    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         if (signal.aborted) return;
         emitter.emit('message', 'https://mock-qrcode-url.com/bilibili');
         emitter.emit('message', this.loginStatus && this.cookieValid ? '200' : '500');
@@ -117,27 +117,27 @@ export class DefaultLoginService implements LoginService {
     pollTimeout = 30;
     pollInterval = 1.0;
 
-    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async douyinCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         const { douyinCookieGen } = await import('./login-impl.js');
         return douyinCookieGen(id, emitter, signal, groupName);
     }
 
-    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async getWxChannelsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         const { getWxChannelsCookie } = await import('./login-impl.js');
         return getWxChannelsCookie(id, emitter, signal, groupName);
     }
 
-    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async getKsCookie(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         const { getKsCookie } = await import('./login-impl.js');
         return getKsCookie(id, emitter, signal, groupName);
     }
 
-    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async xiaohongshuCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         const { xiaohongshuCookieGen } = await import('./login-impl.js');
         return xiaohongshuCookieGen(id, emitter, signal, groupName);
     }
 
-    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<any> {
+    async bilibiliCookieGen(id: string, emitter: EventEmitter, signal: AbortSignal, groupName?: string | null): Promise<void | Record<string, unknown>> {
         const { bilibiliCookieGen } = await import('./login-impl.js');
         return bilibiliCookieGen(id, emitter, signal, groupName);
     }
