@@ -82,6 +82,30 @@ export class DefaultCookieService implements CookieService {
             page = await context.newPage();
             const screenshotDir = createScreenshotDir('wx_channels_auth');
             
+            // 🚀 安全的极限拦截：避免无脑 abort 导致现代单页应用(SPA)崩溃或触发不可见元素
+            await page.route('**/*', (route) => {
+                const type = route.request().resourceType();
+                const url = route.request().url();
+
+                // 1. 拦截埋点与极其消耗带宽的媒体流、字体
+                if (type === 'media' || type === 'font' || url.includes('/log/api') || url.includes('/tracking')) {
+                    return route.abort();
+                }
+
+                // 2. 将图片替换为 1x1 透明像素，防止 React/Vue 的 Image 的 onError 触发导致组件渲染挂起，同时保证 img 元素占据体积(对 isVisible 友好)
+                if (type === 'image') {
+                    return route.fulfill({
+                        status: 200,
+                        contentType: 'image/png',
+                        body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64')
+                    });
+                }
+                
+                // CSS (stylesheet) 被放行，因为接下来 Playwright 可能用到基于版面的 isVisible / 几何形态判断
+                return route.continue();
+            });
+
+            
             // 捕获导航响应（使用 domcontentloaded 而非 networkidle，因为视频号有持久 WebSocket 连接）
             const response = await page.goto(
                 'https://channels.weixin.qq.com/platform/post/create',

@@ -1,5 +1,5 @@
 import { taskApi } from '@/api'
-import { PLATFORM_NAMES } from '@/core/platformConstants'
+import { usePlatformStore } from './platform'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 
@@ -20,10 +20,14 @@ const priorityMap = {
   2: '高'
 }
 
-// Platform mapping - use centralized constants
-const platformMap = PLATFORM_NAMES
-
 export const useTaskStore = defineStore('task', () => {
+  const platformStore = usePlatformStore()
+
+  const getPlatformName = (id) => {
+    const platform = platformStore.allPlatforms.find(p => p.key === id)
+    return platform ? platform.name : '未知'
+  }
+
   // 存储所有任务信息
   const tasks = ref([])
 
@@ -101,7 +105,7 @@ export const useTaskStore = defineStore('task', () => {
         createdAt: task.created_at || task.createdAt || new Date().toISOString(),
         updatedAt: task.updated_at || task.updatedAt || new Date().toISOString(),
         // 扩展字段
-        platformNames: platforms.map(key => platformMap[key] || '未知'),
+        platformNames: platforms.map(key => getPlatformName(key)),
         fileList: fileList,
         selectedAccounts: accountList,
         publishData: task.publish_data || null,
@@ -140,7 +144,7 @@ export const useTaskStore = defineStore('task', () => {
       priorityText: priorityMap[task.priority] || '正常',
       createdAt: task.createdAt || new Date().toISOString(),
       updatedAt: task.updatedAt || new Date().toISOString(),
-      platformNames: (task.selectedPlatforms || []).map(key => platformMap[key] || '未知'),
+      platformNames: (task.selectedPlatforms || []).map(key => getPlatformName(key)),
       fileList: task.fileList || [],
       selectedAccounts: task.selectedAccounts || [],
       publishData: task.publishData || null,
@@ -168,7 +172,7 @@ export const useTaskStore = defineStore('task', () => {
         transformedUpdate.priorityText = priorityMap[updatedTask.priority] || '正常'
       }
       if (updatedTask.selectedPlatforms) {
-        transformedUpdate.platformNames = updatedTask.selectedPlatforms.map(key => platformMap[key] || '未知')
+        transformedUpdate.platformNames = updatedTask.selectedPlatforms.map(key => getPlatformName(key))
       }
 
       // 更新任务
