@@ -243,8 +243,9 @@ export class WxChannelsUploader extends BaseUploader {
                     const publishPromise = this.waitForPublishSuccess(page);
                     await publishBtn.click({ force: true });
                     await publishPromise;
-                } catch (error: any) {
-                    this.log(`发布流程异常: ${error.message}`, 'error');
+                } catch (error: unknown) {
+                    const msg = error instanceof Error ? error.message : String(error);
+                    this.log(`发布流程异常: ${msg}`, 'error');
                 }
 
                 this.log(`视频 ${i + 1} 发布逻辑执行完毕`);
@@ -252,8 +253,9 @@ export class WxChannelsUploader extends BaseUploader {
                 onProgress(Math.floor(((i + 1) / fileList.length) * 100));
                 await page.waitForTimeout(3000);
             }
-        } catch (error: any) {
-            this.log(`上传失败: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`上传失败: ${msg}`, 'error');
             throw error;
         } finally {
             await page.close();
@@ -310,8 +312,9 @@ export class WxChannelsUploader extends BaseUploader {
             } else {
                 this.log('未找到短标题输入框 (Shadow DOM)', 'warn');
             }
-        } catch (error: any) {
-            this.log(`设置短标题失败: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`设置短标题失败: ${msg}`, 'error');
         }
     }
 
