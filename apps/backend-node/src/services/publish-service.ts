@@ -16,8 +16,8 @@ import type { Browser, BrowserContext } from 'playwright';
 export type { UploadOptions };
 type ProgressHandler = (progress: number) => void;
 type UploaderLike = {
-    postArticle?: (context: BrowserContext | null, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
-    postVideo?: (context: BrowserContext | null, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
+    postArticle?: (context: BrowserContext, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
+    postVideo?: (context: BrowserContext, options: UploadOptions, onProgress: ProgressHandler) => Promise<void>;
     upload?: (options: UploadOptions, context: BrowserContext | null, browser: Browser | null) => Promise<void>;
 };
 
@@ -62,11 +62,11 @@ async function dispatchUploader(
 ): Promise<void> {
     const progressHandler: ProgressHandler = onProgress || (() => {});
     if (typeof uploader.postArticle === 'function' && opts.article) {
-        await uploader.postArticle(context, opts, progressHandler);
+        await uploader.postArticle(context!, opts, progressHandler);
         return;
     }
     if (typeof uploader.postVideo === 'function') {
-        await uploader.postVideo(context, opts, progressHandler);
+        await uploader.postVideo(context!, opts, progressHandler);
         return;
     }
     if (typeof uploader.upload === 'function') {

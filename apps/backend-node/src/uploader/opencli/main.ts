@@ -16,7 +16,7 @@ export class OpenCLIUploader extends BaseUploader {
    */
   async postVideo(
     _context: BrowserContext,
-    options: OpenCLIOptions,
+    options: UploadOptions,
     onProgress: (progress: number) => void
   ): Promise<void> {
     const platformId = options.platform_id;
@@ -65,7 +65,7 @@ export class OpenCLIUploader extends BaseUploader {
    */
   async postArticle(
     _context: BrowserContext,
-    options: OpenCLIOptions,
+    options: UploadOptions,
     onProgress: (progress: number) => void
   ): Promise<void> {
     const platformId = options.platform_id;
