@@ -90,33 +90,12 @@ export async function douyinCookieGen(
 
         // Wait for URL change (login success)
         try {
-            await new Promise<void>((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    reject(new Error('TIMEOUT'));
-                }, 30000);
-
-                const onUrlChange = async () => {
-                    if (page.url() !== originalUrl) {
-                        clearTimeout(timeoutId);
-                        resolve();
-                    }
-                };
-
-                page.on('framenavigated', async (frame) => {
-                    if (frame === page.mainFrame()) {
-                        await onUrlChange();
-                    }
-                });
-
-                signal.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                    reject(new Error('AbortError'));
-                });
-            });
-            debugPrint('[DEBUG] 抖音登录检测成功');
+            await page.waitForURL(url => url.href.includes('creator-micro'), { timeout: 30000 });
+            await page.waitForLoadState('networkidle');
+            debugPrint('[DEBUG] 抖音登录检测成功，页面已加载完成');
         } catch (err: any) {
-            if (err.message === 'AbortError') throw err;
-            logger.warn('抖音登录页面跳转监听超时');
+            if (signal.aborted) throw new Error('AbortError');
+            logger.warn('抖音登录跳转超时或验证失败');
             emitter.emit('message', '500');
             return { success: false, error: 'TIMEOUT' };
         }
