@@ -6,8 +6,25 @@
  * Migrated from: extensions/wechat-publisher/cli.js
  */
 import { Command } from 'commander';
+import fs from 'fs';
 
 const program = new Command();
+
+/**
+ * Helper to resolve '@' prefix as file content.
+ */
+function resolveValue(val) {
+    if (val && val.startsWith('@')) {
+        const filePath = val.slice(1);
+        try {
+            return fs.readFileSync(filePath, 'utf-8');
+        } catch (err) {
+            console.error(`Error reading file ${filePath}: ${err.message}`);
+            return val;
+        }
+    }
+    return val;
+}
 
 program
     .name('wechat-mp-publisher')
@@ -22,8 +39,14 @@ program
     .option('--tags <tags>', 'Comma-separated tags')
     .option('--user <user>', 'User account identifier')
     .action((options) => {
+        const content = resolveValue(options.content);
+        const title = resolveValue(options.title);
+
         console.log(`Starting publish for user: ${options.user || 'default'}`);
-        console.log(`Title: ${options.title}`);
+        console.log(`Title: ${title}`);
+        if (options.content?.startsWith('@')) {
+            console.log(`Content loaded from file: ${options.content.slice(1)} (${content.length} chars)`);
+        }
 
         let progress = 0;
         const interval = setInterval(() => {
