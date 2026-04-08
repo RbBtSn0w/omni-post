@@ -27,11 +27,25 @@
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
-## Constitution Check
+## Governance Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Constitution Alignment (Principles & Why)
+[Verify against the 6 Core Principles in .specify/memory/constitution.md]
+- [ ] Node.js First
+- [ ] Route-Service-Uploader Boundaries
+- [ ] Platform Isolation
+- [ ] Shared Package SSOT
+- [ ] Async Execution
+- [ ] Test Coverage
+
+### Operational Alignment (Procedures & How)
+[Verify against operational protocols in AGENTS.md]
+- [ ] R-S-E Lifecycle followed
+- [ ] Correct tool usage (replace vs write_file)
+- [ ] Type safety & coding discipline (no any, etc.)
+- [ ] Pre-completion validation steps included
 
 ## Project Structure
 

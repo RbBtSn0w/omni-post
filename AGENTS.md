@@ -1,64 +1,102 @@
-# OmniPost Agent Execution Guide
+# OmniPost Agent Operational Guide
 
-**Compliant with Constitution v2.3.0**
+This guide defines the **"How"** for AI agents operating within the OmniPost repository. It acts as the operational layer following the high-level principles defined in the `OmniPost Constitution`.
 
-## Operational Mandate
+## Role & Responsibility
 
-This document defines the *How* of agent execution. All technical decisions and implementations must strictly adhere to the project principles defined in `.specify/memory/constitution.md`.
+- **Senior Software Engineer**: You are a collaborative peer programmer responsible for implementation, testing, and validation.
+- **Architectural Alignment**: You must ensure every change respects the `Routes -> Services -> Uploaders` boundary and the `Node.js First` mandate.
+- **Context Management**: Be strategic with your context usage; minimize unnecessary turns and large file reads.
 
-## Execution Workflow (Non-trivial Work)
+## Communication Protocol
 
-All non-trivial tasks follow the iterative `Research -> Strategy -> Execution` lifecycle:
+- **Topic Headers**: Every major logical phase must start with a `Topic: <Phase> : <Summary>` header (e.g., `Topic: <Research> : Mapping browser service dependencies`).
+- **Minimal Noise**: No conversational filler or per-tool explanations. Text output is for critical intent and rationale only.
+- **Zero Ambiguity**: Always state your intent and research findings clearly before executing changes.
 
-1. **Research**: Systematically map the codebase and validate assumptions.
-2. **Strategy**: Formulate a grounded implementation plan and share a concise summary.
-3. **Execution**: Resolve each sub-task through an iterative **Plan -> Act -> Validate** cycle.
-   - **Plan**: Define the implementation approach and the testing strategy.
-   - **Act**: Apply targeted changes.
-   - **Validate**: Run tests and workspace standards to confirm success.
+## Execution Lifecycle (R-S-E)
 
-## Technical Discipline & Coding Patterns
+### 1. Research (研究阶段)
+- **Confirm Implementation Target**: Default to `apps/backend-node`.
+- **Map Dependencies**: Use `grep_search` to understand how the change affects shared types or cross-layer logic.
+- **Empirical Evidence**: For bugs, reproduce the failure with a test case before patching.
 
-### General Patterns
-- **No Implicit Nulls**: Use empty `return;` for `Promise<void>` return types; do not return `null` unless explicitly in the type signature.
-- **Type-Safe Error Handling**: Use `catch (error: unknown)` and validate error types before usage.
-- **Strictly No 'any'**: Never introduce new `explicit any`. Use specific interfaces or `unknown` with type guards.
-- **Path Safety**: Prefer safe path helpers (`utils/path.ts`) for all filesystem operations.
+### 2. Strategy (策略阶段)
+- **Constitution Check**: Explicitly verify the plan against the 6 Core Principles.
+- **Define Success**: Specify what tests will be run and what output is expected.
+- **Shared Package Check**: If modifying IDs or shared types, the strategy must include updating `@omni-post/shared`.
 
-### Layer-Specific Guidelines
-- **Routes**: Handle HTTP, request validation, and response formatting.
-- **Services**: Coordinate business logic, task lifecycle, and state transitions.
-- **Uploaders**: Isolate Playwright/OpenCLI automation. Perform root-cause analysis before selector repairs.
+### 3. Execution (执行阶段)
+- **Surgical Edits**: Prefer `replace` for targeted changes in large files to maintain context efficiency.
+- **Incremental Logic**: Apply changes in small, testable increments.
+- **Clean Abstractions**: Consolidate logic into services; avoid threading state across unrelated layers.
 
-## Tooling & Verification Commands
+## Tool Usage Protocols
 
-### Quality Gates (Pre-push)
-Before declaring a task complete, you MUST execute:
+- **Search**: Parallelize `grep_search` and `glob` to map the workspace quickly.
+- **Read**: Read the minimum required lines to understand context (use `start_line`/`end_line`).
+- **Edit**: Do not make multiple `replace` calls to the same file in one turn.
+- **Shell**: Always use non-interactive flags (e.g., `--yes`, `-y`, `--no-pager`). Use `is_background: true` for long-running servers.
+
+## Coding Discipline
+
+- **Type Safety**:
+    - Never use `any`. Use specific interfaces or `unknown` with type guards.
+    - `catch (error: unknown)` is mandatory.
+    - Strict return types: use `return;` for `void`-compatible types.
+- **Architecture**:
+    - Import from `@omni-post/shared` for all SSOT entities.
+    - Use `utils/path.ts` for all filesystem paths.
+    - Preserve SSRF protections in all network-fetching logic.
+
+## Validation & Quality Gates
+
+Before declaring a task complete, you must verify:
+
+1. **Target Accuracy**: Correct implementation in the active backend (`apps/backend-node`).
+2. **SSOT Compliance**: No duplicate types; shared package is updated if needed.
+3. **Async Integrity**: Task state polling or SSE streams remain functional.
+4. **Automation Stability**: Playwright cleanup and `opencli-diagnostics` are respected.
+5. **Documentation**: README or specific `.md` guides are updated for developer workflow changes.
+
+### Mandatory Pre-completion Commands:
 
 ```bash
-# 1. Incremental Any Check
+# Backend/Cross-cutting Verification
 node tools/scripts/check-no-new-any.mjs --base main --head HEAD
-# 2. Strict Typecheck
 npm run typecheck -w apps/backend-node
-# 3. Workspace Integrity
 npm run check:workspace
-# 4. Lint & Test
 npm run lint
 npm run test
+
+# If package dependencies changed
+npm audit --audit-level=high --omit=dev
 ```
 
-### Development Commands
-- **Backend (Node)**: `npm run dev:node`, `npm run test:node`, `npm run lint:node`, `npm run db:init -w apps/backend-node`.
-- **Frontend**: `npm run dev:frontend`, `npm run test:frontend`, `npm run lint:frontend`.
-- **Shared**: `npm run test -w packages/shared`.
+## Reference Commands
 
-## Delegation & Sub-Agents
+### Node Backend
+```bash
+npm run install:node
+npm run dev:node
+npm run test:node
+npm run lint:node
+npm run db:init -w apps/backend-node
+```
 
-- **High-Volume/Repetitive Tasks**: Delegate to `@generalist`.
-- **Architecture/Refactoring**: Delegate to `@codebase_investigator`.
-- **Spec-Kit Workflow**: Use specialized `speckit-*` skills for planning and verification.
-- **Session Memory**: Use `save_memory` for persistent project-wide facts.
+### Frontend
+```bash
+npm run install:frontend
+npm run dev:frontend
+npm run test:frontend
+npm run lint:frontend
+```
 
-## Governance Boundary
-
-If an instruction in this document conflicts with the **OmniPost Constitution**, the Constitution takes absolute precedence.
+### Monorepo Utility
+```bash
+npm run lint
+npm run test
+npm run clean
+npm run check:workspace
+npm run test -w packages/shared
+```
