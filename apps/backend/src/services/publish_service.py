@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Optional
 
-from src.core.config import BASE_DIR, COOKIES_DIR, VIDEOS_DIR
+from src.core.config import COOKIES_DIR, VIDEOS_DIR
 from src.core.constants import TencentZoneTypes
 from src.uploader.bilibili_uploader.main import BiliBiliVideo
 from src.uploader.douyin_uploader.main import DouYinVideo

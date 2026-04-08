@@ -8,7 +8,7 @@ from sys import stdout
 
 from loguru import logger
 
-from src.core.config import BASE_DIR, LOGS_DIR
+from src.core.config import LOGS_DIR
 
 
 def log_formatter(record: dict) -> str:

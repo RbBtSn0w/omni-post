@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-import pytest
-from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 
-from src.utils.files_times import (
-    generate_schedule_time_next_day
-)
+import pytest
+
+from src.utils.files_times import generate_schedule_time_next_day
+
 
 class TestFilesTimes:
     """测试文件和时间相关功能"""
@@ -21,7 +20,7 @@ class TestFilesTimes:
 
         # 检查日期是否连续
         for i in range(1, 3):
-            day_diff = (result[i] - result[i-1]).days
+            day_diff = (result[i] - result[i - 1]).days
             assert day_diff == 1
 
     def test_generate_schedule_time_next_day_with_timestamps(self):
@@ -51,7 +50,7 @@ class TestFilesTimes:
         day3 = result[2].date()
 
         assert day1 == day2  # 第一天上传两个视频
-        assert day3 > day2   # 第二天上传第三个视频
+        assert day3 > day2  # 第二天上传第三个视频
 
         # 检查时间是否符合指定的每日时间
         assert result[0].hour == daily_times[0]
@@ -62,7 +61,9 @@ class TestFilesTimes:
         """测试从指定天数后开始的上传时间表"""
         # 执行测试
         start_days = 2
-        result = generate_schedule_time_next_day(2, 1, [10], timestamps=False, start_days=start_days)
+        result = generate_schedule_time_next_day(
+            2, 1, [10], timestamps=False, start_days=start_days
+        )
 
         # 断言结果
         assert len(result) == 2
@@ -84,7 +85,9 @@ class TestFilesTimes:
     def test_generate_schedule_time_next_day_exceed_daily_times(self):
         """测试每日视频数量超过每日时间数量"""
         # 每日时间只有2个，但要上传3个视频
-        with pytest.raises(ValueError, match="videos_per_day should not exceed the length of daily_times"):
+        with pytest.raises(
+            ValueError, match="videos_per_day should not exceed the length of daily_times"
+        ):
             generate_schedule_time_next_day(3, 3, [10, 14])
 
     def test_generate_schedule_time_next_day_zero_videos(self):

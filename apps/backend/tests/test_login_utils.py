@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
-import asyncio
-import pytest
-import os
-from pathlib import Path
-from unittest.mock import MagicMock, patch, call
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from src.services.login_impl import debug_print
+import pytest
+
 from src.core.browser import (
     create_screenshot_dir,
     debug_screenshot,
 )
+from src.services.login_impl import debug_print
 
 
 class TestLoginUtils:
     """测试登录工具函数"""
 
-    @patch('src.services.login_impl.DEBUG_MODE', True)
+    @patch("src.services.login_impl.DEBUG_MODE", True)
     def test_debug_print_enabled(self, capsys):
         """测试DEBUG_MODE开启时debug_print正常打印"""
         debug_print("Test debug message", end="")
         captured = capsys.readouterr()
         assert captured.out == "Test debug message"
 
-    @patch('src.services.login_impl.DEBUG_MODE', False)
+    @patch("src.services.login_impl.DEBUG_MODE", False)
     def test_debug_print_disabled(self, capsys):
         """测试DEBUG_MODE关闭时debug_print不打印"""
         debug_print("Test debug message")
@@ -48,10 +47,11 @@ class TestLoginUtils:
 
         # 清理测试创建的目录
         import shutil
+
         # 只删除我们创建的特定时间戳目录
         shutil.rmtree(dir_path)
 
-    @patch('src.services.login_impl.DEBUG_MODE', True)
+    @patch("src.services.login_impl.DEBUG_MODE", True)
     @pytest.mark.asyncio
     async def test_debug_screenshot_enabled(self):
         """测试DEBUG_MODE开启时debug_screenshot正常截图"""
@@ -77,9 +77,10 @@ class TestLoginUtils:
         finally:
             # 清理测试目录
             import shutil
+
             shutil.rmtree(screenshot_dir, ignore_errors=True)
 
-    @patch('src.core.browser.DEBUG_MODE', False)
+    @patch("src.core.browser.DEBUG_MODE", False)
     @pytest.mark.asyncio
     async def test_debug_screenshot_disabled(self):
         """测试DEBUG_MODE关闭时debug_screenshot不截图"""
@@ -99,12 +100,14 @@ class TestLoginUtils:
         finally:
             # 清理测试目录
             import shutil
+
             shutil.rmtree(screenshot_dir, ignore_errors=True)
 
     @pytest.mark.asyncio
     async def test_debug_screenshot_without_extension(self):
         """测试不带扩展名的文件名处理"""
-        @patch('src.services.login_impl.DEBUG_MODE', True)
+
+        @patch("src.services.login_impl.DEBUG_MODE", True)
         async def run_test():
             # 创建一个模拟的page对象
             mock_page = MagicMock()
@@ -125,6 +128,7 @@ class TestLoginUtils:
             finally:
                 # 清理测试目录
                 import shutil
+
                 shutil.rmtree(screenshot_dir, ignore_errors=True)
 
         await run_test()
@@ -132,7 +136,8 @@ class TestLoginUtils:
     @pytest.mark.asyncio
     async def test_debug_screenshot_with_png_extension(self):
         """测试带有.png扩展名的文件名处理"""
-        @patch('src.services.login_impl.DEBUG_MODE', True)
+
+        @patch("src.services.login_impl.DEBUG_MODE", True)
         async def run_test():
             # 创建一个模拟的page对象
             mock_page = MagicMock()
@@ -153,11 +158,12 @@ class TestLoginUtils:
             finally:
                 # 清理测试目录
                 import shutil
+
                 shutil.rmtree(screenshot_dir, ignore_errors=True)
 
         await run_test()
 
-    @patch('src.services.login_impl.DEBUG_MODE', True)
+    @patch("src.services.login_impl.DEBUG_MODE", True)
     @pytest.mark.asyncio
     async def test_debug_screenshot_failure(self):
         """测试截图失败时的处理"""
@@ -178,6 +184,7 @@ class TestLoginUtils:
         finally:
             # 清理测试目录
             import shutil
+
             # 使用ignore_errors=True直接忽略所有删除错误
             shutil.rmtree(screenshot_dir, ignore_errors=True)
 
@@ -195,6 +202,7 @@ class TestLoginUtils:
         finally:
             # 清理测试目录
             import shutil
+
             shutil.rmtree(dir_path)
 
     def test_create_screenshot_dir_nested_structure(self):
@@ -210,4 +218,5 @@ class TestLoginUtils:
         finally:
             # 清理测试目录
             import shutil
+
             shutil.rmtree(dir_path)

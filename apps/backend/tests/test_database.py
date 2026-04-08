@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-import os
 import sqlite3
-import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 from src.core.config import BASE_DIR
 
@@ -40,11 +36,8 @@ class TestDatabase:
         try:
             conn = sqlite3.connect(create_table_db_file)
             conn.close()
-            connection_success = True
         except Exception as e:
-            connection_success = False
-
-        assert connection_success, f"数据库连接失败: {e}"
+            assert False, f"数据库连接失败: {e}"
 
     def test_database_tables_exist(self):
         """测试数据库表是否存在"""

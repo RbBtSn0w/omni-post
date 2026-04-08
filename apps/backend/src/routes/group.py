@@ -3,7 +3,6 @@
 """
 
 import sqlite3
-from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 

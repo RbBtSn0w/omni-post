@@ -1,8 +1,4 @@
-import json
-import os
 import sqlite3
-import sys
-from pathlib import Path
 
 # 导入数据库管理器
 from .db_manager import db_manager

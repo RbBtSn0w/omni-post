@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import uuid
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
 from flask import Blueprint, jsonify, request, send_from_directory
 
@@ -159,7 +159,7 @@ def get_all_files():
                 data.append(row_dict)
 
             return jsonify({"code": 200, "msg": "success", "data": data}), 200
-    except Exception as e:
+    except Exception:
         return jsonify({"code": 500, "msg": str("get file failed!"), "data": None}), 500
 
 
@@ -212,5 +212,5 @@ def delete_file():
             200,
         )
 
-    except Exception as e:
+    except Exception:
         return jsonify({"code": 500, "msg": str("delete failed!"), "data": None}), 500

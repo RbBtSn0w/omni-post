@@ -1,5 +1,4 @@
 import asyncio
-import os
 from datetime import datetime
 
 from playwright.async_api import Page, Playwright, async_playwright

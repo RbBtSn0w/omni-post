@@ -22,32 +22,26 @@ class CookieService(ABC):
     @abstractmethod
     async def cookie_auth_douyin(self, account_file: Path) -> bool:
         """验证抖音 Cookie"""
-        pass
 
     @abstractmethod
     async def cookie_auth_tencent(self, account_file: Path) -> bool:
         """验证视频号 Cookie"""
-        pass
 
     @abstractmethod
     async def cookie_auth_ks(self, account_file: Path) -> bool:
         """验证快手 Cookie"""
-        pass
 
     @abstractmethod
     async def cookie_auth_xhs(self, account_file: Path) -> bool:
         """验证小红书 Cookie"""
-        pass
 
     @abstractmethod
     async def cookie_auth_bilibili(self, account_file: Path) -> bool:
         """验证 Bilibili Cookie"""
-        pass
 
     @abstractmethod
     async def check_cookie(self, platform_type: int, file_path: str) -> bool:
         """验证指定平台的 Cookie"""
-        pass
 
 
 class DefaultCookieService(CookieService):

@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import os
 from datetime import datetime
 
 from playwright.async_api import Playwright, async_playwright
 
 from src.core.browser import launch_browser, set_init_script
-from src.core.config import DEBUG_MODE, LOCAL_CHROME_HEADLESS
+from src.core.config import LOCAL_CHROME_HEADLESS
 from src.core.logger import bilibili_logger
 
 
@@ -94,7 +93,6 @@ class BiliBiliVideo(object):
                 # Bilibili 的定时发布逻辑通常涉及点击“定时发布”单选框，然后选择日期时间
                 bilibili_logger.info(f"计划发布时间: {self.publish_date}")
                 # TODO: 实现 Bilibili 特有的时间选择逻辑
-                pass
 
             # 点击发布按钮
             # selector: .submit-container .cc-btn, .submit-btn, button:has-text("立即投稿")

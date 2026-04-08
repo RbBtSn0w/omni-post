@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.services.publish_service import (
-    post_video_tencent,
     post_video_DouYin,
     post_video_ks,
-    post_video_xhs
+    post_video_tencent,
+    post_video_xhs,
 )
+
 
 class TestPostVideo:
     """测试视频发布相关功能"""
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.TencentVideo')
-    @patch('src.services.publish_service.Path')
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.TencentVideo")
+    @patch("src.services.publish_service.Path")
     def test_post_video_tencent_basic(self, mock_path, mock_tencent_video, mock_asyncio_run):
         """测试腾讯视频发布基本功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
 
         # 模拟TencentVideo实例和main方法
         mock_video_instance = MagicMock()
@@ -27,11 +27,11 @@ class TestPostVideo:
 
         # 执行测试
         post_video_tencent(
-            title='测试标题',
-            files=['test1.mp4', 'test2.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json', 'account2.json'],
-            enable_timer=False
+            title="测试标题",
+            files=["test1.mp4", "test2.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json", "account2.json"],
+            enable_timer=False,
         )
 
         # 断言结果
@@ -44,14 +44,16 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.TencentVideo')
-    @patch('src.services.publish_service.Path')
-    @patch('src.services.publish_service.generate_schedule_time_next_day')
-    def test_post_video_tencent_with_timer(self, mock_generate_schedule, mock_path, mock_tencent_video, mock_asyncio_run):
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.TencentVideo")
+    @patch("src.services.publish_service.Path")
+    @patch("src.services.publish_service.generate_schedule_time_next_day")
+    def test_post_video_tencent_with_timer(
+        self, mock_generate_schedule, mock_path, mock_tencent_video, mock_asyncio_run
+    ):
         """测试腾讯视频定时发布功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
         mock_generate_schedule.return_value = [1234567890, 1234567900]
 
         # 模拟TencentVideo实例和main方法
@@ -61,14 +63,14 @@ class TestPostVideo:
 
         # 执行测试
         post_video_tencent(
-            title='测试标题',
-            files=['test1.mp4', 'test2.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
+            title="测试标题",
+            files=["test1.mp4", "test2.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
             enable_timer=True,
             videos_per_day=1,
             daily_times=[10, 14, 18],
-            start_days=1
+            start_days=1,
         )
 
         # 断言结果
@@ -81,13 +83,13 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.DouYinVideo')
-    @patch('src.services.publish_service.Path')
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.DouYinVideo")
+    @patch("src.services.publish_service.Path")
     def test_post_video_douyin(self, mock_path, mock_douyin_video, mock_asyncio_run):
         """测试抖音视频发布功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
 
         # 模拟DouYinVideo实例和main方法
         mock_video_instance = MagicMock()
@@ -96,14 +98,14 @@ class TestPostVideo:
 
         # 执行测试
         post_video_DouYin(
-            title='测试标题',
-            files=['test1.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
+            title="测试标题",
+            files=["test1.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
             enable_timer=False,
-            thumbnail_path='thumbnail.jpg',
-            product_link='https://example.com/product',
-            product_title='测试商品'
+            thumbnail_path="thumbnail.jpg",
+            product_link="https://example.com/product",
+            product_title="测试商品",
         )
 
         # 断言结果
@@ -113,13 +115,13 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.KSVideo')
-    @patch('src.services.publish_service.Path')
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.KSVideo")
+    @patch("src.services.publish_service.Path")
     def test_post_video_ks(self, mock_path, mock_ks_video, mock_asyncio_run):
         """测试快手视频发布功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
 
         # 模拟KSVideo实例和main方法
         mock_video_instance = MagicMock()
@@ -128,11 +130,11 @@ class TestPostVideo:
 
         # 执行测试
         post_video_ks(
-            title='测试标题',
-            files=['test1.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
-            enable_timer=False
+            title="测试标题",
+            files=["test1.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
+            enable_timer=False,
         )
 
         # 断言结果
@@ -142,13 +144,13 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.XiaoHongShuVideo')
-    @patch('src.services.publish_service.Path')
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.XiaoHongShuVideo")
+    @patch("src.services.publish_service.Path")
     def test_post_video_xhs(self, mock_path, mock_xhs_video, mock_asyncio_run):
         """测试小红书视频发布功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
 
         # 模拟XiaoHongShuVideo实例和main方法
         mock_video_instance = MagicMock()
@@ -157,11 +159,11 @@ class TestPostVideo:
 
         # 执行测试
         post_video_xhs(
-            title='测试标题',
-            files=['test1.mp4', 'test2.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
-            enable_timer=False
+            title="测试标题",
+            files=["test1.mp4", "test2.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
+            enable_timer=False,
         )
 
         # 断言结果
@@ -171,14 +173,16 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.XiaoHongShuVideo')
-    @patch('src.services.publish_service.Path')
-    @patch('src.services.publish_service.generate_schedule_time_next_day')
-    def test_post_video_xhs_with_timer(self, mock_generate_schedule, mock_path, mock_xhs_video, mock_asyncio_run):
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.XiaoHongShuVideo")
+    @patch("src.services.publish_service.Path")
+    @patch("src.services.publish_service.generate_schedule_time_next_day")
+    def test_post_video_xhs_with_timer(
+        self, mock_generate_schedule, mock_path, mock_xhs_video, mock_asyncio_run
+    ):
         """测试小红书视频定时发布功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
         mock_generate_schedule.return_value = [1234567890, 1234567900]
 
         # 模拟XiaoHongShuVideo实例和main方法
@@ -188,13 +192,13 @@ class TestPostVideo:
 
         # 执行测试
         post_video_xhs(
-            title='测试标题',
-            files=['test1.mp4', 'test2.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
+            title="测试标题",
+            files=["test1.mp4", "test2.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
             enable_timer=True,
             videos_per_day=2,
-            daily_times=[10, 14]
+            daily_times=[10, 14],
         )
 
         # 断言结果
@@ -207,13 +211,13 @@ class TestPostVideo:
         # 验证asyncio.run调用次数
         assert mock_asyncio_run.call_count >= 0
 
-    @patch('src.services.publish_service.asyncio.run')
-    @patch('src.services.publish_service.TencentVideo')
-    @patch('src.services.publish_service.Path')
+    @patch("src.services.publish_service.asyncio.run")
+    @patch("src.services.publish_service.TencentVideo")
+    @patch("src.services.publish_service.Path")
     def test_post_video_tencent_draft(self, mock_path, mock_tencent_video, mock_asyncio_run):
         """测试腾讯视频发布为草稿功能"""
         # 配置模拟返回值
-        mock_path.return_value.__truediv__.return_value = 'mock_file_path'
+        mock_path.return_value.__truediv__.return_value = "mock_file_path"
 
         # 模拟TencentVideo实例和main方法
         mock_video_instance = MagicMock()
@@ -222,12 +226,12 @@ class TestPostVideo:
 
         # 执行测试
         post_video_tencent(
-            title='测试标题',
-            files=['test1.mp4'],
-            tags=['标签1', '标签2'],
-            account_file=['account1.json'],
+            title="测试标题",
+            files=["test1.mp4"],
+            tags=["标签1", "标签2"],
+            account_file=["account1.json"],
             enable_timer=False,
-            is_draft=True
+            is_draft=True,
         )
 
         # 断言结果

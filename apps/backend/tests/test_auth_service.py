@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-import pytest
 from pathlib import Path
-from abc import ABC
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.services.auth_service import (
-    AuthService,
-    DefaultAuthService,
-    default_auth_service
-)
+import pytest
+
+from src.services.auth_service import AuthService, DefaultAuthService, default_auth_service
 
 
 class TestAuthService:
@@ -42,7 +38,7 @@ class TestAuthService:
         assert isinstance(default_auth_service, AuthService)
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_douyin')
+    @patch("src.services.cookie_service.DefaultCookieService.cookie_auth_douyin")
     async def test_cookie_auth_douyin(self, mock_cookie_auth_douyin):
         """测试抖音cookie认证方法"""
         # 设置mock返回值
@@ -58,7 +54,7 @@ class TestAuthService:
         assert result == True
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_tencent')
+    @patch("src.services.cookie_service.DefaultCookieService.cookie_auth_tencent")
     async def test_cookie_auth_tencent(self, mock_cookie_auth_tencent):
         """测试腾讯视频号cookie认证方法"""
         # 设置mock返回值
@@ -74,7 +70,7 @@ class TestAuthService:
         assert result == True
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_ks')
+    @patch("src.services.cookie_service.DefaultCookieService.cookie_auth_ks")
     async def test_cookie_auth_ks(self, mock_cookie_auth_ks):
         """测试快手cookie认证方法"""
         # 设置mock返回值
@@ -90,7 +86,7 @@ class TestAuthService:
         assert result == False
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.DefaultCookieService.cookie_auth_xhs')
+    @patch("src.services.cookie_service.DefaultCookieService.cookie_auth_xhs")
     async def test_cookie_auth_xhs(self, mock_cookie_auth_xhs):
         """测试小红书cookie认证方法"""
         # 设置mock返回值
@@ -106,7 +102,7 @@ class TestAuthService:
         assert result == False
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.get_cookie_service')
+    @patch("src.services.cookie_service.get_cookie_service")
     async def test_check_cookie(self, mock_check_cookie):
         """测试检查cookie有效性方法"""
         # 设置mock返回值
@@ -124,7 +120,7 @@ class TestAuthService:
         assert result == True
 
     @pytest.mark.asyncio
-    @patch('src.services.cookie_service.get_cookie_service')
+    @patch("src.services.cookie_service.get_cookie_service")
     async def test_check_cookie_invalid(self, mock_check_cookie):
         """测试检查无效cookie方法"""
         # 设置mock返回值
@@ -147,38 +143,40 @@ class TestAuthService:
         auth_service = DefaultAuthService()
 
         # 验证方法存在
-        assert hasattr(auth_service, 'cookie_auth_douyin')
-        assert hasattr(auth_service, 'cookie_auth_tencent')
-        assert hasattr(auth_service, 'cookie_auth_ks')
-        assert hasattr(auth_service, 'cookie_auth_xhs')
-        assert hasattr(auth_service, 'check_cookie')
+        assert hasattr(auth_service, "cookie_auth_douyin")
+        assert hasattr(auth_service, "cookie_auth_tencent")
+        assert hasattr(auth_service, "cookie_auth_ks")
+        assert hasattr(auth_service, "cookie_auth_xhs")
+        assert hasattr(auth_service, "check_cookie")
 
     @pytest.mark.asyncio
     async def test_global_auth_service_methods(self):
         """测试全局认证服务实例的方法调用"""
         # 测试全局实例的方法是否可调用
-        assert hasattr(default_auth_service, 'cookie_auth_douyin')
-        assert hasattr(default_auth_service, 'cookie_auth_tencent')
-        assert hasattr(default_auth_service, 'cookie_auth_ks')
-        assert hasattr(default_auth_service, 'cookie_auth_xhs')
-        assert hasattr(default_auth_service, 'check_cookie')
+        assert hasattr(default_auth_service, "cookie_auth_douyin")
+        assert hasattr(default_auth_service, "cookie_auth_tencent")
+        assert hasattr(default_auth_service, "cookie_auth_ks")
+        assert hasattr(default_auth_service, "cookie_auth_xhs")
+        assert hasattr(default_auth_service, "check_cookie")
 
     def test_auth_service_abstract_methods(self):
         """测试认证服务的抽象方法列表"""
         # 获取AuthService的所有抽象方法
         import inspect
+
         abstract_methods = [
-            name for name, func in inspect.getmembers(AuthService, predicate=inspect.isfunction)
-            if getattr(func, '__isabstractmethod__', False)
+            name
+            for name, func in inspect.getmembers(AuthService, predicate=inspect.isfunction)
+            if getattr(func, "__isabstractmethod__", False)
         ]
 
         # 验证所有预期的抽象方法都存在
         expected_methods = [
-            'cookie_auth_douyin',
-            'cookie_auth_tencent',
-            'cookie_auth_ks',
-            'cookie_auth_xhs',
-            'check_cookie'
+            "cookie_auth_douyin",
+            "cookie_auth_tencent",
+            "cookie_auth_ks",
+            "cookie_auth_xhs",
+            "check_cookie",
         ]
 
         for method in expected_methods:
@@ -190,17 +188,17 @@ class TestAuthService:
         auth_service = DefaultAuthService()
 
         # 验证所有抽象方法都被实现
-        assert hasattr(auth_service, 'cookie_auth_douyin')
+        assert hasattr(auth_service, "cookie_auth_douyin")
         assert callable(auth_service.cookie_auth_douyin)
 
-        assert hasattr(auth_service, 'cookie_auth_tencent')
+        assert hasattr(auth_service, "cookie_auth_tencent")
         assert callable(auth_service.cookie_auth_tencent)
 
-        assert hasattr(auth_service, 'cookie_auth_ks')
+        assert hasattr(auth_service, "cookie_auth_ks")
         assert callable(auth_service.cookie_auth_ks)
 
-        assert hasattr(auth_service, 'cookie_auth_xhs')
+        assert hasattr(auth_service, "cookie_auth_xhs")
         assert callable(auth_service.cookie_auth_xhs)
 
-        assert hasattr(auth_service, 'check_cookie')
+        assert hasattr(auth_service, "check_cookie")
         assert callable(auth_service.check_cookie)

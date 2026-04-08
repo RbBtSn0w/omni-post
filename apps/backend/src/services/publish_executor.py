@@ -6,7 +6,7 @@ This module handles task execution for video publishing.
 
 import threading
 import traceback
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
 from src.core.config import COOKIES_DIR, VIDEOS_DIR
 from src.core.constants import PlatformType, get_platform_name

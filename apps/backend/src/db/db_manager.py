@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import os
-import sys
-from pathlib import Path
 
 from src.core.config import DATA_DIR
 

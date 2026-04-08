@@ -209,7 +209,7 @@ def delete_account():
             # 删除关联的 Cookie 文件
             file_path = record.get("filePath")
             if file_path:
-                from pathlib import Path
+                pass
 
                 from src.core.config import COOKIES_DIR
 
@@ -230,7 +230,7 @@ def delete_account():
 
         return jsonify({"code": 200, "msg": "account deleted successfully", "data": None}), 200
 
-    except Exception as e:
+    except Exception:
         return jsonify({"code": 500, "msg": str("delete failed!"), "data": None}), 500
 
 
@@ -263,5 +263,5 @@ def updateUserinfo():
 
         return jsonify({"code": 200, "msg": "account update successfully", "data": None}), 200
 
-    except Exception as e:
+    except Exception:
         return jsonify({"code": 500, "msg": str("update failed!"), "data": None}), 500
