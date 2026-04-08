@@ -1,91 +1,73 @@
 # OmniPost Agent Execution Guide (AGENTS.md)
 
+> **Memory Entry Point**: This is the first file any AI agent must read. It defines the operational protocol for working in this repository.
+
 ## Authority & Governance
 
-This document defines the **operational protocol** for AI agents in the OmniPost repository. All actions must comply with the [OmniPost Constitution](.specify/memory/constitution.md), which holds absolute precedence over this guide.
-
-- **Constitution**: Defines "Why" (Principles) and "What" (Constraints).
-- **AGENTS.md**: Defines "How" (Workflows, Tools, and Protocols).
+1. **North Star**: All actions MUST comply with the [OmniPost Constitution](.specify/memory/constitution.md). 
+2. **Two-Layer Governance**:
+   - **Constitution**: Defines "Why" (Principles) and "What" (Non-negotiable constraints).
+   - **AGENTS.md** (This file): Defines "How" (Workflows, Tools, and Protocols).
 
 ---
 
-## Execution Workflow (Spec-Kit Protocol)
+## Operational Workflow: Spec-Kit Protocol
 
-All non-trivial tasks follow the iterative **Research -> Strategy -> Execution** lifecycle, specifically designed to satisfy constitutional quality gates.
+All non-trivial tasks MUST follow this iterative lifecycle to satisfy constitutional quality gates.
 
 ### 1. Research Phase
-- **Map Context**: Use `grep_search` and `glob` to find relevant routes, services, and shared types.
-- **Identify Dependencies**: Check for cross-package impacts in `@omni-post/shared` or monorepo workspace configurations.
-- **Empirical Validation**: For bug fixes, reproduce the failure with a script or test before proposing a fix.
+- **Context Mapping**: Use `grep_search` and `glob` to map routes, services, and types.
+- **Empirical Validation**: For bug fixes, reproduce the failure with a script or test BEFORE implementation.
 
 ### 2. Strategy Phase (Spec/Plan/Tasks)
-- **Draft Spec/Plan**: Update `.specify/spec.md` and `.specify/plan.md`.
-- **Constitution Check**: Explicitly verify the plan against the 6 Core Principles (Node.js First, Boundaries, etc.).
-- **Task Breakdown**: Create a dependency-ordered `tasks.md` with explicit validation steps for each task.
+- **Drafting**: Update `.specify/spec.md` and `.specify/plan.md`.
+- **Mandatory Constitution Check**: Explicitly verify the plan against the 6 Core Principles.
+- **Taskification**: Create a dependency-ordered `tasks.md` with explicit validation steps.
 
 ### 3. Execution Phase (Plan -> Act -> Validate)
-- **Small Increments**: Apply surgical changes to one file or layer at a time.
-- **TDD (Red-Green-Refactor)**: Write or update tests before or alongside implementation.
-- **Validation**: Run the mandatory pre-completion script (see below) after each significant sub-task.
+- **Small Batches**: Change one file or layer at a time.
+- **TDD Requirement**: Write or update tests alongside implementation.
+- **Pre-Completion Validation**: Run the mandatory verification scripts (see below).
 
 ---
 
-## Editing Discipline & Operational Patterns
+## Engineering Standards (The "How")
 
-These patterns ensure compliance with constitutional principles:
+### Layer Discipline (P-II)
+- **Patterns**: Use `services/` for logic, `routes/` for validation, `uploader/` for automation.
+- **Anti-Patterns**: No Express `req/res` in uploaders; no automation logic in routes.
 
-- **Layer Boundaries (P-II)**: Never put automation logic in routes; never handle Express `req/res` in uploaders.
-- **SSOT Compliance (P-IV)**: Always check `@omni-post/shared/src/index.ts` before defining new interfaces or constants.
-- **Async Safety (P-V)**: Ensure long-running tasks use the `task-service` for lifecycle management.
-- **Type Safety**: 
-    - Never use `explicit any`.
-    - Use `catch (error: unknown)`.
-    - Enforce strict return types (no implicit `null` for `void` promises).
-- **Security**: 
-    - Use `utils/path.ts` for all filesystem I/O.
-    - Validate external URLs via `ExplorerService.validateUrl` pattern (SSRF protection).
+### Type Safety & SSOT (P-IV)
+- **Strict Typing**: 
+    - NEVER use `explicit any` or `as any`.
+    - Run `node tools/scripts/check-no-new-any.mjs` before finishing.
+- **SSOT**: Always check `@omni-post/shared/src/index.ts` before defining new constants.
 
----
-
-## Validation & Quality Gates (Mandatory)
-
-Before declaring a task "Complete", you MUST execute and record the output of:
-
-### 1. Scope-Specific Verification
-- **Backend-Node**: `npm run typecheck -w apps/backend-node`
-- **Frontend**: `npm run lint:frontend`
-- **Shared**: `npm run test -w packages/shared`
-
-### 2. Full Regression Gate
-For any change affecting the backend or shared package, run:
-
-```bash
-# 1. Check for new 'any' violations
-node tools/scripts/check-no-new-any.mjs --base main --head HEAD
-
-# 2. Strict Typecheck
-npm run typecheck -w apps/backend-node
-
-# 3. Workspace Integrity
-npm run check:workspace
-
-# 4. Standard Lint & Test
-npm run lint
-npm run test
-```
-
-### 3. Security Check (If package surface changed)
-```bash
-npm audit --audit-level=high --omit=dev
-```
+### Async Safety (P-V)
+- **Lifecycle**: Long-running tasks MUST use the `task-service` for state management.
+- **Patterns**: Use SSE-style streaming for real-time progress.
 
 ---
 
-## Common Development Commands
+## Validation Gates & Commands
+
+Before declaring a task "Complete", you MUST execute and record:
+
+| Scope | Command |
+| :--- | :--- |
+| **Integrity** | `npm run check:workspace` |
+| **Type Check** | `npm run typecheck -w apps/backend-node` |
+| **Safety** | `node tools/scripts/check-no-new-any.mjs --base main --head HEAD` |
+| **Linting** | `npm run lint` |
+| **Testing** | `npm run test` |
+
+---
+
+## Standard Development Entry Points
 
 | Target | Command |
 | :--- | :--- |
-| **Node Backend** | `npm run dev:node` / `npm run test:node` / `npm run lint:node` |
-| **Frontend** | `npm run dev:frontend` / `npm run test:frontend` / `npm run lint:frontend` |
-| **Database** | `npm run db:init -w apps/backend-node` |
-| **Clean** | `npm run clean` |
+| **Backend-Node** | `npm run dev:node` / `npm run test:node` |
+| **Frontend** | `npm run dev:frontend` / `npm run test:frontend` |
+| **Shared** | `npm run test -w packages/shared` |
+| **Cleaning** | `npm run clean` |

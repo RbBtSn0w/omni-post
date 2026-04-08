@@ -1,11 +1,12 @@
 <!--
 Sync Impact Report:
-- Version change: 2.2.0 → 2.3.0
+- Version change: 2.3.0 → 2.4.0
 - List of modified principles:
-    - Development Workflow & Quality Gates: Refactored to delegate operational "How-to" (Research/Strategy/Execution) to AGENTS.md while keeping high-level governance requirements.
-- Added sections: Governance now explicitly references AGENTS.md as the operational layer.
-- Removed sections: Detailed operational steps in the workflow section.
-- Notes: Aligned with the "Two-Layer Governance" principle.
+    - Entire document refactored to strictly adhere to the "Why/What" governance layer.
+    - Workflow section now only defines "Requirements for Change" (What must be declared), delegating the "How" to AGENTS.md.
+- Added sections: None.
+- Removed sections: Detailed operational steps and tool usage.
+- Notes: This file is the "North Star" for project integrity.
 -->
 
 # OmniPost Constitution
@@ -13,91 +14,45 @@ Sync Impact Report:
 ## Core Principles
 
 ### I. Node.js First, Python by Exception
-`apps/backend-node` 是 OmniPost 唯一的默认实现和维护目标。所有新功能、缺陷修复、
-性能优化和架构演进必须优先落在 Node.js/TS 后端。`apps/backend`
-仅作为遗留兼容或迁移参考，除非需求明确指向遗留兼容修复，否则不得把 Python
-后端作为默认交付路径。
+`apps/backend-node` 是 OmniPost 唯一的默认实现和维护目标。
+**约束**：除非显式指向遗留兼容性，否则所有新逻辑必须在 Node.js 环境中实现。
+**理由**：维持单一技术栈以降低长期维护成本和回归风险。
 
-理由：项目当前的任务执行、文章发布和浏览器会话能力均以 Node.js
-实现为主，继续分散投资会直接增加回归面和维护成本。
-
-### II. Route-Service-Uploader Boundaries
-后端实现必须遵循 `Routes -> Services -> Uploaders` 分层。Routes 只负责 HTTP
-协议、参数校验和响应格式；Services 负责任务编排、状态流转和业务规则（包括扩展注册与调度）；
-Uploaders 只负责平台自动化执行（包括 Playwright 浏览器自动化和 OpenCLI 动态桥接）。禁止在路由层写入平台自动化逻辑，禁止在上传器中
-直接处理 HTTP 请求对象。
-
-理由：清晰边界是控制发布流程复杂度、隔离平台波动、保证可测试性的前提。扩展机制（OpenCLI）必须融入这套标准生命周期。
+### II. Strict Layer Boundaries
+系统架构必须遵循 `Routes -> Services -> Uploaders` 的严格分层。
+**约束**：路由层严禁包含业务逻辑；上传层严禁处理 HTTP 协议细节；跨层调用必须单向。
+**理由**：解耦协议、业务与执行，确保系统在平台波动下的稳健性。
 
 ### III. Platform Isolation & Automation Discipline
-每个内置平台必须拥有独立上传器入口，位于
-`apps/backend-node/src/uploader/<platform>/main.ts`。上传器必须保持平台内聚、
-无跨平台直接调用。对于 Playwright 自动化，必须负责自身资源清理，诊断自动化回归时，必须先
-基于真实页面行为、网络请求或 `opencli-diagnostics` 流程收集证据，再修改选择器
-或硬编码流程。对于动态扩展平台（OpenCLI Bridge），必须严格遵循 OCS 标准，依赖注册中心进行调用，禁止绕开调度框架直接执行外部脚本。
+每个平台必须逻辑隔离，位于独立目录。
+**约束**：禁止跨平台直接调用。自动化诊断必须基于证据而非猜测。
+**理由**：防止平台特定的修复演变为系统性的回归。
 
-理由：平台 UI 变化频繁，无论是 UI 自动化还是外部 CLI 调用，未经统一诊断或管控直接打补丁会把问题从单点失败扩大为系统性脆弱。
+### IV. Single Source of Truth (SSOT)
+所有共享定义（ID、类型、契约）必须存储在 `@omni-post/shared`。
+**约束**：严禁在各包内维护本地副本。
+**理由**：Monorepo 的完整性依赖于协议的一致性。
 
-### IV. Shared Package SSOT & Monorepo Discipline
-平台 ID、共享类型、实体接口和公共映射必须从 `@omni-post/shared` 引入，
-不得在前后端或工具链中定义本地副本。工作区依赖必须在所属 workspace 中维护，
-根级脚本必须作为标准开发入口。新增共享约束时，必须同步更新 shared 包并让消费方
-通过编译或测试验证。
+### V. Asynchronous Safety & Real-Time State
+所有高延迟 I/O（登录、上传）必须采用异步后台模式。
+**约束**：禁止阻塞请求周期。必须提供实时状态流或轮询能力。
+**理由**：确保系统吞吐量和用户交互的流畅性。
 
-理由：Monorepo 的核心收益来自单一事实来源；重复定义会直接导致平台映射、
-任务结构和接口契约漂移。
+### VI. Mandatory Test Coverage
+功能变更必须伴随对应的回归测试。
+**约束**：涉及核心链路（分发、状态、契约）的变更若无测试，则视为“未完成”。
+**理由**：测试是防止架构衰退的唯一物理屏障。
 
-### V. Asynchronous Execution & Real-Time State
-登录、上传、发布和批处理任务必须以异步后台执行方式运行，不得阻塞请求响应周期。
-任务状态、进度和取消信号必须通过统一任务服务与实时反馈机制表达；登录流程必须保留
-SSE 风格的状态流能力；发布任务必须能够被轮询或查询到明确状态。
+## Data Integrity & Security
 
-理由：浏览器自动化是高延迟 IO 过程，只有异步编排和统一状态管理才能保证吞吐、
-可观测性和前端交互稳定性。
+Cookie 和凭据必须存放在受控的安全目录中。严禁将任何敏感信息提交至版本控制系统。所有文件 I/O 必须通过经过验证的安全路径辅助方法。
 
-### VI. Test Coverage & Regression Gates (NON-NEGOTIABLE)
-所有面向 Node 主路径的功能变更必须附带对应测试或对现有测试进行扩展，至少覆盖受影响的
-路由、服务或前端状态流之一。涉及平台分发、任务状态、共享类型、数据库迁移或自动化流程的
-变更，必须补充回归验证。只有在需求明确为遗留 Python 修复时，才可以将 Python 测试作为主质量门。
+## Governance & Precedence
 
-理由：OmniPost 的主要风险来自跨层编排和平台回归，没有测试约束就无法稳定迭代。
+1. **最高权威**：本宪章是项目的最高准则。任何文档（包括 `AGENTS.md`）如与本宪章冲突，以本宪章为准。
+2. **两层治理**：
+   - **Constitution** (Why/What): 定义不可违反的原则与硬性约束。
+   - **AGENTS.md** (How): 定义代理的操作规程、工具链和协作协议。
+3. **合规性检查**：所有 AI 代理在执行任务前必须通过宪章原则的自检。
 
-## Security & Data Integrity
-
-Cookie、浏览器配置文件、账号凭据和本地数据文件必须存放在受控目录中，并通过
-`.gitignore` 排除。任何密钥、令牌或个人凭据都不得硬编码到仓库。文件系统操作必须优先使用
-安全路径辅助方法。任务持久化字段如 `platforms`、`file_list`、`account_list`、
-`schedule_data` 和 `publish_data` 在读写时必须保持结构稳定并与共享类型一致。
-
-## Development Workflow & Quality Gates
-
-所有非琐碎修改必须采用“文档先行”的 Spec-Kit 开发模式。代理必须在执行前通过规范 (Spec)、计划 (Plan) 和任务 (Tasks) 文档显式声明：
-
-- **目标合规性**：验证改动是否符合 Node.js 优先原则及各层级边界。
-- **影响评估**：识别对共享类型、平台映射、数据库结构或自动化诊断的潜在影响。
-- **验证方案**：声明如何满足 Principle VI 的测试与回归义务。
-
-质量门禁要求：
-1. **宪章自检**：所有交付物必须通过宪章原则的符合性检查。
-2. **文档同步**：代码变更必须伴随相关的 README 或架构文档更新。
-3. **标准化提交**：必须遵循 Conventional Commits 规范。
-
-具体的执行流程（Research/Strategy/Execution）和工具使用请参考 `AGENTS.md`。
-
-## Governance
-
-本宪章作为项目的最高治理准则，定义了“不可违反”的原则。`AGENTS.md` 继承本宪章，负责定义代理的运行细节与协作协议。
-
-版本策略采用语义化版本：
-
-- MAJOR：删除原则、重新定义既有强制约束，或引入会改变默认交付路径的治理变更。
-- MINOR：新增原则、增加新强制章节，或显著扩展现有原则的适用范围（包括治理结构重组）。
-- PATCH：仅做措辞澄清、排版修正或不改变执行含义的补充说明。
-
-修订流程必须包含：
-
-- 对变更原因、影响范围和版本升级理由的书面说明。
-- 对 `.specify/templates/` 与相关运行文档的同步检查。
-- 在宪章顶部维护 Sync Impact Report，记录已更新与待跟进项。
-
-**Version**: 2.3.0 | **Ratified**: 2024-05-22 | **Last Amended**: 2026-04-07
+**Version**: 2.4.0 | **Ratified**: 2024-05-22 | **Last Amended**: 2026-04-07
