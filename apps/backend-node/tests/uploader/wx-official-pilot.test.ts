@@ -53,7 +53,7 @@ describe('WeChat Official Account Pilot', () => {
         const content = fs.readFileSync(manifestPath, 'utf-8');
         const manifest = JSON.parse(content);
         expect(manifest.ocs_version).toBe('1.0');
-        expect(manifest.name).toBe('WeChat Official Account');
+        expect(manifest.name).toBe('WeChat Official Account (Demo)');
         expect(manifest.platform_id).toBe(8);
         expect(manifest.actions.publish_article).toBeDefined();
         expect(manifest.actions.publish_article.command).toBe('publish');
@@ -92,7 +92,7 @@ describe('WeChat Official Account Pilot', () => {
 
         // Should discover at least the wx_official_account local extension
         expect(count).toBeGreaterThanOrEqual(1);
-        const wxExt = insertedRows.find((r) => r.name === 'WeChat Official Account');
+        const wxExt = insertedRows.find((r) => r.name === 'WeChat Official Account (Demo)');
         expect(wxExt).toBeDefined();
         expect(wxExt!.platform_id).toBe(8);
     });

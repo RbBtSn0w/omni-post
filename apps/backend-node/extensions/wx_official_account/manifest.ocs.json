@@ -1,9 +1,9 @@
 {
     "ocs_version": "1.0",
-    "name": "WeChat Official Account",
+    "name": "WeChat Official Account (Demo)",
     "platform_id": 8,
     "version": "1.0.0",
-    "description": "Publish articles to WeChat Official Account via CLI",
+    "description": "Demo/Mock runner for WeChat Official Account articles (Simulation)",
     "actions": {
         "publish_article": {
             "command": "publish",
