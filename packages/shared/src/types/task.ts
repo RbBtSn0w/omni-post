@@ -10,7 +10,7 @@ import { PlatformType } from '../constants/platform.js';
 // ─── UserInfo ────────────────────────────────────────────────────────
 export interface UserInfo {
     id: number;
-    type: PlatformType;
+    type: PlatformType | number;
     filePath: string;
     userName: string;
     status: number;
