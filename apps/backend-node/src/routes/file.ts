@@ -137,14 +137,15 @@ router.post('/uploadSave', upload.single('file'), async (req: Request, res: Resp
         const db = dbManager.getDb();
         const originalName = (req.body.filename as string) || req.file.originalname;
         const fileSize = Number((req.file.size / (1024 * 1024)).toFixed(2));
+        const filename = req.file.filename;
 
         db.prepare(
             'INSERT INTO file_records (filename, filesize, file_path) VALUES (?, ?, ?)'
-        ).run(originalName, fileSize, req.file.filename);
+        ).run(originalName, fileSize, filename);
 
         sendSuccess(res, {
             filename: originalName,
-            file_path: req.file.filename,
+            file_path: filename,
             filesize: fileSize,
         }, '上传成功');
 
@@ -155,8 +156,8 @@ router.post('/uploadSave', upload.single('file'), async (req: Request, res: Resp
                     const stats = fs.statSync(filePath);
                     const finalSize = Number((stats.size / (1024 * 1024)).toFixed(2));
                     const db = dbManager.getDb();
-                    db.prepare('UPDATE file_records SET filesize = ? WHERE file_path = ?').run(finalSize, req.file.filename);
-                    logger.info(`[FileRoute] 视频优化后已更新数据库大小: ${req.file.filename} -> ${finalSize} MB`);
+                    db.prepare('UPDATE file_records SET filesize = ? WHERE file_path = ?').run(finalSize, filename);
+                    logger.info(`[FileRoute] 视频优化后已更新数据库大小: ${filename} -> ${finalSize} MB`);
                 } catch (e) {
                     logger.error(`[FileRoute] 更新优化后大小失败: ${e instanceof Error ? e.message : String(e)}`);
                 }

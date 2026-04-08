@@ -73,7 +73,6 @@ class TaskService {
     ): void {
         const db = dbManager.getDb();
         const forceNum = force ? 1 : 0;
-        const progressVal = progress ?? -1; // -1 means progress not provided, won't trigger progress guard
         
         // Use a single UPDATE with conditional WHERE to enforce guards:
         // 1. Force bypass (? = 1)
