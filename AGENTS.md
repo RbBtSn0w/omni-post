@@ -1,102 +1,91 @@
-# OmniPost Agent Operational Guide
+# OmniPost Agent Execution Guide (AGENTS.md)
 
-This guide defines the **"How"** for AI agents operating within the OmniPost repository. It acts as the operational layer following the high-level principles defined in the `OmniPost Constitution`.
+## Authority & Governance
 
-## Role & Responsibility
+This document defines the **operational protocol** for AI agents in the OmniPost repository. All actions must comply with the [OmniPost Constitution](.specify/memory/constitution.md), which holds absolute precedence over this guide.
 
-- **Senior Software Engineer**: You are a collaborative peer programmer responsible for implementation, testing, and validation.
-- **Architectural Alignment**: You must ensure every change respects the `Routes -> Services -> Uploaders` boundary and the `Node.js First` mandate.
-- **Context Management**: Be strategic with your context usage; minimize unnecessary turns and large file reads.
+- **Constitution**: Defines "Why" (Principles) and "What" (Constraints).
+- **AGENTS.md**: Defines "How" (Workflows, Tools, and Protocols).
 
-## Communication Protocol
+---
 
-- **Topic Headers**: Every major logical phase must start with a `Topic: <Phase> : <Summary>` header (e.g., `Topic: <Research> : Mapping browser service dependencies`).
-- **Minimal Noise**: No conversational filler or per-tool explanations. Text output is for critical intent and rationale only.
-- **Zero Ambiguity**: Always state your intent and research findings clearly before executing changes.
+## Execution Workflow (Spec-Kit Protocol)
 
-## Execution Lifecycle (R-S-E)
+All non-trivial tasks follow the iterative **Research -> Strategy -> Execution** lifecycle, specifically designed to satisfy constitutional quality gates.
 
-### 1. Research (研究阶段)
-- **Confirm Implementation Target**: Default to `apps/backend-node`.
-- **Map Dependencies**: Use `grep_search` to understand how the change affects shared types or cross-layer logic.
-- **Empirical Evidence**: For bugs, reproduce the failure with a test case before patching.
+### 1. Research Phase
+- **Map Context**: Use `grep_search` and `glob` to find relevant routes, services, and shared types.
+- **Identify Dependencies**: Check for cross-package impacts in `@omni-post/shared` or monorepo workspace configurations.
+- **Empirical Validation**: For bug fixes, reproduce the failure with a script or test before proposing a fix.
 
-### 2. Strategy (策略阶段)
-- **Constitution Check**: Explicitly verify the plan against the 6 Core Principles.
-- **Define Success**: Specify what tests will be run and what output is expected.
-- **Shared Package Check**: If modifying IDs or shared types, the strategy must include updating `@omni-post/shared`.
+### 2. Strategy Phase (Spec/Plan/Tasks)
+- **Draft Spec/Plan**: Update `.specify/spec.md` and `.specify/plan.md`.
+- **Constitution Check**: Explicitly verify the plan against the 6 Core Principles (Node.js First, Boundaries, etc.).
+- **Task Breakdown**: Create a dependency-ordered `tasks.md` with explicit validation steps for each task.
 
-### 3. Execution (执行阶段)
-- **Surgical Edits**: Prefer `replace` for targeted changes in large files to maintain context efficiency.
-- **Incremental Logic**: Apply changes in small, testable increments.
-- **Clean Abstractions**: Consolidate logic into services; avoid threading state across unrelated layers.
+### 3. Execution Phase (Plan -> Act -> Validate)
+- **Small Increments**: Apply surgical changes to one file or layer at a time.
+- **TDD (Red-Green-Refactor)**: Write or update tests before or alongside implementation.
+- **Validation**: Run the mandatory pre-completion script (see below) after each significant sub-task.
 
-## Tool Usage Protocols
+---
 
-- **Search**: Parallelize `grep_search` and `glob` to map the workspace quickly.
-- **Read**: Read the minimum required lines to understand context (use `start_line`/`end_line`).
-- **Edit**: Do not make multiple `replace` calls to the same file in one turn.
-- **Shell**: Always use non-interactive flags (e.g., `--yes`, `-y`, `--no-pager`). Use `is_background: true` for long-running servers.
+## Editing Discipline & Operational Patterns
 
-## Coding Discipline
+These patterns ensure compliance with constitutional principles:
 
-- **Type Safety**:
-    - Never use `any`. Use specific interfaces or `unknown` with type guards.
-    - `catch (error: unknown)` is mandatory.
-    - Strict return types: use `return;` for `void`-compatible types.
-- **Architecture**:
-    - Import from `@omni-post/shared` for all SSOT entities.
-    - Use `utils/path.ts` for all filesystem paths.
-    - Preserve SSRF protections in all network-fetching logic.
+- **Layer Boundaries (P-II)**: Never put automation logic in routes; never handle Express `req/res` in uploaders.
+- **SSOT Compliance (P-IV)**: Always check `@omni-post/shared/src/index.ts` before defining new interfaces or constants.
+- **Async Safety (P-V)**: Ensure long-running tasks use the `task-service` for lifecycle management.
+- **Type Safety**: 
+    - Never use `explicit any`.
+    - Use `catch (error: unknown)`.
+    - Enforce strict return types (no implicit `null` for `void` promises).
+- **Security**: 
+    - Use `utils/path.ts` for all filesystem I/O.
+    - Validate external URLs via `ExplorerService.validateUrl` pattern (SSRF protection).
 
-## Validation & Quality Gates
+---
 
-Before declaring a task complete, you must verify:
+## Validation & Quality Gates (Mandatory)
 
-1. **Target Accuracy**: Correct implementation in the active backend (`apps/backend-node`).
-2. **SSOT Compliance**: No duplicate types; shared package is updated if needed.
-3. **Async Integrity**: Task state polling or SSE streams remain functional.
-4. **Automation Stability**: Playwright cleanup and `opencli-diagnostics` are respected.
-5. **Documentation**: README or specific `.md` guides are updated for developer workflow changes.
+Before declaring a task "Complete", you MUST execute and record the output of:
 
-### Mandatory Pre-completion Commands:
+### 1. Scope-Specific Verification
+- **Backend-Node**: `npm run typecheck -w apps/backend-node`
+- **Frontend**: `npm run lint:frontend`
+- **Shared**: `npm run test -w packages/shared`
+
+### 2. Full Regression Gate
+For any change affecting the backend or shared package, run:
 
 ```bash
-# Backend/Cross-cutting Verification
+# 1. Check for new 'any' violations
 node tools/scripts/check-no-new-any.mjs --base main --head HEAD
+
+# 2. Strict Typecheck
 npm run typecheck -w apps/backend-node
+
+# 3. Workspace Integrity
 npm run check:workspace
+
+# 4. Standard Lint & Test
 npm run lint
 npm run test
+```
 
-# If package dependencies changed
+### 3. Security Check (If package surface changed)
+```bash
 npm audit --audit-level=high --omit=dev
 ```
 
-## Reference Commands
+---
 
-### Node Backend
-```bash
-npm run install:node
-npm run dev:node
-npm run test:node
-npm run lint:node
-npm run db:init -w apps/backend-node
-```
+## Common Development Commands
 
-### Frontend
-```bash
-npm run install:frontend
-npm run dev:frontend
-npm run test:frontend
-npm run lint:frontend
-```
-
-### Monorepo Utility
-```bash
-npm run lint
-npm run test
-npm run clean
-npm run check:workspace
-npm run test -w packages/shared
-```
+| Target | Command |
+| :--- | :--- |
+| **Node Backend** | `npm run dev:node` / `npm run test:node` / `npm run lint:node` |
+| **Frontend** | `npm run dev:frontend` / `npm run test:frontend` / `npm run lint:frontend` |
+| **Database** | `npm run db:init -w apps/backend-node` |
+| **Clean** | `npm run clean` |
