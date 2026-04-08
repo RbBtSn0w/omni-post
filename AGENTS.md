@@ -1,83 +1,64 @@
 # OmniPost Agent Execution Guide
 
-## Default Target & Scope
+**Compliant with Constitution v2.3.0**
 
-- Default implementation target: `apps/backend-node` (Node.js/TypeScript).
-- Shared types/constants/IDs must be imported from `@omni-post/shared`.
+## Operational Mandate
+
+This document defines the *How* of agent execution. All technical decisions and implementations must strictly adhere to the project principles defined in `.specify/memory/constitution.md`.
 
 ## Execution Workflow (Non-trivial Work)
 
-All non-trivial tasks follow `Research -> Strategy -> Execution`:
+All non-trivial tasks follow the iterative `Research -> Strategy -> Execution` lifecycle:
 
-1. Research current behavior and affected files.
-2. Define a minimal implementation plan.
-3. Implement in smallest safe increments.
-4. Verify with tests/typecheck/lint relevant to changed scope.
-5. Update docs when behavior or developer workflow changes.
+1. **Research**: Systematically map the codebase and validate assumptions.
+2. **Strategy**: Formulate a grounded implementation plan and share a concise summary.
+3. **Execution**: Resolve each sub-task through an iterative **Plan -> Act -> Validate** cycle.
+   - **Plan**: Define the implementation approach and the testing strategy.
+   - **Act**: Apply targeted changes.
+   - **Validate**: Run tests and workspace standards to confirm success.
 
-## Editing Discipline
+## Technical Discipline & Coding Patterns
 
-- Respect route-service-uploader boundaries in code changes.
-- Keep long-running login/publish flows asynchronous; preserve observable task state semantics.
-- Never introduce new `explicit any`.
-- Use type-safe catch blocks: `catch (error: unknown)`.
-- Do not return `null` from `void`-compatible return types unless type signature explicitly includes `null`.
-- For external URL fetching logic, preserve SSRF protections (DNS resolution + private/local range blocking).
-- Prefer safe path helpers (`utils/path.ts`) for filesystem operations.
+### General Patterns
+- **No Implicit Nulls**: Use empty `return;` for `Promise<void>` return types; do not return `null` unless explicitly in the type signature.
+- **Type-Safe Error Handling**: Use `catch (error: unknown)` and validate error types before usage.
+- **Strictly No 'any'**: Never introduce new `explicit any`. Use specific interfaces or `unknown` with type guards.
+- **Path Safety**: Prefer safe path helpers (`utils/path.ts`) for all filesystem operations.
 
-## Validation Steps (Pre-completion)
+### Layer-Specific Guidelines
+- **Routes**: Handle HTTP, request validation, and response formatting.
+- **Services**: Coordinate business logic, task lifecycle, and state transitions.
+- **Uploaders**: Isolate Playwright/OpenCLI automation. Perform root-cause analysis before selector repairs.
 
-Before claiming completion, record and verify:
+## Tooling & Verification Commands
 
-1. Target area: `apps/backend-node` / `apps/frontend` / `packages/shared` / explicit legacy scope.
-2. Whether shared types, platform mappings, DB schema, async task flow, or automation diagnostics changed.
-3. Whether README or related docs require updates.
-4. Test scope includes impacted route/service/store or equivalent affected area.
-5. Run quality and coverage-oriented regression verification for impacted scope.
-
-For backend or cross-cutting changes, run:
+### Quality Gates (Pre-push)
+Before declaring a task complete, you MUST execute:
 
 ```bash
+# 1. Incremental Any Check
 node tools/scripts/check-no-new-any.mjs --base main --head HEAD
+# 2. Strict Typecheck
 npm run typecheck -w apps/backend-node
+# 3. Workspace Integrity
 npm run check:workspace
+# 4. Lint & Test
 npm run lint
 npm run test
 ```
 
-If package surface changed, also run:
+### Development Commands
+- **Backend (Node)**: `npm run dev:node`, `npm run test:node`, `npm run lint:node`, `npm run db:init -w apps/backend-node`.
+- **Frontend**: `npm run dev:frontend`, `npm run test:frontend`, `npm run lint:frontend`.
+- **Shared**: `npm run test -w packages/shared`.
 
-```bash
-npm audit --audit-level=high --omit=dev
-```
+## Delegation & Sub-Agents
 
-## Working Commands
+- **High-Volume/Repetitive Tasks**: Delegate to `@generalist`.
+- **Architecture/Refactoring**: Delegate to `@codebase_investigator`.
+- **Spec-Kit Workflow**: Use specialized `speckit-*` skills for planning and verification.
+- **Session Memory**: Use `save_memory` for persistent project-wide facts.
 
-Node backend:
+## Governance Boundary
 
-```bash
-npm run install:node
-npm run dev:node
-npm run test:node
-npm run lint:node
-npm run db:init -w apps/backend-node
-```
-
-Frontend:
-
-```bash
-npm run install:frontend
-npm run dev:frontend
-npm run test:frontend
-npm run lint:frontend
-```
-
-Monorepo:
-
-```bash
-npm run lint
-npm run test
-npm run clean
-npm run check:workspace
-npm run test -w packages/shared
-```
+If an instruction in this document conflicts with the **OmniPost Constitution**, the Constitution takes absolute precedence.
