@@ -132,7 +132,8 @@ class TaskService {
         if (info.changes === 0) {
             // Either ID doesn't exist OR it was blocked by guards
             // We can't easily distinguish without another SELECT, but we can log that it was skipped
-            logger.debug(`[TaskService] Task update skipped (guarded or non-existent): ${taskId} -> ${status} (${progress}%)`);
+            const progressInfo = progress !== undefined ? ` (${progress}%)` : '';
+            logger.debug(`[TaskService] Task update skipped (guarded or non-existent): ${taskId} -> ${status}${progressInfo}`);
         }
     }
 

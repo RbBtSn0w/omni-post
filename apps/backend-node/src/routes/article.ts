@@ -56,13 +56,20 @@ router.post('/publish/article', async (req: Request, res: Response) => {
       return;
     }
     const resolvedCapability = typeof capability_id === 'string' ? capabilityService.getCapabilityById(capability_id) : null;
-    const platformInput = resolvedCapability?.platform_id ?? platform_id ?? platform;
+    let platformInput = resolvedCapability?.platform_id ?? platform_id ?? platform;
+    
     if (platformInput === undefined || platformInput === null) {
       sendError(res, 400, 'platform_id (number) or platform (string) is required');
       return;
     }
+
+    // Normalize platformInput: convert numeric strings to numbers
+    if (typeof platformInput === 'string' && /^\d+$/.test(platformInput)) {
+      platformInput = Number(platformInput);
+    }
+
     if (typeof platformInput !== 'string' && typeof platformInput !== 'number') {
-      sendError(res, 400, 'platform_id must be a number, or platform must be a string');
+      sendError(res, 400, 'platform_id must be a number (or numeric string), or platform must be a string');
       return;
     }
     // account_id can be optional if using a profile, or vice versa, but we should validate them if they exist
