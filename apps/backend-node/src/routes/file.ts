@@ -149,7 +149,19 @@ router.post('/uploadSave', upload.single('file'), async (req: Request, res: Resp
         }, '上传成功');
 
         // 异步后台优化视频轨道（不阻塞响应）
-        videoService.autoFixVideo(filePath).catch((err: unknown) => {
+        videoService.autoFixVideo(filePath).then((success) => {
+            if (success) {
+                try {
+                    const stats = fs.statSync(filePath);
+                    const finalSize = Number((stats.size / (1024 * 1024)).toFixed(2));
+                    const db = dbManager.getDb();
+                    db.prepare('UPDATE file_records SET filesize = ? WHERE file_path = ?').run(finalSize, req.file.filename);
+                    logger.info(`[FileRoute] 视频优化后已更新数据库大小: ${req.file.filename} -> ${finalSize} MB`);
+                } catch (e) {
+                    logger.error(`[FileRoute] 更新优化后大小失败: ${e instanceof Error ? e.message : String(e)}`);
+                }
+            }
+        }).catch((err: unknown) => {
             logger.error(`[FileRoute] 视频后台优化失败: ${err instanceof Error ? err.message : String(err)}`);
         });
     } catch (error: unknown) {
