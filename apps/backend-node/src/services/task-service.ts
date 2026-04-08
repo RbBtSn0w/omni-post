@@ -76,8 +76,8 @@ class TaskService {
         
         // Use a single UPDATE with conditional WHERE to enforce guards:
         // 1. Force bypass (? = 1)
-        // 2. Terminal guard: (status NOT IN ('completed', 'failed') OR ? = 0) 
-        //    Allows moving out of terminal states ONLY if progress is reset to 0
+        // 2. Restart guard: ((status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))))
+        //    Allows moving out of terminal states ONLY for explicit restarts (progress 0 + non-terminal status)
         // 3. Progress guard: (status != ? OR ? >= progress)
         //    Prevents progress regression when status remains the same
         
@@ -90,24 +90,24 @@ class TaskService {
                 SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP 
                 WHERE id = ? AND (
                     ? = 1 OR (
-                        (status NOT IN ('completed', 'failed') OR ? = 0) AND
+                        (status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))) AND
                         (status != ? OR ? >= progress)
                     )
                 )
             `);
-            params = [status, progress, errorMsg, taskId, forceNum, progress, status, progress];
+            params = [status, progress, errorMsg, taskId, forceNum, progress, status, status, progress];
         } else if (progress !== undefined) {
             stmt = db.prepare(`
                 UPDATE tasks 
                 SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP 
                 WHERE id = ? AND (
                     ? = 1 OR (
-                        (status NOT IN ('completed', 'failed') OR ? = 0) AND
+                        (status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))) AND
                         (status != ? OR ? >= progress)
                     )
                 )
             `);
-            params = [status, progress, taskId, forceNum, progress, status, progress];
+            params = [status, progress, taskId, forceNum, progress, status, status, progress];
         } else if (errorMsg !== undefined) {
             stmt = db.prepare(`
                 UPDATE tasks 

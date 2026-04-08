@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * WeChat Official Account Publisher CLI
- * Publishes articles to WeChat MP Draft Box via API.
+ * WeChat Official Account Publisher CLI (DEMO/MOCK)
+ * Simulates article publication to WeChat MP for testing the OpenCLI bridge.
+ * This runner does NOT perform real API calls.
  *
  * Migrated from: extensions/wechat-publisher/cli.js
  */
