@@ -446,26 +446,51 @@ const formatDate = (dateString) => {
 
 const SENSITIVE_KEY_PATTERN = /(^|[_-])(token|secret|password|cookie|credentials?|authorization|auth)([_-]|$)/i
 
-const maskSensitive = (value) => {
-  if (Array.isArray(value)) {
-    return value.map(item => maskSensitive(item))
+/**
+ * Safe deep clone and mask sensitive data with depth/size limits to prevent UI lag
+ */
+const maskAndLimit = (val, depth = 0, seen = new WeakSet()) => {
+  const MAX_DEPTH = 5
+  const MAX_ARRAY_LEN = 20
+  const MAX_STRING_LEN = 200
+
+  if (val === null || typeof val !== 'object') {
+    if (typeof val === 'string' && val.length > MAX_STRING_LEN) {
+      return val.slice(0, MAX_STRING_LEN) + '... (truncated)'
+    }
+    return val
   }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, v]) => {
-        if (SENSITIVE_KEY_PATTERN.test(key)) {
-          return [key, '***MASKED***']
-        }
-        return [key, maskSensitive(v)]
-      })
-    )
+
+  if (depth >= MAX_DEPTH) return '[Max Depth Reached]'
+  if (seen.has(val)) return '[Circular Reference]'
+  seen.add(val)
+
+  if (Array.isArray(val)) {
+    const result = val.slice(0, MAX_ARRAY_LEN).map(item => maskAndLimit(item, depth + 1, seen))
+    if (val.length > MAX_ARRAY_LEN) {
+      result.push(`[... ${val.length - MAX_ARRAY_LEN} more items hidden]`)
+    }
+    return result
   }
-  return value
+
+  return Object.fromEntries(
+    Object.entries(val).map(([key, v]) => {
+      if (SENSITIVE_KEY_PATTERN.test(key)) {
+        return [key, '***MASKED***']
+      }
+      return [key, maskAndLimit(v, depth + 1, seen)]
+    })
+  )
 }
 
 const formatPublishSnapshot = (publishData) => {
-  const sanitized = maskSensitive(publishData)
-  return JSON.stringify(sanitized, null, 2)
+  if (!publishData) return '{}'
+  try {
+    const sanitized = maskAndLimit(publishData)
+    return JSON.stringify(sanitized, null, 2)
+  } catch (err) {
+    return `[Error formatting snapshot: ${err.message}]`
+  }
 }
 
 // 分页变化处理

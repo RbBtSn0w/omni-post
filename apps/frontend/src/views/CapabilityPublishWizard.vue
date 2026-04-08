@@ -129,8 +129,10 @@ import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 import { capabilityApi } from '@/api/capability'
 import { PLATFORM_NAMES } from '@/core/platformConstants'
+import { usePlatformStore } from '@/stores/platform'
 
 const router = useRouter()
+const platformStore = usePlatformStore()
 const currentStep = ref(0)
 const submitting = ref(false)
 const capabilities = ref([])
@@ -215,6 +217,11 @@ const selectCapability = (capability) => {
   ElMessage.success(`已选择能力: ${capability.name}`)
 }
 
+const getPlatformDisplayName = (id) => {
+  const p = platformStore.allPlatforms.find(p => p.key === Number(id))
+  return p ? p.name : (PLATFORM_NAMES[id] || '未知')
+}
+
 const loadCapabilities = async () => {
   const res = await capabilityApi.getCapabilities()
   capabilities.value = res.data || []
@@ -228,7 +235,7 @@ const loadAccounts = async () => {
     type: item[1],
     filePath: item[2],
     userName: item[3],
-    platformName: PLATFORM_NAMES[item[1]] || '未知'
+    platformName: getPlatformDisplayName(item[1])
   }))
 }
 
@@ -264,7 +271,11 @@ watch(selectedCapability, () => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadCapabilities(), loadAccounts()])
+  await Promise.all([
+    loadCapabilities(),
+    loadAccounts(),
+    platformStore.fetchExtensions()
+  ])
 })
 </script>
 

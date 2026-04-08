@@ -456,12 +456,39 @@ export class ExtensionService {
           try {
             const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
             const manifest = JSON.parse(manifestContent) as OCSManifest;
+
+            // Validate platform_id
+            if (manifest.platform_id !== undefined) {
+              const id = manifest.platform_id;
+              const isReserved = id > 0 && id < ExtensionService.DYNAMIC_ID_START;
+              const isAllowedBuiltIn = id === 8; // WX_OFFICIAL_ACCOUNT
+
+              if (isReserved && !isAllowedBuiltIn) {
+                logger.error(`Rejected local extension at ${extPath}: platform_id ${id} is reserved for built-in platforms.`);
+                continue;
+              }
+
+              if (extensions.some(e => e.platform_id === id)) {
+                logger.error(`Rejected local extension at ${extPath}: platform_id ${id} conflicts with another local extension.`);
+                continue;
+              }
+            }
+
             const commandSpec = this.resolveLocalCommandSpec(extPath, manifest);
             manifest.executable_args = commandSpec.executableArgs;
 
+            // Assign platform_id, ensuring auto-assigned IDs don't conflict with manifest-provided ones
+            let platformId = manifest.platform_id;
+            if (platformId === undefined) {
+              while (extensions.some(e => e.platform_id === nextId)) {
+                nextId++;
+              }
+              platformId = nextId++;
+            }
+
             extensions.push({
               id: `local-${dirName}`,
-              platform_id: manifest.platform_id || nextId++,
+              platform_id: platformId,
               name: manifest.name,
               manifest,
               executable: commandSpec.executable,
