@@ -82,7 +82,7 @@ class TaskService {
         //    Prevents progress regression when status remains the same
         
         let stmt;
-        let params: any[];
+        let params: (string | number | null)[];
 
         if (progress !== undefined && errorMsg !== undefined) {
             stmt = db.prepare(`
