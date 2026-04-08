@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 import asyncio
-import pytest
-from unittest.mock import MagicMock, patch, call, AsyncMock
 from queue import Queue
-from pathlib import Path
+
+import pytest
 
 from src.services.login_impl import (
     douyin_cookie_gen,
-    get_tencent_cookie,
     get_ks_cookie,
+    get_tencent_cookie,
     xiaohongshu_cookie_gen,
 )
 

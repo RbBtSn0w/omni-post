@@ -1,6 +1,5 @@
-import os
 import sqlite3
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
 from flask import Blueprint, jsonify, request, send_from_directory
 

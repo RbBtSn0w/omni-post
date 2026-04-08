@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 class TestPublishRoutes:
     def test_get_tasks(self, client):

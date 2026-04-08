@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
 # Allow tests to patch via utils.files_times.* aliases
 sys.modules.setdefault("utils.files_times", sys.modules[__name__])

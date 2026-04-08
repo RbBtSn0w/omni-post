@@ -8,14 +8,13 @@ import asyncio
 import datetime
 import logging
 import sqlite3
-import sys
 import uuid
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 
 from src.core.browser import launch_browser, set_init_script
-from src.core.config import BASE_DIR, COOKIES_DIR, DEBUG_MODE, LOGS_DIR
+from src.core.config import COOKIES_DIR, DEBUG_MODE, LOGS_DIR
 from src.db.db_manager import db_manager
 from src.services.cookie_service import get_cookie_service
 
@@ -435,7 +434,7 @@ async def get_ks_cookie(id, status_queue, group_name=None):
         )
 
         initial_url = "https://cp.kuaishou.com"
-        response = await page.goto(initial_url, wait_until="networkidle")
+        await page.goto(initial_url, wait_until="networkidle")
         original_url = page.url
 
         await page.get_by_role("link", name="立即登录").click()

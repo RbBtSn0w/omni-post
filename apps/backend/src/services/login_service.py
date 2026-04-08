@@ -8,12 +8,8 @@
 
 import asyncio
 import time
-import uuid
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Dict, Optional, Tuple
-
-from src.db.db_manager import db_manager
+from typing import Dict, Optional
 
 # 全局变量
 active_queues = {}
@@ -94,33 +90,28 @@ class LoginService(ABC):
         self, id: str, status_queue, group_name: str = None
     ) -> Optional[Dict]:
         """抖音登录"""
-        pass
 
     @abstractmethod
     async def get_tencent_cookie(
         self, id: str, status_queue, group_name: str = None
     ) -> Optional[Dict]:
         """腾讯视频号登录"""
-        pass
 
     @abstractmethod
     async def get_ks_cookie(self, id: str, status_queue, group_name: str = None) -> Optional[Dict]:
         """快手登录"""
-        pass
 
     @abstractmethod
     async def xiaohongshu_cookie_gen(
         self, id: str, status_queue, group_name: str = None
     ) -> Optional[Dict]:
         """小红书登录"""
-        pass
 
     @abstractmethod
     async def bilibili_cookie_gen(
         self, id: str, status_queue, group_name: str = None
     ) -> Optional[Dict]:
         """Bilibili登录"""
-        pass
 
 
 class MockLoginService(LoginService):

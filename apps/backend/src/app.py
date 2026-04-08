@@ -1,12 +1,9 @@
-import asyncio
 import os
-from pathlib import Path
-from queue import Queue
 
-from flask import Flask, Response, send_from_directory
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 
-from src.core.config import BASE_DIR, MAX_UPLOAD_SIZE
+from src.core.config import MAX_UPLOAD_SIZE
 
 
 def create_app():
