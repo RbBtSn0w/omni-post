@@ -14,7 +14,8 @@ export const usePlatformStore = defineStore('platform', () => {
       customExtensions.value = res.data?.platforms || [];
     } catch (err) {
       console.error('Failed to fetch extensions:', err);
-      ElMessage.error(err.message || err.response?.data?.msg || '无法连接到扩展服务，请检查网络或后端状态');
+      // The axios interceptor already rejects with Error(data.message) for business errors
+      ElMessage.error(err.message || '无法连接到扩展服务，请检查网络或后端状态');
     }
   }
 
