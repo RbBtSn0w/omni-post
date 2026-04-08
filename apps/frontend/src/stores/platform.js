@@ -21,10 +21,11 @@ export const usePlatformStore = defineStore('platform', () => {
   const allPlatforms = computed(() => {
     const list = [...PLATFORM_LIST];
     customExtensions.value.forEach(ext => {
-      // Avoid duplicates if already in PLATFORM_LIST
-      if (!list.some(p => p.key === ext.platform_id)) {
+      // Avoid duplicates if already in PLATFORM_LIST. Normalize to number for safe comparison.
+      const platformId = Number(ext.platform_id);
+      if (!list.some(p => Number(p.key) === platformId)) {
         list.push({
-          key: ext.platform_id,
+          key: platformId,
           name: ext.name,
           isExtension: true
         });
@@ -36,7 +37,7 @@ export const usePlatformStore = defineStore('platform', () => {
   const platformTagTypes = computed(() => {
     const types = { ...PLATFORM_TAG_TYPES };
     customExtensions.value.forEach(ext => {
-      types[ext.platform_id] = 'info'; // Default for extensions
+      types[Number(ext.platform_id)] = 'info'; // Default for extensions
     });
     return types;
   });

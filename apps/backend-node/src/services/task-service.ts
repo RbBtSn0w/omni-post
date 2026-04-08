@@ -72,44 +72,68 @@ class TaskService {
         force = false
     ): void {
         const db = dbManager.getDb();
-
-        // 1. Fetch current status to decide if transition is allowed
-        const current = db.prepare('SELECT status, progress FROM tasks WHERE id = ?').get(taskId) as { status: string, progress: number } | undefined;
-        if (!current) {
-            logger.warn(`[TaskService] Attempted to update status for non-existent task: ${taskId}`);
-            return;
-        }
-
-        // 2. Protection: Transition from terminal states ('completed', 'failed') back to intermediate states is NOT allowed
-        // unless it's a manual status reset (progress === 0 or force === true)
-        const isTerminal = ['completed', 'failed'].includes(current.status);
-        const isRestart = (status === 'uploading' || status === 'waiting') && (progress === 0 || force);
+        const forceNum = force ? 1 : 0;
+        const progressVal = progress ?? -1; // -1 means progress not provided, won't trigger progress guard
         
-        if (isTerminal && (status === 'uploading' || status === 'waiting') && !isRestart) {
-            return;
-        }
-
-        // 3. Progress Guard: Avoid overwriting higher progress with lower progress for same status
-        if (!force && status === current.status && progress !== undefined && progress < current.progress) {
-            return;
-        }
+        // Use a single UPDATE with conditional WHERE to enforce guards:
+        // 1. Force bypass (? = 1)
+        // 2. Terminal guard: (status NOT IN ('completed', 'failed') OR ? = 0) 
+        //    Allows moving out of terminal states ONLY if progress is reset to 0
+        // 3. Progress guard: (status != ? OR ? >= progress)
+        //    Prevents progress regression when status remains the same
+        
+        let stmt;
+        let params: any[];
 
         if (progress !== undefined && errorMsg !== undefined) {
-            db.prepare(
-                `UPDATE tasks SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-            ).run(status, progress, errorMsg, taskId);
+            stmt = db.prepare(`
+                UPDATE tasks 
+                SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND (
+                    ? = 1 OR (
+                        (status NOT IN ('completed', 'failed') OR ? = 0) AND
+                        (status != ? OR ? >= progress)
+                    )
+                )
+            `);
+            params = [status, progress, errorMsg, taskId, forceNum, progress, status, progress];
         } else if (progress !== undefined) {
-            db.prepare(
-                `UPDATE tasks SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-            ).run(status, progress, taskId);
+            stmt = db.prepare(`
+                UPDATE tasks 
+                SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND (
+                    ? = 1 OR (
+                        (status NOT IN ('completed', 'failed') OR ? = 0) AND
+                        (status != ? OR ? >= progress)
+                    )
+                )
+            `);
+            params = [status, progress, taskId, forceNum, progress, status, progress];
         } else if (errorMsg !== undefined) {
-            db.prepare(
-                `UPDATE tasks SET status = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-            ).run(status, errorMsg, taskId);
+            stmt = db.prepare(`
+                UPDATE tasks 
+                SET status = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND (
+                    ? = 1 OR (status NOT IN ('completed', 'failed'))
+                )
+            `);
+            params = [status, errorMsg, taskId, forceNum];
         } else {
-            db.prepare(
-                `UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-            ).run(status, taskId);
+            stmt = db.prepare(`
+                UPDATE tasks 
+                SET status = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND (
+                    ? = 1 OR (status NOT IN ('completed', 'failed'))
+                )
+            `);
+            params = [status, taskId, forceNum];
+        }
+
+        const info = stmt.run(...params);
+        if (info.changes === 0) {
+            // Either ID doesn't exist OR it was blocked by guards
+            // We can't easily distinguish without another SELECT, but we can log that it was skipped
+            logger.debug(`[TaskService] Task update skipped (guarded or non-existent): ${taskId} -> ${status} (${progress}%)`);
         }
     }
 
