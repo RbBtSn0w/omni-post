@@ -19,8 +19,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and dependency management.
 
-- [ ] T001 Install OpenTelemetry SDK dependencies in `apps/backend-node/package.json` (`@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`)
-- [ ] T002 [P] Install necessary type definitions as devDependencies if required.
+- [x] T001 Install OpenTelemetry SDK dependencies in `apps/backend-node/package.json` (`@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`)
+- [x] T002 [P] Install necessary type definitions as devDependencies if required.
 
 ---
 
@@ -30,9 +30,9 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter` and `ConsoleLogRecordExporter`.
-- [ ] T004 Update application entry point `apps/backend-node/src/index.ts` to ensure `telemetry.ts` is imported and initialized before any other module.
-- [ ] T005 Create a new OpenTelemetry-native logging facade in `apps/backend-node/src/core/logger.ts` that replaces the Winston logger and exports an API compatible with the existing usage.
+- [x] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter` and `ConsoleLogRecordExporter`.
+- [x] T004 Update application entry point `apps/backend-node/src/index.ts` to ensure `telemetry.ts` is imported and initialized before any other module.
+- [x] T005 Create a new OpenTelemetry-native logging facade in `apps/backend-node/src/core/logger.ts` that replaces the Winston logger and exports an API compatible with the existing usage.
 
 **Checkpoint**: Foundation ready - OpenTelemetry SDK is active and the new logger facade is ready for migration.
 
@@ -45,14 +45,14 @@ description: "Task list template for feature implementation"
 **Independent Test**: Trigger a sample publishing task locally and verify console output contains unified traces linking the request to the internal steps.
 
 ### Tests for User Story 1
-- [ ] T006 [P] [US1] Add unit/integration tests in `apps/backend-node/tests/routes/publish.test.ts` to verify root trace spans are generated upon publishing requests.
+- [x] T006 [P] [US1] Add unit/integration tests in `apps/backend-node/tests/routes/publish.test.ts` to verify root trace spans are generated upon publishing requests.
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Instrument the HTTP route handler in `apps/backend-node/src/routes/publish.ts` to start the root trace span for a publishing request.
-- [ ] T008 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform and task ID, and extracting user session context from the active OpenTelemetry context (do not use Express `req` object).
-- [ ] T009 [US1] Instrument `apps/backend-node/src/services/task-service.ts` to wrap state updates and long-running operations in child spans.
-- [ ] T010 [US1] Add error recording (`span.recordException`) and status updates (`ERROR`) within catch blocks across the above instrumented files.
+- [x] T007 [US1] Instrument the HTTP route handler in `apps/backend-node/src/routes/publish.ts` to start the root trace span for a publishing request.
+- [x] T008 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform and task ID, and extracting user session context from the active OpenTelemetry context (do not use Express `req` object).
+- [x] T009 [US1] Instrument `apps/backend-node/src/services/task-service.ts` to wrap state updates and long-running operations in child spans.
+- [x] T010 [US1] Add error recording (`span.recordException`) and status updates (`ERROR`) within catch blocks across the above instrumented files.
 
 **Checkpoint**: At this point, User Story 1 should be fully functional. A publishing task will generate a unified trace hierarchy visible in the local console.
 
@@ -65,13 +65,13 @@ description: "Task list template for feature implementation"
 **Independent Test**: Execute platform uploads and verify the console output displays accurate duration metrics for specific Playwright steps.
 
 ### Tests for User Story 2
-- [ ] T011 [P] [US2] Add unit tests in `apps/backend-node/tests/uploader/base-uploader.test.ts` to verify performance spans are created during base uploader actions.
+- [x] T011 [P] [US2] Add unit tests in `apps/backend-node/tests/uploader/base-uploader.test.ts` to verify performance spans are created during base uploader actions.
 
 ### Implementation for User Story 2
 
-- [ ] T012 [P] [US2] Instrument the base uploader class in `apps/backend-node/src/uploader/base-uploader.ts` to wrap core Playwright automation methods (e.g., page navigation, file upload actions) in performance-tracking spans.
-- [ ] T013 [P] [US2] Instrument `apps/backend-node/src/services/video-service.ts` (or relevant media processing logic) to track duration of file validation/preparation steps.
-- [ ] T014 [US2] Ensure all spans created in T012 and T013 are properly closed (`span.end()`) in `finally` blocks to guarantee accurate duration metrics even on failure.
+- [x] T012 [P] [US2] Instrument the base uploader class in `apps/backend-node/src/uploader/base-uploader.ts` to wrap core Playwright automation methods (e.g., page navigation, file upload actions) in performance-tracking spans.
+- [x] T013 [P] [US2] Instrument `apps/backend-node/src/services/video-service.ts` (or relevant media processing logic) to track duration of file validation/preparation steps.
+- [x] T014 [US2] Ensure all spans created in T012 and T013 are properly closed (`span.end()`) in `finally` blocks to guarantee accurate duration metrics even on failure.
 
 **Checkpoint**: At this point, both User Stories are independently functional. The console output will now include fine-grained performance durations for critical automation steps.
 
@@ -81,9 +81,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Migrate all existing legacy logs to the new OpenTelemetry structure and remove the old dependency.
 
-- [ ] T015 [P] Run workspace search for `import.*logger.*core/logger` and ensure all calls correctly use the new facade across `apps/backend-node/src/`.
-- [ ] T016 [P] Remove `winston`, `winston-daily-rotate-file`, and any Winston-related OpenTelemetry instrumentation from `apps/backend-node/package.json`.
-- [ ] T017 Delete old logging configuration file `apps/backend-node/tests/core/logger.test.ts` or rewrite it to test the new OpenTelemetry facade.
+- [x] T015 [P] Run workspace search for `import.*logger.*core/logger` and ensure all calls correctly use the new facade across `apps/backend-node/src/`.
+- [x] T016 [P] Remove `winston`, `winston-daily-rotate-file`, and any Winston-related OpenTelemetry instrumentation from `apps/backend-node/package.json`.
+- [x] T017 Delete old logging configuration file `apps/backend-node/tests/core/logger.test.ts` or rewrite it to test the new OpenTelemetry facade.
 
 ---
 
@@ -91,8 +91,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories and system health.
 
-- [ ] T018 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
-- [ ] T019 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
+- [x] T018 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
+- [x] T019 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
 
 ---
 

@@ -3,6 +3,10 @@
  * Mirrors: apps/backend/run.py functionality
  */
 
+// Telemetry MUST be initialized before any other imports that use tracing
+import { initTelemetry } from './core/telemetry.js';
+initTelemetry();
+
 import { createApp } from './app.js';
 import { logBrowserInfo, SERVER_HOST, SERVER_PORT } from './core/config.js';
 import { logger } from './core/logger.js';

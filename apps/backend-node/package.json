@@ -21,6 +21,11 @@
   },
   "dependencies": {
     "@omni-post/shared": "*",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/api-logs": "^0.214.0",
+    "@opentelemetry/sdk-logs": "^0.214.0",
+    "@opentelemetry/sdk-node": "^0.214.0",
+    "@opentelemetry/sdk-trace-node": "^2.6.1",
     "better-sqlite3": "^11.7.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
@@ -31,9 +36,7 @@
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.0.0",
     "unified": "^11.0.0",
-    "uuid": "^11.0.0",
-    "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "uuid": "^11.0.0"
   },
   "devDependencies": {
     "@omni-post/shared-config": "*",

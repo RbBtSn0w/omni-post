@@ -5,6 +5,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../core/logger.js';
+import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
 
 export interface Task {
@@ -31,33 +32,38 @@ class TaskService {
      * Create a new publishing task.
      */
     createTask(publishData: any): string {
-        const db = dbManager.getDb();
-        const taskId = `task_${Date.now()}_${uuidv4().slice(0, 8)}`;
+        const tracer = getTracer();
+        return tracer.startActiveSpan('task.create', (span) => {
+            const db = dbManager.getDb();
+            const taskId = `task_${Date.now()}_${uuidv4().slice(0, 8)}`;
+            span.setAttribute('task.id', taskId);
 
-        const stmt = db.prepare(`
+            const stmt = db.prepare(`
       INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data, publish_data)
       VALUES (?, ?, 'waiting', 0, 1, ?, ?, ?, ?, ?)
     `);
 
-        // Build schedule_data from top-level fields (matching Python's route-layer assembly)
-        const scheduleData = {
-            enableTimer: publishData.enableTimer ?? null,
-            videosPerDay: publishData.videosPerDay ?? null,
-            dailyTimes: publishData.dailyTimes ?? null,
-            startDays: publishData.startDays ?? null,
-        };
+            // Build schedule_data from top-level fields (matching Python's route-layer assembly)
+            const scheduleData = {
+                enableTimer: publishData.enableTimer ?? null,
+                videosPerDay: publishData.videosPerDay ?? null,
+                dailyTimes: publishData.dailyTimes ?? null,
+                startDays: publishData.startDays ?? null,
+            };
 
-        stmt.run(
-            taskId,
-            publishData.title || null,
-            JSON.stringify(publishData.platforms || [publishData.type]),
-            JSON.stringify(publishData.fileList || []),
-            JSON.stringify(publishData.accountList || []),
-            JSON.stringify(scheduleData),
-            JSON.stringify(publishData)
-        );
+            stmt.run(
+                taskId,
+                publishData.title || null,
+                JSON.stringify(publishData.platforms || [publishData.type]),
+                JSON.stringify(publishData.fileList || []),
+                JSON.stringify(publishData.accountList || []),
+                JSON.stringify(scheduleData),
+                JSON.stringify(publishData)
+            );
 
-        return taskId;
+            span.end();
+            return taskId;
+        }); // end startActiveSpan
     }
 
     /**
@@ -71,23 +77,29 @@ class TaskService {
         errorMsg?: string | null,
         force = false
     ): void {
-        const db = dbManager.getDb();
-        const forceNum = force ? 1 : 0;
-        
-        // Use a single UPDATE with conditional WHERE to enforce guards:
-        // 1. Force bypass (? = 1)
-        // 2. Restart guard: ((status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))))
-        //    Allows moving out of terminal states ONLY for explicit restarts (progress 0 + non-terminal status)
-        // 3. Progress guard: (status != ? OR ? >= progress)
-        //    Prevents progress regression when status remains the same
-        
-        let stmt;
-        let params: (string | number | null)[];
+        const tracer = getTracer();
+        tracer.startActiveSpan('task.updateStatus', (span) => {
+            span.setAttribute('task.id', taskId);
+            span.setAttribute('task.status', status);
+            if (progress !== undefined) span.setAttribute('task.progress', progress);
 
-        if (progress !== undefined && errorMsg !== undefined) {
-            stmt = db.prepare(`
-                UPDATE tasks 
-                SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP 
+            const db = dbManager.getDb();
+            const forceNum = force ? 1 : 0;
+
+            // Use a single UPDATE with conditional WHERE to enforce guards:
+            // 1. Force bypass (? = 1)
+            // 2. Restart guard: ((status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))))
+            //    Allows moving out of terminal states ONLY for explicit restarts (progress 0 + non-terminal status)
+            // 3. Progress guard: (status != ? OR ? >= progress)
+            //    Prevents progress regression when status remains the same
+
+            let stmt;
+            let params: (string | number | null)[];
+
+            if (progress !== undefined && errorMsg !== undefined) {
+                stmt = db.prepare(`
+                UPDATE tasks
+                SET status = ?, progress = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND (
                     ? = 1 OR (
                         (status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))) AND
@@ -95,11 +107,11 @@ class TaskService {
                     )
                 )
             `);
-            params = [status, progress, errorMsg, taskId, forceNum, progress, status, status, progress];
-        } else if (progress !== undefined) {
-            stmt = db.prepare(`
-                UPDATE tasks 
-                SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP 
+                params = [status, progress, errorMsg, taskId, forceNum, progress, status, status, progress];
+            } else if (progress !== undefined) {
+                stmt = db.prepare(`
+                UPDATE tasks
+                SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND (
                     ? = 1 OR (
                         (status NOT IN ('completed', 'failed') OR (? = 0 AND ? IN ('waiting', 'uploading'))) AND
@@ -107,34 +119,36 @@ class TaskService {
                     )
                 )
             `);
-            params = [status, progress, taskId, forceNum, progress, status, status, progress];
-        } else if (errorMsg !== undefined) {
-            stmt = db.prepare(`
-                UPDATE tasks 
-                SET status = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP 
+                params = [status, progress, taskId, forceNum, progress, status, status, progress];
+            } else if (errorMsg !== undefined) {
+                stmt = db.prepare(`
+                UPDATE tasks
+                SET status = ?, error_msg = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND (
                     ? = 1 OR (status NOT IN ('completed', 'failed'))
                 )
             `);
-            params = [status, errorMsg, taskId, forceNum];
-        } else {
-            stmt = db.prepare(`
-                UPDATE tasks 
-                SET status = ?, updated_at = CURRENT_TIMESTAMP 
+                params = [status, errorMsg, taskId, forceNum];
+            } else {
+                stmt = db.prepare(`
+                UPDATE tasks
+                SET status = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND (
                     ? = 1 OR (status NOT IN ('completed', 'failed'))
                 )
             `);
-            params = [status, taskId, forceNum];
-        }
+                params = [status, taskId, forceNum];
+            }
 
-        const info = stmt.run(...params);
-        if (info.changes === 0) {
-            // Either ID doesn't exist OR it was blocked by guards
-            // We can't easily distinguish without another SELECT, but we can log that it was skipped
-            const progressInfo = progress !== undefined ? ` (${progress}%)` : '';
-            logger.debug(`[TaskService] Task update skipped (guarded or non-existent): ${taskId} -> ${status}${progressInfo}`);
-        }
+            const info = stmt.run(...params);
+            if (info.changes === 0) {
+                // Either ID doesn't exist OR it was blocked by guards
+                // We can't easily distinguish without another SELECT, but we can log that it was skipped
+                const progressInfo = progress !== undefined ? ` (${progress}%)` : '';
+                logger.debug(`[TaskService] Task update skipped (guarded or non-existent): ${taskId} -> ${status}${progressInfo}`);
+            }
+            span.end();
+        }); // end startActiveSpan
     }
 
     /**

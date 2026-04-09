@@ -1,5 +1,6 @@
 import { BrowserContext, Page } from 'playwright';
 import { logger } from '../core/logger.js';
+import { getTracer } from '../core/telemetry.js';
 import { UploadOptions } from '../db/models.js';
 
 /**
@@ -38,9 +39,17 @@ export abstract class BaseUploader {
      * 子类通用的工具方法: 创建并配置新页面
      */
     protected async createPage(context: BrowserContext): Promise<Page> {
-        const page = await context.newPage();
-        logger.info(`[${this.platformName}] New page created.`);
-        return page;
+        const tracer = getTracer();
+        return tracer.startActiveSpan('uploader.createPage', async (span) => {
+            span.setAttribute('uploader.platform', this.platformName);
+            try {
+                const page = await context.newPage();
+                logger.info(`[${this.platformName}] New page created.`);
+                return page;
+            } finally {
+                span.end();
+            }
+        });
     }
 
     /**
