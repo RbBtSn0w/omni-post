@@ -85,3 +85,10 @@ Before declaring a task "Complete", you MUST execute and record:
 ## Recent Decisions
 - **Deprecation**: Python code (Flask, pytest, pip) has been removed. No new Python dependencies are permitted.
 - **Architecture**: Enforced monorepo structure with workspace isolation.
+
+## Active Technologies
+- Node.js 20+ (TypeScript 5.x) + `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/instrumentation-winston`, `winston` (036-add-opentelemetry)
+- N/A (Console output only) (036-add-opentelemetry)
+
+## Recent Changes
+- 036-add-opentelemetry: Added Node.js 20+ (TypeScript 5.x) + `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/instrumentation-winston`, `winston`
