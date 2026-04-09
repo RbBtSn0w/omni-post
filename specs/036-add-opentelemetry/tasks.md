@@ -30,11 +30,11 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter`, `ConsoleLogRecordExporter`, and Winston instrumentation.
+- [ ] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter` and `ConsoleLogRecordExporter`.
 - [ ] T004 Update application entry point `apps/backend-node/src/index.ts` to ensure `telemetry.ts` is imported and initialized before any other module.
-- [ ] T005 Refactor existing Winston logger configuration in `apps/backend-node/src/core/logger.ts` to ensure compatibility with OpenTelemetry injection (e.g., format adjustments to output trace_id and span_id).
+- [ ] T005 Create a new OpenTelemetry-native logging facade in `apps/backend-node/src/core/logger.ts` that replaces the Winston logger and exports an API compatible with the existing usage.
 
-**Checkpoint**: Foundation ready - OpenTelemetry SDK is active and Winston logs are being automatically enriched with trace context.
+**Checkpoint**: Foundation ready - OpenTelemetry SDK is active and the new logger facade is ready for migration.
 
 ---
 
@@ -50,7 +50,7 @@ description: "Task list template for feature implementation"
 ### Implementation for User Story 1
 
 - [ ] T007 [US1] Instrument the HTTP route handler in `apps/backend-node/src/routes/publish.ts` to start the root trace span for a publishing request.
-- [ ] T008 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform, task ID, and explicitly capturing user session context from the request.
+- [ ] T008 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform and task ID, and extracting user session context from the active OpenTelemetry context (do not use Express `req` object).
 - [ ] T009 [US1] Instrument `apps/backend-node/src/services/task-service.ts` to wrap state updates and long-running operations in child spans.
 - [ ] T010 [US1] Add error recording (`span.recordException`) and status updates (`ERROR`) within catch blocks across the above instrumented files.
 
@@ -81,9 +81,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Migrate all existing legacy logs to the new OpenTelemetry structure and remove the old dependency.
 
-- [ ] T015 Run workspace search for `import.*logger.*core/logger` and ensure all calls correctly use the new facade across `apps/backend-node/src/` (e.g., `services/`, `uploader/`, `routes/`, `core/`).
-- [ ] T016 Remove `winston` and `winston-daily-rotate-file` from `apps/backend-node/package.json` dependencies.
-- [ ] T017 Delete any old logging configuration files or tests specifically coupled to Winston internals.
+- [ ] T015 [P] Run workspace search for `import.*logger.*core/logger` and ensure all calls correctly use the new facade across `apps/backend-node/src/`.
+- [ ] T016 [P] Remove `winston`, `winston-daily-rotate-file`, and any Winston-related OpenTelemetry instrumentation from `apps/backend-node/package.json`.
+- [ ] T017 Delete old logging configuration file `apps/backend-node/tests/core/logger.test.ts` or rewrite it to test the new OpenTelemetry facade.
 
 ---
 

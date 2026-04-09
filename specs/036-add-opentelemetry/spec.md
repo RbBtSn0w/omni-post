@@ -1,8 +1,8 @@
 # Feature Specification: OpenTelemetry Structured Logging
 
-**Feature Branch**: `[036-add-opentelemetry]`  
-**Created**: 2026-04-09  
-**Status**: Draft  
+**Feature Branch**: `[036-add-opentelemetry]`
+**Created**: 2026-04-09
+**Status**: Draft
 **Input**: User description: "为了更好方便排查问题和最终任务的流程信息, 引入OpenTelemetry, 使用它的结构化日志功能, 完善问题的排查效率和性能信息. 以上都是在开发阶段使用, 所有不存在对应存储 OpenTelemetry 的数据."
 
 ## Clarifications
@@ -62,7 +62,7 @@ As a developer, I need to see the execution duration of specific operations (lik
 - **SC-001**: Developers can visually identify the parent-child relationship of a 5-step task workflow solely from the local console output.
 - **SC-002**: The time required for a developer to locate the specific point of failure in a complex, multi-platform publishing task is reduced by at least 50% compared to the unstructured logging approach.
 - **SC-003**: No new external infrastructure dependencies (like Jaeger, Zipkin, or Datadog) are required to run the local development environment.
-- **SC-004**: Performance regressions in specific sub-operations (e.g., browser startup time) can be identified immediately from local log output.
+- **SC-004**: Duration metrics are strictly printed for all BaseUploader methods and span duration > 500ms is highlighted in the console output.
 
 ## Assumptions
 

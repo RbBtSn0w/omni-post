@@ -1,34 +1,36 @@
-# Implementation Plan: OpenTelemetry Structured Logging
+# Implementation Plan: 036-add-opentelemetry
 
 **Branch**: `036-add-opentelemetry` | **Date**: 2026-04-09 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/036-add-opentelemetry/spec.md`
 
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+
 ## Summary
 
-Introduce OpenTelemetry structured logging and tracing for local development debugging. The implementation will integrate `@opentelemetry/sdk-trace-node` and `@opentelemetry/instrumentation-winston` into the existing `apps/backend-node` Winston logger, outputting structured traces and performance metrics directly to the console without requiring external collectors.
+The core technology is using the OpenTelemetry framework as the logging system. We will completely replace the legacy logging system with OpenTelemetry for structured logging in the local development environment. This will provide developers with hierarchical trace views of asynchronous publishing tasks and explicit duration metrics to identify performance bottlenecks, outputting directly to the local console without requiring external collectors.
 
 ## Technical Context
 
-**Language/Version**: Node.js 20+ (TypeScript 5.x)
+**Language/Version**: Node.js 20+, TypeScript 5.x
 **Primary Dependencies**: `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`
-**Storage**: N/A (Console output only)
-**Testing**: `vitest` (Existing workspace test runner)
-**Target Platform**: Local development environments
-**Project Type**: Web Service / Background Workers (Express + Playwright)
-**Performance Goals**: Negligible overhead during development; ability to track duration of existing operations (like Playwright actions).
-**Constraints**: MUST NOT introduce external database or collector requirements (like Jaeger/Datadog) for local execution.
-**Scale/Scope**: Backend Node.js application only.
+**Storage**: N/A (Console output only, no persistent storage)
+**Testing**: Vitest
+**Target Platform**: Local Node.js Backend Console
+**Project Type**: Automation Web Service Backend
+**Performance Goals**: Negligible latency overhead for tracing locally, high visibility into sub-operation durations
+**Constraints**: Must run entirely offline in local dev; no Jaeger, Zipkin, or Datadog instances required
+**Scale/Scope**: Local developer tracking of multi-platform task executions
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **I. North Star Compliance**: Yes. Aligns with observability goals.
-- **II. Layer Discipline (P-II)**: Yes. Telemetry initialization will be in `core/`, and spans will be used across `services/` and `uploader/` without mixing domain logic.
-- **III. Type Safety & SSOT (P-IV)**: Yes. OpenTelemetry provides strict TS definitions. No `any` types will be used.
-- **IV. Async & Task Safety (P-V)**: Yes. Structured logging will specifically enhance the visibility of the async `task-service`.
-- **V. Empirical Validation (TDD)**: Yes. Tests will verify trace generation.
-- **VI. Monorepo Integrity**: Yes. Dependencies will be installed in `apps/backend-node`.
+- **I. North Star Compliance**: PASS. Conforms to the structured execution protocol.
+- **II. Layer Discipline**: PASS. Telemetry is injected as a cross-cutting concern in `core/` and respects service/uploader boundaries.
+- **III. Type Safety**: PASS. Strict TypeScript usage; no `any` types will be added.
+- **IV. Async & Task Safety**: PASS. Traces explicitly wrap the async task runner to provide observability for long-running routines.
+- **V. Empirical Validation (TDD)**: PASS. Tests will assert that trace spans are generated accurately.
+- **VI. Monorepo Integrity**: PASS. Implemented exclusively within `apps/backend-node`.
 
 ## Project Structure
 
@@ -40,6 +42,7 @@ specs/036-add-opentelemetry/
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -49,19 +52,22 @@ specs/036-add-opentelemetry/
 apps/backend-node/
 ├── src/
 │   ├── core/
-│   │   ├── telemetry.ts     # NEW: OpenTelemetry initialization
-│   │   └── logger.ts        # MODIFIED: Integrate Winston with OTel
-│   ├── services/
-│   │   └── task-service.ts  # MODIFIED: Add spans to task execution
-│   └── uploader/
-│       └── base-uploader.ts # MODIFIED: Add spans to platform actions
-└── package.json             # MODIFIED: Add OTel dependencies
+│   │   └── telemetry.ts      # New OpenTelemetry initialization
+│   ├── routes/               # Route instrumentation
+│   ├── services/             # Task/Business logic instrumentation
+│   └── uploader/             # Playwright base uploader instrumentation
+└── tests/
+    ├── core/                 # Telemetry unit tests
+    ├── routes/               # Route span trace tests
+    └── uploader/             # Performance span tests
 ```
 
-**Structure Decision**: The implementation focuses on `apps/backend-node`. A new `telemetry.ts` file in the `core` layer will handle SDK initialization, which will be imported into the main entry point and existing `logger.ts`.
+**Structure Decision**: Integrated cross-cutting telemetry primarily within `apps/backend-node` `core/` while instrumenting existing `routes/`, `services/`, and `uploader/` layers. Legacy logging configuration in `core/logger.ts` will be deprecated/removed.
 
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-*(No violations found. The approach leverages industry-standard SDKs to fulfill the requirement safely.)*requirement safely.)*
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| N/A | N/A | N/A |
