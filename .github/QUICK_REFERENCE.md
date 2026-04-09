@@ -28,14 +28,7 @@
 
 ## 🎯 Core Features Overview
 
-### 1️⃣ dependency-check.yml Workflow
-
-**Automated Checks:**
-- ✅ NPM multi-layer audit (root, frontend, backend-node)
-- ✅ Critical dependency monitoring (Playwright, Vue)
-- ✅ Automated alerts on vulnerabilities found
-
-### 2️⃣ dependabot.yml Automated Updates
+### 1️⃣ dependabot.yml Automated Updates
 
 **Covered Package Managers:**
 - ✓ NPM Root - package.json
@@ -143,7 +136,6 @@ Actions → Latest run → Artifacts → dependency-report
 
 ## ✅ Verification Checklist
 
-- [x] `.github/workflows/dependency-check.yml` exists
 - [x] `.github/dependabot.yml` exists
 - [x] `.github/DEPENDENCY_CHECK_GUIDE.md` exists
 - [ ] Pushed to GitHub main branch
@@ -157,3 +149,4 @@ Actions → Latest run → Artifacts → dependency-report
 **Deployment Time**: 2026-01-17 14:11 UTC+8
 **Version**: v1.0
 **Status**: ✨ Ready for Deployment
+oyment

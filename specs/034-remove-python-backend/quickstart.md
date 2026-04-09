@@ -5,15 +5,21 @@ This project uses a monorepo structure managed by npm workspaces. The Python leg
 ## Prerequisites
 
 1.  **Node.js**: v20 or higher.
-2.  **npm**: v10 or higher.
+2.  **npm**: v9.0.0 or higher.
 3.  **Playwright dependencies**: Required for browser automation in the Node.js backend.
 
 ## Initialization
 
-Run the following command in the root of the repository to install all workspace dependencies and initialize Playwright:
+Run the following command in the root of the repository to install all workspace dependencies:
 
 ```bash
 npm run setup
+```
+
+If this is your first time or if you updated playwright, initialize Playwright browsers:
+
+```bash
+npx playwright install chromium
 ```
 
 ## Running the Application
