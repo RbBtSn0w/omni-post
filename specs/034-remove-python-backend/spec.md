@@ -1,8 +1,8 @@
 # Feature Specification: Remove Python Backend Logic
 
-**Feature Branch**: `034-remove-python-backend`  
-**Created**: 2026-04-09  
-**Status**: Draft  
+**Feature Branch**: `034-remove-python-backend`
+**Created**: 2026-04-09
+**Status**: completed
 **Input**: User description: "删除所有python 后端逻辑"
 
 ## User Scenarios & Testing *(mandatory)*
