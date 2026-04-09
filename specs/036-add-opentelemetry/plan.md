@@ -10,7 +10,7 @@ Introduce OpenTelemetry structured logging and tracing for local development deb
 ## Technical Context
 
 **Language/Version**: Node.js 20+ (TypeScript 5.x)
-**Primary Dependencies**: `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/instrumentation-winston`, `winston`
+**Primary Dependencies**: `@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`
 **Storage**: N/A (Console output only)
 **Testing**: `vitest` (Existing workspace test runner)
 **Target Platform**: Local development environments
@@ -64,4 +64,4 @@ apps/backend-node/
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-*(No violations found. The approach leverages industry-standard SDKs to fulfill the requirement safely.)*
+*(No violations found. The approach leverages industry-standard SDKs to fulfill the requirement safely.)*requirement safely.)*

@@ -5,6 +5,11 @@
 **Status**: Draft  
 **Input**: User description: "为了更好方便排查问题和最终任务的流程信息, 引入OpenTelemetry, 使用它的结构化日志功能, 完善问题的排查效率和性能信息. 以上都是在开发阶段使用, 所有不存在对应存储 OpenTelemetry 的数据."
 
+## Clarifications
+
+### Session 2026-04-09
+- Q: Should the new OpenTelemetry logging wrap the existing logger or replace it completely? → A: Completely replace the old logging system and its management. Remove the legacy logger entirely.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Developer Debugging Task Workflows (Priority: P1)

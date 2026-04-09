@@ -19,7 +19,7 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and dependency management.
 
-- [ ] T001 Install OpenTelemetry SDK dependencies in `apps/backend-node/package.json` (`@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/instrumentation-winston`)
+- [ ] T001 Install OpenTelemetry SDK dependencies in `apps/backend-node/package.json` (`@opentelemetry/api`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`)
 - [ ] T002 [P] Install necessary type definitions as devDependencies if required.
 
 ---
@@ -77,12 +77,22 @@ description: "Task list template for feature implementation"
 
 ---
 
-## Phase 5: Polish & Cross-Cutting Concerns
+## Phase 5: Legacy Logger Migration and Removal
+
+**Purpose**: Migrate all existing legacy logs to the new OpenTelemetry structure and remove the old dependency.
+
+- [ ] T015 Run workspace search for `import.*logger.*core/logger` and ensure all calls correctly use the new facade across `apps/backend-node/src/` (e.g., `services/`, `uploader/`, `routes/`, `core/`).
+- [ ] T016 Remove `winston` and `winston-daily-rotate-file` from `apps/backend-node/package.json` dependencies.
+- [ ] T017 Delete any old logging configuration files or tests specifically coupled to Winston internals.
+
+---
+
+## Phase 6: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories and system health.
 
-- [ ] T015 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
-- [ ] T016 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
+- [ ] T018 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
+- [ ] T019 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
 
 ---
 
@@ -91,8 +101,9 @@ description: "Task list template for feature implementation"
 ### Phase Dependencies
 - **Setup (Phase 1)**: No dependencies - can start immediately.
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories.
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion. Proceed sequentially (P1 → P2).
-- **Polish (Final Phase)**: Depends on all user stories being complete.
+- **User Stories (Phase 3 & 4)**: All depend on Foundational phase completion. Proceed sequentially (P1 → P2).
+- **Migration (Phase 5)**: Depends on Foundational completion. Can run in parallel with User Stories.
+- **Polish (Final Phase)**: Depends on all previous phases being complete.
 
 ### Parallel Opportunities
 - Dependency installation (T001, T002) can be done in one command.
