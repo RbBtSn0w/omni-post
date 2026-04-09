@@ -1,18 +1,5 @@
 {
     // =====================================
-    // Python 配置
-    // =====================================
-    "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python3",
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}/apps/backend"
-    ],
-    // Python 测试配置
-    "python.testing.pytestEnabled": true,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
-    "python.testing.cwd": "${workspaceFolder}/apps/backend",
-    // =====================================
     // 前端配置
     // =====================================
     "vitest.enable": true,
@@ -40,14 +27,6 @@
         "typescriptreact",
         "vue"
     ],
-    // Python 格式化配置 (需安装 Black Formatter 和 isort 扩展)
-    "[python]": {
-        // "editor.defaultFormatter": "ms-python.black-formatter",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
     // Vue 文件配置
     "[vue]": {
         "editor.defaultFormatter": "Vue.volar"
