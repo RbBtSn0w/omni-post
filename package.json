@@ -8,28 +8,23 @@
     "packages/*"
   ],
   "scripts": {
-    "setup": "npm install && npm run install:python",
+    "setup": "npm install",
     "install:ws": "npm install --workspaces",
-    "install:all": "npm install && npm run install:backend && npm run install:node && npm run install:frontend",
-    "install:python": "node tools/scripts/install-python.mjs",
-    "install:backend": "npm run env:create -w apps/backend && npm run env:install -w apps/backend",
+    "install:all": "npm install && npm run install:node && npm run install:frontend",
     "install:node": "npm install -w apps/backend-node",
     "install:frontend": "npm install -w apps/frontend",
     "dev": "npm run dev --workspaces",
     "dev:all": "npm run dev --workspaces",
-    "dev:backend": "npm run dev -w apps/backend",
     "dev:frontend": "npm run dev -w apps/frontend",
     "dev:node": "npm run dev -w apps/backend-node",
     "build": "npm run build --workspaces",
     "build:all": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "lint:all": "npm run lint --workspaces",
-    "lint:backend": "npm run lint -w apps/backend",
     "lint:node": "npm run lint -w apps/backend-node",
     "lint:frontend": "npm run lint -w apps/frontend",
     "test": "npm run test --workspaces",
     "test:all": "npm run test --workspaces",
-    "test:backend": "npm run test -w apps/backend",
     "test:frontend": "npm run test -w apps/frontend",
     "test:node": "npm run test -w apps/backend-node",
     "test:frontend:coverage": "npm run test:coverage -w apps/frontend",
@@ -42,8 +37,7 @@
   },
   "engines": {
     "node": ">=20.19.0",
-    "npm": ">=9.0.0",
-    "python": ">=3.10.0 <3.11.0"
+    "npm": ">=9.0.0"
   },
   "repository": {
     "type": "git",
@@ -66,20 +60,14 @@
     "xiaohongshu",
     "playwright",
     "vue3",
-    "flask",
     "typescript"
   ],
   "author": "rbbtsn0w <hamiltonsnow@gmail.com>",
   "license": "MIT",
   "notes": [
-    "This is a full-stack project with separate dependencies for frontend and dual backends (Python & Node.js).",
+    "This is a full-stack project with a Node.js backend and Vue.js frontend.",
     "Frontend dependencies are managed by npm in apps/frontend/package.json.",
     "Node.js backend dependencies are managed by npm in apps/backend-node/package.json.",
-    "Python backend dependencies are managed by pip in apps/backend/requirements.txt.",
-    "Python version must be 3.10.x (>=3.10.0 <3.11.0) as specified in README.md.",
-    "It is recommended to run Python in a virtual environment (venv) as specified in README.md.",
-    "Use the :venv suffix commands to run in a virtual environment.",
-    "For example: npm run install:all:venv, npm run dev:backend:venv.",
     "Please follow the setup instructions in the README.md file."
   ],
   "devDependencies": {
@@ -104,10 +92,6 @@
     ],
     "packages/shared/**/*.ts": [
       "npm run lint -w @omni-post/shared"
-    ],
-    "apps/backend/**/*.py": [
-      "apps/backend/.venv/bin/black",
-      "apps/backend/.venv/bin/isort"
     ]
   }
 }

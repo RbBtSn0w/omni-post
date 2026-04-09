@@ -3,8 +3,7 @@
 ## Overview
 
 OmniPost is built using a **Monorepo architecture** with a Vue 3 frontend and a
-primary Node.js/TypeScript backend. The legacy Python backend remains in the
-repository for compatibility and migration reference only. This document explains
+Node.js/TypeScript backend. This document explains
 the current system design, component interactions, and technical decisions.
 
 ## System Architecture Diagram
@@ -175,8 +174,7 @@ Child Components
 ## Backend Architecture
 
 The maintained backend lives in `apps/backend-node` and follows a strict
-`Routes -> Services -> Uploaders` pattern. `apps/backend` is deprecated and
-should only be consulted for compatibility work.
+`Routes -> Services -> Uploaders` pattern.
 
 ### Directory Structure
 

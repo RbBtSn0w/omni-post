@@ -71,3 +71,9 @@ Before declaring a task "Complete", you MUST execute and record:
 | **Frontend** | `npm run dev:frontend` / `npm run test:frontend` |
 | **Shared** | `npm run test -w packages/shared` |
 | **Cleaning** | `npm run clean` |
+
+## Active Technologies
+- N/A (Removing Python code) + Removing Python dependencies (pip, pytest, Flask, etc.) (034-remove-python-backend)
+
+## Recent Changes
+- 034-remove-python-backend: Added N/A (Removing Python code) + Removing Python dependencies (pip, pytest, Flask, etc.)

@@ -28,13 +28,9 @@ Before submitting the PR, please ensure:
 - [ ] No `console.log`, `print`, or other debugging statements
 - [ ] No hardcoded keys or sensitive information
 
-#### Backend Checks (if `apps/backend/` was modified)
-- [ ] Code passes Black formatting check
-- [ ] Imports are sorted with isort
-- [ ] Code passes Flake8/PEP8 checks
-- [ ] Code passes Pylint basic checks
-- [ ] Cyclomatic complexity and maintainability index checked (radon)
-- [ ] Related unit tests run: `npm run test:backend`
+#### Backend Checks (if `apps/backend-node/` was modified)
+- [ ] Code passes ESLint checks: `npm run lint:node`
+- [ ] Related unit tests run: `npm run test:node`
 - [ ] New features have corresponding test cases
 - [ ] Test coverage has not decreased
 

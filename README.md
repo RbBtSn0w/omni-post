@@ -64,18 +64,11 @@
 
 ### Backend
 
-#### Primary Backend: Node.js (Maintained)
 - **Language**: Node.js 20+ (TypeScript 5.x)
 - **Framework**: Express.js (ESM)
 - **Browser Automation**: Playwright (Node.js version)
 - **Database**: SQLite
 - **Testing Framework**: Vitest
-
-#### Legacy Backend: Python (Deprecated)
-- **Language**: Python 3.10
-- **Framework**: Flask
-- **Purpose**: Compatibility and migration reference only
-- **Testing Framework**: pytest + pytest-asyncio
 
 ## 🚀 Supported Platforms
 
@@ -132,7 +125,6 @@ The backend will automatically discover the extension and make it available for 
 ### System Requirements
 
 - Node.js >= 20.0.0
-- Python 3.10.x (only if you need the legacy backend)
 - npm >= 9.0.0
 - Modern browser (Chrome, Firefox, Safari, or Edge)
 
@@ -184,11 +176,6 @@ time npm install
 ### 3. Install Playwright Browser Driver
 
 ```bash
-# For legacy Python backend
-cd apps/backend
-.venv/bin/python -m playwright install chromium
-
-# For maintained Node.js backend
 npx playwright install chromium
 ```
 
@@ -212,12 +199,9 @@ node scripts/migrate-wx-channels.mjs
 ### 6. Start the Services
 
 ```bash
-# Start the maintained backend and frontend
+# Start the backend and frontend
 npm run dev:node
 npm run dev:frontend
-
-# Legacy Python backend only when explicitly needed
-npm run dev:backend
 
 # Or individually
 npm run dev:node          # Node.js Backend (http://localhost:5409)
@@ -237,15 +221,6 @@ npm run dev:frontend      # Vue 3 Frontend (http://localhost:5173)
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask Backend (Legacy/Deprecated)
-│   │   ├── src/
-│   │   │   ├── app.py          # Entry point
-│   │   │   ├── core/           # Config & Logging
-│   │   │   ├── routes/         # API Endpoints
-│   │   │   ├── services/       # Business Logic
-│   │   │   └── uploader/       # Playwright Uploaders
-│   │   └── tests/              # Pytest suite
-│   │
 │   ├── backend-node/            # Node.js TypeScript Backend (Primary)
 │   │   ├── src/
 │   │   │   ├── app.ts          # Express Application
@@ -321,9 +296,6 @@ omni-post/
 # Run all linters
 npm run lint
 
-# Lint backend
-npm run lint:backend
-
 # Lint frontend
 npm run lint:frontend
 
@@ -359,8 +331,8 @@ We welcome contributions in all forms! For detailed information, please refer to
 
 ### Development Standards
 
-- **Backend**: Follow PEP 8 coding standards
 - **Frontend**: Follow Vue 3 best practices and ES6+ conventions
+- **Backend**: Follow Node.js/TypeScript best practices
 - **Testing**: Ensure tests pass with `npm test`
 - **Code Quality**: Run linters before committing with `npm run lint`
 
@@ -377,7 +349,7 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 ## 📊 Project Statistics
 
-- **Language**: Python (Backend), JavaScript/Vue (Frontend)
+- **Language**: TypeScript (Backend), JavaScript/Vue (Frontend)
 - **Test Coverage**: Extensive unit and integration tests
 - **Architecture**: Monorepo with Workspaces
 - **License**: MIT
