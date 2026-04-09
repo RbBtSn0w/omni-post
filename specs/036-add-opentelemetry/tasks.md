@@ -30,7 +30,7 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter` and Winston instrumentation.
+- [ ] T003 Create telemetry initialization module in `apps/backend-node/src/core/telemetry.ts` implementing `ConsoleSpanExporter`, `ConsoleLogRecordExporter`, and Winston instrumentation.
 - [ ] T004 Update application entry point `apps/backend-node/src/index.ts` to ensure `telemetry.ts` is imported and initialized before any other module.
 - [ ] T005 Refactor existing Winston logger configuration in `apps/backend-node/src/core/logger.ts` to ensure compatibility with OpenTelemetry injection (e.g., format adjustments to output trace_id and span_id).
 
@@ -44,12 +44,15 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: Trigger a sample publishing task locally and verify console output contains unified traces linking the request to the internal steps.
 
+### Tests for User Story 1
+- [ ] T006 [P] [US1] Add unit/integration tests in `apps/backend-node/tests/routes/publish.test.ts` to verify root trace spans are generated upon publishing requests.
+
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Instrument the HTTP route handler in `apps/backend-node/src/routes/publish.ts` to start the root trace span for a publishing request.
-- [ ] T007 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform and task ID.
-- [ ] T008 [US1] Instrument `apps/backend-node/src/services/task-service.ts` to wrap state updates and long-running operations in child spans.
-- [ ] T009 [US1] Add error recording (`span.recordException`) and status updates (`ERROR`) within catch blocks across the above instrumented files.
+- [ ] T007 [US1] Instrument the HTTP route handler in `apps/backend-node/src/routes/publish.ts` to start the root trace span for a publishing request.
+- [ ] T008 [US1] Instrument `apps/backend-node/src/services/publish-executor.ts` to create spans for the overall execution lifecycle, setting attributes like platform, task ID, and explicitly capturing user session context from the request.
+- [ ] T009 [US1] Instrument `apps/backend-node/src/services/task-service.ts` to wrap state updates and long-running operations in child spans.
+- [ ] T010 [US1] Add error recording (`span.recordException`) and status updates (`ERROR`) within catch blocks across the above instrumented files.
 
 **Checkpoint**: At this point, User Story 1 should be fully functional. A publishing task will generate a unified trace hierarchy visible in the local console.
 
@@ -61,11 +64,14 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: Execute platform uploads and verify the console output displays accurate duration metrics for specific Playwright steps.
 
+### Tests for User Story 2
+- [ ] T011 [P] [US2] Add unit tests in `apps/backend-node/tests/uploader/base-uploader.test.ts` to verify performance spans are created during base uploader actions.
+
 ### Implementation for User Story 2
 
-- [ ] T010 [P] [US2] Instrument the base uploader class in `apps/backend-node/src/uploader/base-uploader.ts` to wrap core Playwright automation methods (e.g., page navigation, file upload actions) in performance-tracking spans.
-- [ ] T011 [P] [US2] Instrument `apps/backend-node/src/services/video-service.ts` (or relevant media processing logic) to track duration of file validation/preparation steps.
-- [ ] T012 [US2] Ensure all spans created in T010 and T011 are properly closed (`span.end()`) in `finally` blocks to guarantee accurate duration metrics even on failure.
+- [ ] T012 [P] [US2] Instrument the base uploader class in `apps/backend-node/src/uploader/base-uploader.ts` to wrap core Playwright automation methods (e.g., page navigation, file upload actions) in performance-tracking spans.
+- [ ] T013 [P] [US2] Instrument `apps/backend-node/src/services/video-service.ts` (or relevant media processing logic) to track duration of file validation/preparation steps.
+- [ ] T014 [US2] Ensure all spans created in T012 and T013 are properly closed (`span.end()`) in `finally` blocks to guarantee accurate duration metrics even on failure.
 
 **Checkpoint**: At this point, both User Stories are independently functional. The console output will now include fine-grained performance durations for critical automation steps.
 
@@ -75,8 +81,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories and system health.
 
-- [ ] T013 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
-- [ ] T014 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
+- [ ] T015 Add unit test in `apps/backend-node/tests/core/telemetry.test.ts` to verify OpenTelemetry SDK initialization does not crash.
+- [ ] T016 Run `npm run lint` and `npm run typecheck -w apps/backend-node` to ensure strict typing compliance per Constitution P-IV.
 
 ---
 
@@ -90,7 +96,7 @@ description: "Task list template for feature implementation"
 
 ### Parallel Opportunities
 - Dependency installation (T001, T002) can be done in one command.
-- Within US2, instrumenting the base uploader (T010) and video service (T011) can be done in parallel.
+- Within US2, instrumenting the base uploader (T012) and video service (T013) can be done in parallel.
 
 ## Implementation Strategy
 
