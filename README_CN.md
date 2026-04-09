@@ -55,18 +55,11 @@
 
 ### 后端
 
-#### 主后端：Node.js（当前维护目标）
 - **语言**: Node.js 20+ (TypeScript 5.x)
 - **框架**: Express.js (ESM)
 - **浏览器自动化**: Playwright (Node.js 版)
 - **数据库**: SQLite
 - **测试框架**: Vitest
-
-#### 遗留后端：Python（已废弃，默认不作为交付路径）
-- **语言**: Python 3.10
-- **框架**: Flask
-- **用途**: 兼容与迁移参考
-- **测试框架**: pytest + pytest-asyncio
 
 ### 前端
 - **框架**: Vue 3 + Vite
@@ -92,7 +85,6 @@
 ### 环境要求
 
 - Node.js >= 20.0.0
-- Python 3.10.x（仅在需要遗留后端时）
 - npm >= 9.0.0
 
 ### 1. 克隆项目
@@ -130,11 +122,6 @@ time npm install
 ### 3. 安装 Playwright 浏览器驱动
 
 ```bash
-# Python 遗留后端
-cd apps/backend
-.venv/bin/python -m playwright install chromium
-
-# Node.js 主后端
 npx playwright install chromium
 ```
 
@@ -147,12 +134,9 @@ npm run db:init -w apps/backend-node
 ### 5. 启动服务
 
 ```bash
-# 启动当前维护的 Node.js 后端与前端
+# 启动 Node.js 后端与前端
 npm run dev:node
 npm run dev:frontend
-
-# 仅在明确需要遗留兼容时启动 Python 后端
-npm run dev:backend
 
 # 或者分别启动
 npm run dev:node       # Node.js 后端 (http://localhost:5409)
@@ -172,15 +156,6 @@ npm run dev:frontend   # 前端服务 (http://localhost:5173)
 ```
 omni-post/
 ├── apps/
-│   ├── backend/                 # Python Flask 后端 (遗留/废弃)
-│   │   ├── src/
-│   │   │   ├── app.py          # 应用入口
-│   │   │   ├── core/           # 配置与日志
-│   │   │   ├── routes/         # API 路由
-│   │   │   ├── services/       # 业务逻辑
-│   │   │   └── uploader/       # 视频上传驱动
-│   │   └── tests/              # Pytest 测试集
-│   │
 │   ├── backend-node/            # Node.js TypeScript 后端 (主实现)
 │   │   ├── src/
 │   │   │   ├── app.ts          # Express 应用
@@ -243,7 +218,7 @@ omni-post/
 
 ### 开发规范
 
-- 后端：遵循 PEP 8 编码规范
+- 后端：遵循 Node.js/TypeScript 最佳实践
 - 前端：遵循 Vue 3 最佳实践
 - 运行测试：`npm test`
 

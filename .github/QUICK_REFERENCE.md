@@ -31,19 +31,16 @@
 ### 1️⃣ dependency-check.yml Workflow
 
 **Automated Checks:**
-- ✅ Python outdated package scan (pip list --outdated)
-- ✅ Security vulnerability check (safety check)
-- ✅ NPM multi-layer audit (root, frontend, backend)
-- ✅ Critical dependency monitoring (Playwright, Flask, Vue)
+- ✅ NPM multi-layer audit (root, frontend, backend-node)
+- ✅ Critical dependency monitoring (Playwright, Vue)
 - ✅ Automated alerts on vulnerabilities found
 
 ### 2️⃣ dependabot.yml Automated Updates
 
 **Covered Package Managers:**
-- ✓ Python (pip) - apps/backend/requirements.txt
 - ✓ NPM Root - package.json
 - ✓ NPM Frontend - apps/frontend/package.json
-- ✓ NPM Backend - apps/backend/package.json
+- ✓ NPM Backend - apps/backend-node/package.json
 - ✓ GitHub Actions - .github/workflows/*.yml
 
 **Configuration Features:**
@@ -91,10 +88,8 @@ git push origin main
 | Package | Priority | Check Frequency |
 |---------|----------|-----------------|
 | Playwright | 🔴 High | Weekly |
-| Flask | 🔴 High | Weekly |
 | Vue 3 | 🟡 Medium | Weekly |
 | Axios | 🟡 Medium | Weekly |
-| pytest | 🟢 Low | Monthly |
 
 ---
 
@@ -102,8 +97,8 @@ git push origin main
 
 - **Check Frequency**: 1 time per week
 - **Concurrent PRs**: Max 10
-- **Critical Dependencies**: 4 (Playwright, Flask, Vue, SQLite)
-- **Coverage**: 4 package managers (pip, npm×3, github-actions)
+- **Critical Dependencies**: 2 (Playwright, Vue)
+- **Coverage**: 3 package managers (npm×3, github-actions)
 - **Automated Alerts**: Real-time on vulnerability detection
 - **Report Retention**: 30 days
 
@@ -123,7 +118,7 @@ Actions → Dependency Security Check → Latest run → Summary
 
 ### Download Dependency Report
 ```
-Actions → Latest run → Artifacts → python-dependency-report
+Actions → Latest run → Artifacts → dependency-report
 ```
 
 ---
@@ -141,8 +136,7 @@ Actions → Latest run → Artifacts → python-dependency-report
 ## 🔗 Related Links
 
 - 📖 [Complete Guide](./DEPENDENCY_CHECK_GUIDE.md)
-- 🐍 [Python Safety Tool](https://github.com/pyupio/safety)
-- 📦 [NPM Audit Docs](https://docs.npmjs.com/cli/v8/commands/npm-audit)
+-  [NPM Audit Docs](https://docs.npmjs.com/cli/v8/commands/npm-audit)
 - 🤖 [Dependabot Docs](https://docs.github.com/en/code-security/dependabot)
 
 ---

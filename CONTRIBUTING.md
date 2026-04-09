@@ -15,7 +15,6 @@ The following is a set of guidelines for contributing to `OmniPost`, which is ho
 - [Styleguides](#styleguides)
   - [Git Commit Messages](#git-commit-messages)
   - [Node.js/TypeScript Styleguide](#nodejs-typescript-styleguide)
-  - [Python Styleguide](#python-styleguide)
   - [Vue.js Styleguide](#vuejs-styleguide)
 
 ## I Have a Question
@@ -58,13 +57,7 @@ This section guides you through submitting an enhancement suggestion for `OmniPo
    npx playwright install chromium
    ```
 
-3. **Optional: prepare the legacy Python backend**
-   ```bash
-   cd apps/backend
-   .venv/bin/python -m playwright install chromium
-   ```
-
-4. **Start development servers**
+3. **Start development servers**
    ```bash
    npm run dev:node
    npm run dev:frontend
@@ -85,59 +78,6 @@ This section guides you through submitting an enhancement suggestion for `OmniPo
 - Preserve the `Routes -> Services -> Uploaders` boundary.
 - Import shared platform IDs and interfaces from `@omni-post/shared` instead of redefining them locally.
 - Use existing lint and test scripts before submitting.
-
-### Python Styleguide
-
-- Python guidance applies only when an issue explicitly targets `apps/backend`.
-- We follow [PEP 8](https://www.python.org/dev/peps/pep-0008/).
-- Use `flake8` to lint your code before submitting.
-- Use `black` for code formatting (line length: 100).
-- Use type hints for function signatures.
-
-**Naming conventions:**
-- Classes: `PascalCase` (e.g., `DouYinVideo`)
-- Functions/Variables: `snake_case` (e.g., `process_video`)
-- Constants: `UPPER_SNAKE_CASE` (e.g., `MAX_UPLOAD_SIZE`)
-- Private methods: prefix with `_` (e.g., `_internal_method`)
-
-**Good practices:**
-```python
-# Use type hints
-from pathlib import Path
-from typing import Optional
-
-async def process_video(
-    file_path: str,
-    platform: str,
-    metadata: Optional[dict] = None
-) -> bool:
-    """Process and upload video to specified platform."""
-    if not Path(file_path).exists():
-        raise FileNotFoundError(f"Video file not found: {file_path}")
-    return True
-
-# Use async/await and try...finally for resource management
-from src.core.browser import launch_browser
-
-async def login_platform(account_file: Path) -> bool:
-    async with async_playwright() as playwright:
-        browser = None
-        try:
-            # Use shared launch_browser for consistent config
-            browser = await launch_browser(playwright)
-            # ... implementation
-            return True
-        finally:
-            if browser:
-                await browser.close()
-```
-
-**Testing:**
-- Write or extend tests for new behavior
-- Aim for at least 80% code coverage on touched modules when practical
-- Use Vitest for maintained Node.js and frontend paths
-- Use `pytest` only for explicit legacy Python work
-- Mock external dependencies
 
 ### Vue.js Styleguide
 

@@ -15,7 +15,7 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Verify the Node.js backend tests pass before starting removal (`npm run test:node`)
+- [X] T001 Verify the Node.js backend tests pass before starting removal (`npm run test:node`)
 
 ---
 
@@ -27,15 +27,15 @@
 
 ### Implementation for User Story 1
 
-- [ ] T002 [P] [US1] Delete the entire `apps/backend` directory
-- [ ] T003 [P] [US1] Delete the Python environment setup script at `tools/scripts/install-python.mjs`
-- [ ] T004 [P] [US1] Update root `package.json` to remove Python-specific scripts (`install:backend`, `install:python`, `dev:backend`, `lint:backend`, `test:backend`) and adjust the `setup` script to only install workspace dependencies
-- [ ] T005 [P] [US1] Update root `package.json` to remove Python linting/formatting rules (`apps/backend/**/*.py`) from `lint-staged` and clean up `engines` / `comments` fields referencing Python
-- [ ] T006 [P] [US1] Remove Python setup and execution instructions from `README.md`
-- [ ] T007 [P] [US1] Remove Python setup and execution instructions from `README_CN.md`
-- [ ] T008 [P] [US1] Remove Python style guide and legacy setup steps from `CONTRIBUTING.md`
-- [ ] T008a [P] [US1] Delete `.github/actions/setup-python-backend` action directory
-- [ ] T008b [P] [US1] Update `.github/QUICK_REFERENCE.md` to remove all Python-related quick references
+- [X] T002 [P] [US1] Delete the entire `apps/backend` directory
+- [X] T003 [P] [US1] Delete the Python environment setup script at `tools/scripts/install-python.mjs`
+- [X] T004 [P] [US1] Update root `package.json` to remove Python-specific scripts (`install:backend`, `install:python`, `dev:backend`, `lint:backend`, `test:backend`) and adjust the `setup` script to only install workspace dependencies
+- [X] T005 [P] [US1] Update root `package.json` to remove Python linting/formatting rules (`apps/backend/**/*.py`) from `lint-staged` and clean up `engines` / `comments` fields referencing Python
+- [X] T006 [P] [US1] Remove Python setup and execution instructions from `README.md`
+- [X] T007 [P] [US1] Remove Python setup and execution instructions from `README_CN.md`
+- [X] T008 [P] [US1] Remove Python style guide and legacy setup steps from `CONTRIBUTING.md`
+- [X] T008a [P] [US1] Delete `.github/actions/setup-python-backend` action directory
+- [X] T008b [P] [US1] Update `.github/QUICK_REFERENCE.md` to remove all Python-related quick references
 
 **Checkpoint**: At this point, the Python backend and its direct configuration are fully removed.
 
@@ -45,9 +45,9 @@
 
 **Purpose**: Improvements that affect multiple user stories, final validation, and cleanup.
 
-- [ ] T009 Run `npm install` at the root to ensure `package-lock.json` is updated and clean
-- [ ] T010 Run `npm run test -w apps/backend-node` to verify no regressions in the active backend
-- [ ] T011 Run `npm run lint` and `npm run check:workspace` to ensure overall repository health and formatting
+- [X] T009 Run `npm install` at the root to ensure `package-lock.json` is updated and clean
+- [X] T010 Run `npm run test -w apps/backend-node` to verify no regressions in the active backend
+- [X] T011 Run `npm run lint` and `npm run check:workspace` to ensure overall repository health and formatting
 
 ---
 
