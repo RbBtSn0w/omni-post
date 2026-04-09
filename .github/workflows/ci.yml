@@ -28,7 +28,6 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       backend_node: ${{ steps.filter.outputs.backend_node }}
       shared: ${{ steps.filter.outputs.shared }}
@@ -47,8 +46,6 @@ jobs:
         uses: dorny/paths-filter@v4
         with:
           filters: |
-            backend:
-              - 'apps/backend/**'
             frontend:
               - 'apps/frontend/**'
             backend_node:
@@ -64,64 +61,6 @@ jobs:
             ci:
               - '.github/workflows/**'
               - '.github/actions/**'
-
-  backend-ci:
-    name: Backend (Lint, Test & Security)
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: ./.github/actions/setup-python-backend
-        with:
-          install-dev: 'true'
-
-      - name: Install Playwright
-        working-directory: apps/backend
-        run: python -m playwright install chromium
-
-      - name: Lint (Black)
-        working-directory: apps/backend
-        run: black --check src/ --line-length=100
-
-      - name: Lint (Isort)
-        working-directory: apps/backend
-        run: isort --check-only src/ --profile black
-
-      - name: Lint (Pylint - Critical Only)
-        working-directory: apps/backend
-        # Allow failures, but good to see output
-        run: pylint src/ --disable=all --enable=E,F --exit-zero
-
-      - name: Security (Bandit)
-        working-directory: apps/backend
-        run: bandit -r src/ -c pyproject.toml 2>&1 || true
-
-      - name: Security (Pip Audit)
-        working-directory: apps/backend
-        run: pip-audit --progress-spinner=off || echo "Pip Audit met warnings but continuing..."
-
-      - name: Run Tests
-        working-directory: apps/backend
-        run: pytest tests/ -v --cov=src --cov-report=xml:test-results/coverage/coverage.xml
-
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v5
-        if: always()
-        with:
-          files: ./apps/backend/test-results/coverage/coverage.xml
-          flags: backend
-          name: backend-coverage
-          fail_ci_if_error: false
 
   shared-ci:
     name: Shared Package (Lint, Test & Build)
@@ -302,7 +241,7 @@ jobs:
 
   ci-success:
     name: CI Success
-    needs: [changes, backend-ci, shared-ci, cli-ci, frontend-ci, backend-node-ci]
+    needs: [changes, shared-ci, cli-ci, frontend-ci, backend-node-ci]
     if: always()
     runs-on: ubuntu-latest
     env:
@@ -313,7 +252,6 @@ jobs:
         run: |
           results=(
             "${{ needs.changes.result }}"
-            "${{ needs.backend-ci.result }}"
             "${{ needs.shared-ci.result }}"
             "${{ needs.cli-ci.result }}"
             "${{ needs.frontend-ci.result }}"
