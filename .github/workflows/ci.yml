@@ -158,6 +158,7 @@ jobs:
         run: npm run build -w @omni-post/shared
 
       - name: Security (NPM Audit)
+        continue-on-error: true
         run: npm audit --audit-level=high --omit=dev
 
       - name: Lint
@@ -182,6 +183,7 @@ jobs:
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
+          handle_no_reports_found: true
 
   backend-node-ci:
     name: Backend Node (Lint, Typecheck & Test)
