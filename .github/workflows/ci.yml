@@ -157,8 +157,13 @@ jobs:
       - name: Build Shared Package
         run: npm run build -w @omni-post/shared
 
-      - name: Security (NPM Audit)
+      - name: Security (NPM Audit, advisory on PR)
+        if: github.event_name == 'pull_request'
         continue-on-error: true
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Security (NPM Audit, blocking on non-PR)
+        if: github.event_name != 'pull_request'
         run: npm audit --audit-level=high --omit=dev
 
       - name: Lint

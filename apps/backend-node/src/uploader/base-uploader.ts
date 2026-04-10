@@ -1,4 +1,5 @@
 import { BrowserContext, Page } from 'playwright';
+import { SpanStatusCode } from '@opentelemetry/api';
 import { logger } from '../core/logger.js';
 import { getTracer } from '../core/telemetry.js';
 import { UploadOptions } from '../db/models.js';
@@ -46,6 +47,11 @@ export abstract class BaseUploader {
                 const page = await context.newPage();
                 logger.info(`[${this.platformName}] New page created.`);
                 return page;
+            } catch (error: unknown) {
+                const exception = error instanceof Error ? error : new Error(String(error));
+                span.recordException(exception);
+                span.setStatus({ code: SpanStatusCode.ERROR, message: exception.message });
+                throw exception;
             } finally {
                 span.end();
             }

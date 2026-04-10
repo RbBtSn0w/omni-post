@@ -6,7 +6,7 @@
 import { initTelemetry } from './core/telemetry.js';
 
 // Initialize telemetry before loading application modules.
-initTelemetry();
+await initTelemetry();
 
 const [{ createApp }, { logBrowserInfo, SERVER_HOST, SERVER_PORT }, { logger }, { StartupService }] = await Promise.all([
     import('./app.js'),

@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { SpanStatusCode } from '@opentelemetry/api';
 import { logger } from '../core/logger.js';
 import { getTracer } from '../core/telemetry.js';
 
@@ -144,8 +145,11 @@ export class VideoService {
 
                 return false;
             } catch (error: unknown) {
-                const msg = error instanceof Error ? error.message : String(error);
+                const exception = error instanceof Error ? error : new Error(String(error));
+                const msg = exception.message;
                 logger.error(`[VideoService] 视频处理异常: ${msg}`);
+                span.recordException(exception);
+                span.setStatus({ code: SpanStatusCode.ERROR, message: msg });
                 return false;
             } finally {
                 this.activeOptimizations.delete(filePath);

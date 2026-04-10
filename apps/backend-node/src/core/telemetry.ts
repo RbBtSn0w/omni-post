@@ -15,6 +15,7 @@ const SERVICE_NAME = 'omni-post-backend';
 const TRACER_NAME = 'omni-post';
 
 let sdk: NodeSDK | undefined;
+let startupPromise: Promise<void> | undefined;
 
 function isTelemetryEnabled(): boolean {
     const raw = process.env.OTEL_ENABLED;
@@ -29,8 +30,13 @@ function isTelemetryEnabled(): boolean {
  * Initialize the OpenTelemetry SDK with console exporters.
  * Must be called before any other module imports that need tracing.
  */
-export function initTelemetry(): void {
-    if (sdk || !isTelemetryEnabled()) return;
+export async function initTelemetry(): Promise<void> {
+    if (!isTelemetryEnabled()) return;
+    if (sdk) return;
+    if (startupPromise) {
+        await startupPromise;
+        return;
+    }
 
     const nextSdk = new NodeSDK({
         serviceName: SERVICE_NAME,
@@ -38,15 +44,23 @@ export function initTelemetry(): void {
         logRecordProcessor: new SimpleLogRecordProcessor(new ConsoleLogRecordExporter()),
     });
 
-    sdk = nextSdk;
+    startupPromise = Promise.resolve(nextSdk.start())
+        .then(() => {
+            sdk = nextSdk;
+        })
+        .catch((error: unknown) => {
+            if (sdk === nextSdk) {
+                sdk = undefined;
+            }
+            // eslint-disable-next-line no-console
+            console.error('Failed to initialize OpenTelemetry SDK', error);
+            throw error;
+        })
+        .finally(() => {
+            startupPromise = undefined;
+        });
 
-    void Promise.resolve(nextSdk.start()).catch((error: unknown) => {
-        if (sdk === nextSdk) {
-            sdk = undefined;
-        }
-        // eslint-disable-next-line no-console
-        console.error('Failed to initialize OpenTelemetry SDK', error);
-    });
+    await startupPromise;
 }
 
 /**

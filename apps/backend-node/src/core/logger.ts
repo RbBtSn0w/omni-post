@@ -19,6 +19,23 @@ const SEVERITY_MAP: Record<LogLevel, SeverityNumber> = {
     error: SeverityNumber.ERROR,
 };
 
+const LEVEL_ORDER: Record<LogLevel, number> = {
+    debug: 10,
+    info: 20,
+    warn: 30,
+    error: 40,
+};
+
+function resolveMinLogLevel(): LogLevel {
+    const raw = process.env.LOG_LEVEL?.trim().toLowerCase();
+    if (raw === 'debug' || raw === 'info' || raw === 'warn' || raw === 'error') return raw;
+    return 'info';
+}
+
+function shouldLog(level: LogLevel): boolean {
+    return LEVEL_ORDER[level] >= LEVEL_ORDER[resolveMinLogLevel()];
+}
+
 /**
  * Timestamp string in ISO-like format for console output.
  */
@@ -57,9 +74,22 @@ function toAttributeValue(value: unknown): AttributeValue | undefined {
 }
 
 function sanitizeAttributes(meta?: unknown): Attributes | undefined {
+    if (meta instanceof Error) {
+        return {
+            'error.message': meta.message,
+            'error.name': meta.name,
+            ...(meta.stack ? { 'error.stack': meta.stack } : {}),
+        };
+    }
     if (typeof meta !== 'object' || meta === null) return undefined;
     const attrs: Attributes = {};
     for (const [key, value] of Object.entries(meta as Record<string, unknown>)) {
+        if (value instanceof Error) {
+            attrs[`${key}.message`] = value.message;
+            attrs[`${key}.name`] = value.name;
+            if (value.stack) attrs[`${key}.stack`] = value.stack;
+            continue;
+        }
         const normalized = toAttributeValue(value);
         if (normalized !== undefined) {
             attrs[key] = normalized;
@@ -72,18 +102,28 @@ function sanitizeAttributes(meta?: unknown): Attributes | undefined {
  * Emit a structured log record via OTel and also print to console.
  */
 function emit(otelLogger: OtelLoggerType, level: LogLevel, message: string, meta?: unknown): void {
+    if (!shouldLog(level)) return;
+
     // Console output (preserves human-readable format)
     const ts = timestamp();
     const tag = level.toUpperCase();
     const attrs = sanitizeAttributes(meta);
     const prefix = typeof attrs?.platform === 'string' ? `[${attrs.platform}] ` : '';
+    const consoleWriter = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
 
-    if (meta !== undefined && typeof meta !== 'object') {
+    if (meta instanceof Error) {
         // eslint-disable-next-line no-console
-        console.log(`${ts} | ${tag}: ${prefix}${message} ${String(meta)}`);
+        consoleWriter(`${ts} | ${tag}: ${prefix}${message} ${meta.message}`);
+        if (meta.stack) {
+            // eslint-disable-next-line no-console
+            consoleWriter(meta.stack);
+        }
+    } else if (meta !== undefined && typeof meta !== 'object') {
+        // eslint-disable-next-line no-console
+        consoleWriter(`${ts} | ${tag}: ${prefix}${message} ${String(meta)}`);
     } else {
         // eslint-disable-next-line no-console
-        console.log(`${ts} | ${tag}: ${prefix}${message}`);
+        consoleWriter(`${ts} | ${tag}: ${prefix}${message}`);
     }
 
     // OTel structured log record

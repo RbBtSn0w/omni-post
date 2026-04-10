@@ -15,12 +15,12 @@ describe('Telemetry Module', () => {
 
     it('should initialize without throwing', async () => {
         const mod = await import('../../src/core/telemetry.js');
-        expect(() => mod.initTelemetry()).not.toThrow();
+        await expect(mod.initTelemetry()).resolves.not.toThrow();
     });
 
     it('should provide access to a tracer', async () => {
         const mod = await import('../../src/core/telemetry.js');
-        mod.initTelemetry();
+        await mod.initTelemetry();
         expect(typeof mod.getTracer).toBe('function');
         const tracer = mod.getTracer();
         expect(tracer).toBeDefined();
@@ -29,7 +29,7 @@ describe('Telemetry Module', () => {
 
     it('should shutdown gracefully', async () => {
         const mod = await import('../../src/core/telemetry.js');
-        mod.initTelemetry();
+        await mod.initTelemetry();
         await expect(mod.shutdownTelemetry()).resolves.not.toThrow();
     });
 });
