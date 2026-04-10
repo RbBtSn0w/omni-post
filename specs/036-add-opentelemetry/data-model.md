@@ -20,10 +20,10 @@ Represents a timed operation.
 - `status`: OK | ERROR
 
 ### Structured Log Record
-The enriched Winston log output when running in development mode.
+The OpenTelemetry log record emitted by the logger facade in development mode.
 - `timestamp`: String (ISO 8601)
-- `level`: String (info, warn, error)
-- `message`: String
-- `trace_id`: String (from TraceContext)
-- `span_id`: String (from TraceContext)
-- `metadata`: Key-Value map (custom attributes passed to the logger)
+- `severityText`: String (DEBUG, INFO, WARN, ERROR)
+- `body`: String (log message)
+- `traceId`: String (from TraceContext, when active span exists)
+- `spanId`: String (from TraceContext, when active span exists)
+- `attributes`: Key-Value map (sanitized primitive fields from logger metadata)

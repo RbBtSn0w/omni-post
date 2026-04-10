@@ -16,20 +16,37 @@ const TRACER_NAME = 'omni-post';
 
 let sdk: NodeSDK | undefined;
 
+function isTelemetryEnabled(): boolean {
+    const raw = process.env.OTEL_ENABLED;
+    if (raw !== undefined) {
+        const normalized = raw.trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+    }
+    return process.env.NODE_ENV === 'development';
+}
+
 /**
  * Initialize the OpenTelemetry SDK with console exporters.
  * Must be called before any other module imports that need tracing.
  */
 export function initTelemetry(): void {
-    if (sdk) return; // Already initialized
+    if (sdk || !isTelemetryEnabled()) return;
 
-    sdk = new NodeSDK({
+    const nextSdk = new NodeSDK({
         serviceName: SERVICE_NAME,
         traceExporter: new ConsoleSpanExporter(),
         logRecordProcessor: new SimpleLogRecordProcessor(new ConsoleLogRecordExporter()),
     });
 
-    sdk.start();
+    sdk = nextSdk;
+
+    void Promise.resolve(nextSdk.start()).catch((error: unknown) => {
+        if (sdk === nextSdk) {
+            sdk = undefined;
+        }
+        // eslint-disable-next-line no-console
+        console.error('Failed to initialize OpenTelemetry SDK', error);
+    });
 }
 
 /**

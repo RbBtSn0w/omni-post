@@ -30,9 +30,9 @@ describe('Task Service Tracing', () => {
         ({ db, dbPath } = createTempDb());
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         exporter.reset();
-        provider.shutdown();
+        await provider.shutdown();
         cleanupTempDb(dbPath, db);
     });
 

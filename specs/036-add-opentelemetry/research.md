@@ -2,16 +2,16 @@
 
 ## OpenTelemetry SDK & Logging Integration
 
-**Context**: The application currently uses `winston` for logging within the `apps/backend-node` package (e.g., `src/core/logger.ts`). The goal is to introduce structured logging and performance tracking for local development without external collectors.
+**Context**: The application now uses an OpenTelemetry-native logger facade in `apps/backend-node/src/core/logger.ts` instead of Winston. The goal remains structured logging and performance tracking for local development without external collectors.
 
 **Decision**:
 - Integrate `@opentelemetry/api`, `@opentelemetry/sdk-trace-node`, and `@opentelemetry/sdk-node`.
 - Use the built-in `ConsoleSpanExporter` and `ConsoleLogRecordExporter` for development environments to output traces and structured logs to standard out.
-- Utilize `@opentelemetry/instrumentation-winston` to automatically inject trace context (TraceId, SpanId) into existing Winston logs, ensuring a graceful transition and linking legacy logs to the new OpenTelemetry spans.
+- Provide a typed logging facade (`logger.info/warn/error/debug`) that emits OpenTelemetry log records and keeps concise console output for local debugging.
 
 **Rationale**:
 - **Standardization**: OpenTelemetry is the industry standard for observability. Using its API prevents vendor lock-in.
-- **Graceful Integration**: Winston instrumentation allows us to keep the existing `logger.info()` calls while automatically enriching them with trace metadata, avoiding a massive rewrite of every logging site.
+- **Facade Compatibility**: Keeping the existing `logger.info()` style API minimizes call-site churn while removing the legacy Winston dependency.
 - **Zero-Dependency Local Dev**: The `ConsoleSpanExporter` outputs directly to the terminal, fulfilling the requirement of not needing a persistent storage backend or external collector like Jaeger for local development.
 
 **Alternatives Considered**:

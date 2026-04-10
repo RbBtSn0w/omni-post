@@ -18,18 +18,31 @@ The OpenTelemetry setup is designed for zero-friction local development. You do 
    npm run dev:node
    ```
    
-2. *Configuration Note*: OpenTelemetry structured logging to the console is enabled by default in the `development` environment.
+2. *Configuration Note*: OpenTelemetry console exporters are enabled in `development` by default.  
+   You can override via environment variable:
+   - `OTEL_ENABLED=true` to force-enable
+   - `OTEL_ENABLED=false` (or unset outside development) to disable
 
 ## Understanding the Output
 
-When you perform actions (like starting a publishing task), you will see two types of enriched output in your terminal:
+When you perform actions (like starting a publishing task), you will see two types of output in your terminal:
 
-1. **Enriched Winston Logs**: Your standard `logger.info()` calls will now contain `trace_id` and `span_id`.
+1. **Logger Facade Console Output**: Calls via `core/logger.ts` emit OpenTelemetry log records and print readable console lines.
    ```json
-   {"level":"info","message":"Task started","trace_id":"d4cda95b652f4a1592b449d5929fda1b","span_id":"6e0c63257de34c92","timestamp":"2026-04-09T10:00:00.000Z"}
+   {
+     "severityText": "INFO",
+     "body": "Task started",
+     "attributes": {
+       "task.id": "publish-123",
+       "task.platform": "douyin"
+     },
+     "traceId": "d4cda95b652f4a1592b449d5929fda1b",
+     "spanId": "6e0c63257de34c92",
+     "timestamp": "2026-04-09T10:00:00.000Z"
+   }
    ```
 
-2. **OpenTelemetry Spans**: At the end of an operation, a summary span is printed containing the total duration and execution status.
+2. **OpenTelemetry Spans**: At the end of an operation, a summary span is printed with duration and status.
    ```json
    {
      "traceId": "d4cda95b652f4a1592b449d5929fda1b",
