@@ -151,7 +151,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
                     let filePath: string;
                     try {
                         filePath = safeJoin(VIDEOS_DIR, f);
-                    } catch (error: any) {
+                    } catch {
                         logger.error(`  ✗ Video Path Invalid: ${f}`);
                         throw new Error(`非法的文件路径: ${f}`);
                     }
@@ -176,7 +176,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
                     let accPath: string;
                     try {
                         accPath = safeJoin(COOKIES_DIR, acc);
-                    } catch (error: any) {
+                    } catch {
                         logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
                         throw new Error(`非法的文件路径: ${acc}`);
                     }
@@ -241,12 +241,17 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
 
             logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
             taskService.updateTaskStatus(taskId, 'completed', 100, null);
-        } catch (error: any) {
-            logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
-            logger.error(error.stack);
-            span.recordException(error);
-            span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-            taskService.updateTaskStatus(taskId, 'failed', undefined, error.message);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            const stack = error instanceof Error ? error.stack : undefined;
+            const exception = error instanceof Error ? error : new Error(message);
+            logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${message}`);
+            if (stack) {
+                logger.error(stack);
+            }
+            span.recordException(exception);
+            span.setStatus({ code: SpanStatusCode.ERROR, message });
+            taskService.updateTaskStatus(taskId, 'failed', undefined, message);
         } finally {
             // 释放所有已持有的账号锁
             for (const key of lockKeys) {
