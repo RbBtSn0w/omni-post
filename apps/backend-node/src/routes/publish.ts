@@ -11,6 +11,7 @@ import { logger } from '../core/logger.js';
 import { dbManager } from '../db/database.js';
 import { activeQueues, runAsyncFunction } from '../services/login-service.js';
 import { startPublishThread } from '../services/publish-executor.js';
+import type { PublishTaskData } from '../services/publish-types.js';
 import { taskService } from '../services/task-service.js';
 import { capabilityService } from '../services/capability-service.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,6 +69,31 @@ function resolveTypeByCapability(data: Record<string, unknown>): { type: number;
     const capability = capabilityService.getCapabilityById(capabilityId);
     if (!capability) return null;
     return { type: capability.platform_id, kind: capability.kind };
+}
+
+function toPublishTaskData(raw: Record<string, unknown>): PublishTaskData | null {
+    const typeValue = raw.type;
+    const type = typeof typeValue === 'number' && Number.isInteger(typeValue) && typeValue > 0 ? typeValue : undefined;
+    const platforms = Array.isArray(raw.platforms)
+        ? raw.platforms.filter((platform): platform is number => typeof platform === 'number' && Number.isInteger(platform) && platform > 0)
+        : [];
+
+    if (platforms.length > 0) {
+        return {
+            ...raw,
+            type,
+            platforms: platforms as [number, ...number[]]
+        };
+    }
+
+    if (type !== undefined) {
+        return {
+            ...raw,
+            type
+        };
+    }
+
+    return null;
 }
 
 function filterValidAccountsByType(platformType: number, accountList: string[]): string[] {
@@ -304,9 +330,15 @@ router.post('/postVideo', async (req: Request, res: Response) => {
 
         data.accountList = validAccounts;
 
-        const taskId = taskService.createTask(data as Record<string, unknown>);
+        const publishTaskData = toPublishTaskData(data);
+        if (!publishTaskData) {
+            sendError(res, 400, '缺少有效平台信息(type/platforms)');
+            return;
+        }
+
+        const taskId = taskService.createTask(publishTaskData);
         if (taskId) {
-            startPublishThread(taskId, data as Record<string, unknown>);
+            startPublishThread(taskId, publishTaskData);
             sendSuccess(res, { taskId }, 'Task started');
         } else {
             sendError(res, 500, 'Failed to create task');
@@ -337,9 +369,15 @@ router.post('/postVideoBatch', async (req: Request, res: Response) => {
                 data.type = resolved.type;
                 data.content_type = resolved.kind === 'publish.article' ? 'article' : 'video';
             }
-            const taskId = taskService.createTask(data);
+            const publishTaskData = toPublishTaskData(data);
+            if (!publishTaskData) {
+                logger.warn('[PUBLISH] Skip batch item due to missing type/platforms');
+                continue;
+            }
+
+            const taskId = taskService.createTask(publishTaskData);
             if (taskId) {
-                startPublishThread(taskId, data);
+                startPublishThread(taskId, publishTaskData);
                 createdTasks.push(taskId);
             }
         }
@@ -383,8 +421,14 @@ router.post('/publish/capability', async (req: Request, res: Response) => {
             };
         }
 
-        const taskId = taskService.createTask(data);
-        startPublishThread(taskId, data);
+        const publishTaskData = toPublishTaskData(data);
+        if (!publishTaskData) {
+            sendError(res, 400, '缺少有效平台信息(type/platforms)');
+            return;
+        }
+
+        const taskId = taskService.createTask(publishTaskData);
+        startPublishThread(taskId, publishTaskData);
         sendSuccess(res, { taskId }, 'Task started');
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

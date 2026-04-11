@@ -14,7 +14,7 @@ import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
 import { safeJoin } from '../utils/path.js';
 import { lockManager } from './lock-manager.js';
-import type { PublishTaskData } from './publish-types.js';
+import { resolvePublishType, type PublishTaskData } from './publish-types.js';
 import {
     postArticleJuejin,
     postArticleZhihu,
@@ -119,7 +119,7 @@ export async function runPublishTask(taskId: string, publishData: PublishTaskDat
             taskService.updateTaskStatus(taskId, 'uploading', 0);
 
             // Extract data
-            const type = typeof publishData.type === 'number' ? publishData.type : -1;
+            const type = resolvePublishType(publishData);
             const title = publishData.title || '';
             const tags = publishData.tags || [];
             const fileList: string[] = publishData.fileList || [];

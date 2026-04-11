@@ -1,10 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 describe('Telemetry Module', () => {
+    const previousOtelEnabled = process.env.OTEL_ENABLED;
+
+    beforeAll(() => {
+        process.env.OTEL_ENABLED = 'true';
+    });
+
     afterEach(async () => {
         // Clean up SDK after each test to avoid state leaks
         const mod = await import('../../src/core/telemetry.js');
         await mod.shutdownTelemetry();
+    });
+
+    afterAll(() => {
+        if (previousOtelEnabled === undefined) {
+            delete process.env.OTEL_ENABLED;
+            return;
+        }
+        process.env.OTEL_ENABLED = previousOtelEnabled;
     });
 
     it('should export initTelemetry and shutdownTelemetry functions', async () => {

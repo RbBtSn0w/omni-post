@@ -8,7 +8,7 @@ import { SpanStatusCode } from '@opentelemetry/api';
 import { logger } from '../core/logger.js';
 import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
-import type { PublishTaskData } from './publish-types.js';
+import { resolvePublishPlatforms, type PublishTaskData } from './publish-types.js';
 
 export interface Task {
     id: string;
@@ -40,6 +40,8 @@ class TaskService {
                 const db = dbManager.getDb();
                 const taskId = `task_${Date.now()}_${uuidv4().slice(0, 8)}`;
                 span.setAttribute('task.id', taskId);
+                const resolvedPlatforms = resolvePublishPlatforms(publishData);
+                span.setAttribute('task.platforms.count', resolvedPlatforms.length);
 
                 const stmt = db.prepare(`
       INSERT INTO tasks (id, title, status, progress, priority, platforms, file_list, account_list, schedule_data, publish_data)
@@ -57,7 +59,7 @@ class TaskService {
                 stmt.run(
                     taskId,
                     publishData.title || null,
-                    JSON.stringify(publishData.platforms || [publishData.type]),
+                    JSON.stringify(resolvedPlatforms),
                     JSON.stringify(publishData.fileList || []),
                     JSON.stringify(publishData.accountList || []),
                     JSON.stringify(scheduleData),
