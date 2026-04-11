@@ -23,7 +23,8 @@ function isTelemetryEnabled(): boolean {
         const normalized = raw.trim().toLowerCase();
         return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
     }
-    return process.env.NODE_ENV === 'development';
+    // Default to true in local development (when NODE_ENV is undefined or 'development')
+    return process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 }
 
 /**
