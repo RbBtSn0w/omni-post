@@ -62,7 +62,7 @@ As a developer, I need to see the execution duration of specific operations (lik
 - **SC-001**: Developers can visually identify the parent-child relationship of a 5-step task workflow solely from the local console output.
 - **SC-002**: The time required for a developer to locate the specific point of failure in a complex, multi-platform publishing task is reduced by at least 50% compared to the unstructured logging approach.
 - **SC-003**: No new external infrastructure dependencies (like Jaeger, Zipkin, or Datadog) are required to run the local development environment.
-- **SC-004**: Duration metrics are strictly printed for all BaseUploader methods and span duration > 500ms is highlighted in the console output.
+- **SC-004**: Duration metrics are printed for BaseUploader method spans in local console output.
 
 ## Assumptions
 

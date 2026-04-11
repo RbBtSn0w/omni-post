@@ -26,7 +26,7 @@ export class VideoService {
                 }
 
                 logger.info(`[VideoService] 文件正在优化中，等待就绪: ${filePath}`);
-                return new Promise<void>((resolve) => {
+                await new Promise<void>((resolve) => {
                     const check = (finishedPath: string) => {
                         if (finishedPath === filePath) {
                             this.eventEmitter.off('finished', check);
@@ -34,6 +34,12 @@ export class VideoService {
                         }
                     };
                     this.eventEmitter.on('finished', check);
+                    // Re-check after listener registration to avoid missing a finish event
+                    // emitted in the small window between has() check and on('finished').
+                    if (!this.activeOptimizations.has(filePath)) {
+                        this.eventEmitter.off('finished', check);
+                        resolve();
+                    }
                 });
             } finally {
                 span.end();
