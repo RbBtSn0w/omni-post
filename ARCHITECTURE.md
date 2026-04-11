@@ -606,10 +606,15 @@ Production:
 
 ## Monitoring & Logging
 
+### OpenTelemetry Integration
+
+The backend uses OpenTelemetry (OTel) for structured logging and distributed tracing, replacing legacy text-based file loggers (like Winston). This provides rich contextual information (Trace IDs, spans, structured attributes) for debugging and AI analysis.
+
 ### Logging Levels
 
 ```typescript
-import { logger } from './core/logger.js';
+import { getOtelLogger } from './core/telemetry.js';
+// Or use the compatible facade: import { logger } from './core/logger.js';
 
 logger.debug("Detailed diagnostic information");
 logger.info("General informational message");
@@ -617,11 +622,11 @@ logger.warn("Warning message");
 logger.error("Error message");
 ```
 
-### Log Storage
+### Log Storage & Tracing
 
-- Backend logs: `apps/backend-node/data/logs/`
-- Organized by date and severity
-- Streamed to console during development
+- **Development**: Traces and logs are output to the console by default (`ConsoleSpanExporter`).
+- **Debugging & AI Analysis**: Run `npm run dev:node:trace` from the root to export full structured JSON traces to `apps/backend-node/logs/local-trace.json`. This JSON is ideal for AI context-aware debugging.
+- **Production**: In future setups, data can be routed via OTLP exporters to observability platforms (Jaeger, Grafana, Datadog) without changing application code.
 
 ## Future Enhancements
 

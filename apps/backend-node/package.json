@@ -7,6 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:trace": "mkdir -p logs && tsx watch src/index.ts 2>&1 | tee logs/local-trace.json",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",

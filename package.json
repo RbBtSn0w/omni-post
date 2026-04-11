@@ -17,6 +17,7 @@
     "dev:all": "npm run dev --workspaces",
     "dev:frontend": "npm run dev -w apps/frontend",
     "dev:node": "npm run dev -w apps/backend-node",
+    "dev:node:trace": "npm run dev:trace -w apps/backend-node",
     "build": "npm run build --workspaces",
     "build:all": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
