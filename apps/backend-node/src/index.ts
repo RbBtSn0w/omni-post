@@ -3,10 +3,17 @@
  * Mirrors: apps/backend/run.py functionality
  */
 
-import { createApp } from './app.js';
-import { logBrowserInfo, SERVER_HOST, SERVER_PORT } from './core/config.js';
-import { logger } from './core/logger.js';
-import { StartupService } from './services/startup-service.js';
+import { initTelemetry } from './core/telemetry.js';
+
+// Initialize telemetry before loading application modules.
+await initTelemetry();
+
+const [{ createApp }, { logBrowserInfo, SERVER_HOST, SERVER_PORT }, { logger }, { StartupService }] = await Promise.all([
+    import('./app.js'),
+    import('./core/config.js'),
+    import('./core/logger.js'),
+    import('./services/startup-service.js'),
+]);
 
 const app = createApp();
 

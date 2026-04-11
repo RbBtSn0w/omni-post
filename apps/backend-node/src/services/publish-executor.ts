@@ -5,13 +5,16 @@
  * Handles task execution lifecycle: validates files, dispatches to uploader, updates status.
  */
 
+import { SpanStatusCode } from '@opentelemetry/api';
 import fs from 'fs';
 import { COOKIES_DIR, VIDEOS_DIR } from '../core/config.js';
 import { PlatformType, getPlatformName } from '../core/constants.js';
 import { logger } from '../core/logger.js';
+import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
 import { safeJoin } from '../utils/path.js';
 import { lockManager } from './lock-manager.js';
+import { resolvePublishType, type PublishTaskData } from './publish-types.js';
 import {
     postArticleJuejin,
     postArticleZhihu,
@@ -82,174 +85,189 @@ function releaseSlot(taskId: string): void {
 /**
  * Execute publish task. Updates task status in DB.
  */
-export async function runPublishTask(taskId: string, publishData: any): Promise<void> {
-    // 等待并发槽位分配
-    await acquireSlot(taskId);
+export async function runPublishTask(taskId: string, publishData: PublishTaskData): Promise<void> {
+    const tracer = getTracer();
+    return tracer.startActiveSpan('publish.task', async (span) => {
+        span.setAttribute('task.id', taskId);
 
-    const accountList: string[] = publishData.accountList || [];
-    const contentType: 'video' | 'article' = publishData.content_type || 'video';
-    const browser_profile_id = publishData.browser_profile_id || null;
-    const lockKeys: string[] = [];
-    let lastProgress = 0;
+        // 等待并发槽位分配
+        await acquireSlot(taskId);
 
-    try {
-        const resourcesToLock = [...accountList];
-        if (browser_profile_id) {
-            resourcesToLock.push(`profile:${browser_profile_id}`);
-        }
+        const accountList: string[] = publishData.accountList || [];
+        const contentType: 'video' | 'article' = publishData.content_type === 'article' ? 'article' : 'video';
+        const browser_profile_id = publishData.browser_profile_id || null;
+        const lockKeys: string[] = [];
+        let lastProgress = 0;
 
-        // 尝试锁定所有涉及资源（账号、浏览器 profile）
-        for (const key of resourcesToLock) {
-            if (!lockManager.lock(key)) {
-                throw new Error('账号或浏览器配置正在使用中，请稍后再试');
+        try {
+            const resourcesToLock = [...accountList];
+            if (browser_profile_id) {
+                resourcesToLock.push(`profile:${browser_profile_id}`);
             }
-            lockKeys.push(key);
-        }
 
-        logger.info(`\n${'='.repeat(50)}`);
-        logger.info(`[PUBLISH] Starting task ${taskId}`);
-        logger.info(`${'='.repeat(50)}`);
-        taskService.updateTaskStatus(taskId, 'uploading', 0);
-
-        // Extract data
-        const type = publishData.type;
-        const title = publishData.title || '';
-        const tags = publishData.tags || [];
-        const fileList: string[] = publishData.fileList || [];
-        let category = publishData.category;
-        if (category === 0) category = null;
-        const enableTimer = publishData.enableTimer;
-        const videosPerDay = publishData.videosPerDay;
-        const dailyTimes = publishData.dailyTimes;
-        const startDays = publishData.startDays;
-        const productLink = publishData.productLink || '';
-        const productTitle = publishData.productTitle || '';
-        const thumbnailPath = publishData.thumbnail || '';
-        const isDraft = publishData.isDraft || false;
-        const article = publishData.article;
-
-        // Debug logging
-        logger.info(`[PUBLISH] Platform: ${getPlatformName(type)}`);
-        logger.info(`[PUBLISH] Title: ${title}`);
-        logger.info(`[PUBLISH] Tags: ${tags}`);
-        logger.info(`[PUBLISH] File list: ${fileList}`);
-        logger.info(`[PUBLISH] Account list: ${accountList}`);
-        logger.info(`[PUBLISH] Browser Profile ID: ${browser_profile_id}`);
-
-        // Validate files exist
-        if (contentType === 'video') {
-            logger.info(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
-            for (const f of fileList) {
-                let filePath: string;
-                try {
-                    filePath = safeJoin(VIDEOS_DIR, f);
-                } catch (error: any) {
-                    logger.error(`  ✗ Video Path Invalid: ${f}`);
-                    throw new Error(`非法的文件路径: ${f}`);
+            // 尝试锁定所有涉及资源（账号、浏览器 profile）
+            for (const key of resourcesToLock) {
+                if (!lockManager.lock(key)) {
+                    throw new Error('账号或浏览器配置正在使用中，请稍后再试');
                 }
-
-                if (fs.existsSync(filePath)) {
-                    // 等待视频优化（ffmpeg 任务）就绪，防止文件占位符被原子替换时导致的 File not found
-                    await videoService.waitForReadiness(filePath);
-                    logger.info(`  ✓ Video exists: ${f}`);
-                } else {
-                    logger.error(`  ✗ Video MISSING: ${f}`);
-                    throw new Error(`Video file not found: ${filePath}`);
-                }
+                lockKeys.push(key);
             }
-        } else {
-            logger.info('\n[VALIDATE] Skipping video file checks (article task).');
-        }
 
-        // Managed cookies check only if NOT using local profile
-        if (!browser_profile_id) {
-            logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
-            for (const acc of accountList) {
-                let accPath: string;
-                try {
-                    accPath = safeJoin(COOKIES_DIR, acc);
-                } catch (error: any) {
-                    logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
-                    throw new Error(`非法的文件路径: ${acc}`);
-                }
+            logger.info(`\n${'='.repeat(50)}`);
+            logger.info(`[PUBLISH] Starting task ${taskId}`);
+            logger.info(`${'='.repeat(50)}`);
+            taskService.updateTaskStatus(taskId, 'uploading', 0);
 
-                if (fs.existsSync(accPath)) {
-                    logger.info(`  ✓ Cookie exists: ${acc}`);
-                } else {
-                    logger.error(`  ✗ Cookie MISSING: ${acc}`);
-                    throw new Error(`Cookie file not found: ${accPath}`);
+            // Extract data
+            const type = resolvePublishType(publishData);
+            const title = publishData.title || '';
+            const tags = publishData.tags || [];
+            const fileList: string[] = publishData.fileList || [];
+            let category = publishData.category;
+            if (category === 0) category = null;
+            const enableTimer = publishData.enableTimer;
+            const videosPerDay = publishData.videosPerDay;
+            const dailyTimes = publishData.dailyTimes;
+            const startDays = publishData.startDays;
+            const productLink = publishData.productLink || '';
+            const productTitle = publishData.productTitle || '';
+            const thumbnailPath = publishData.thumbnail || '';
+            const isDraft = publishData.isDraft || false;
+            const article = publishData.article;
+
+            // Debug logging
+            logger.info(`[PUBLISH] Platform: ${getPlatformName(type)}`);
+            span.setAttribute('task.platform', getPlatformName(type));
+            span.setAttribute('task.contentType', contentType);
+            logger.info(`[PUBLISH] Title: ${title}`);
+            logger.info(`[PUBLISH] Tags: ${tags}`);
+            logger.info(`[PUBLISH] File list: ${fileList}`);
+            logger.info(`[PUBLISH] Account list: ${accountList}`);
+            logger.info(`[PUBLISH] Browser Profile ID: ${browser_profile_id}`);
+
+            // Validate files exist
+            if (contentType === 'video') {
+                logger.info(`\n[VALIDATE] Checking video files in: ${VIDEOS_DIR}`);
+                for (const f of fileList) {
+                    let filePath: string;
+                    try {
+                        filePath = safeJoin(VIDEOS_DIR, f);
+                    } catch {
+                        logger.error(`  ✗ Video Path Invalid: ${f}`);
+                        throw new Error(`非法的文件路径: ${f}`);
+                    }
+
+                    if (fs.existsSync(filePath)) {
+                        // 等待视频优化（ffmpeg 任务）就绪，防止文件占位符被原子替换时导致的 File not found
+                        await videoService.waitForReadiness(filePath);
+                        logger.info(`  ✓ Video exists: ${f}`);
+                    } else {
+                        logger.error(`  ✗ Video MISSING: ${f}`);
+                        throw new Error(`Video file not found: ${filePath}`);
+                    }
                 }
+            } else {
+                logger.info('\n[VALIDATE] Skipping video file checks (article task).');
             }
-        } else {
-            logger.info('\n[VALIDATE] Skipping cookie check (using local browser profile).');
-        }
 
-        logger.info('\n[PUBLISH] All validations passed. Starting upload...');
+            // Managed cookies check only if NOT using local profile
+            if (!browser_profile_id) {
+                logger.info(`\n[VALIDATE] Checking cookie files in: ${COOKIES_DIR}`);
+                for (const acc of accountList) {
+                    let accPath: string;
+                    try {
+                        accPath = safeJoin(COOKIES_DIR, acc);
+                    } catch {
+                        logger.error(`  ✗ Cookie Path Invalid: ${acc}`);
+                        throw new Error(`非法的文件路径: ${acc}`);
+                    }
 
-        const opts: UploadOptions = {
-            title,
-            fileList,
-            tags,
-            accountList,
-            category,
-            enableTimer,
-            videosPerDay,
-            dailyTimes,
-            startDays,
-            thumbnailPath,
-            productLink,
-            productTitle,
-            isDraft,
-            browser_profile_id,
-            article,
-            platform_id: type,
-            userName: resolveUserNameByAccountFile(type, accountList),
-        };
-        const onProgress = (progress: number): void => {
-            if (!Number.isFinite(progress)) return;
-            const normalized = Math.max(0, Math.min(100, Math.trunc(progress)));
-            if (normalized <= lastProgress || normalized >= 100) return;
-            lastProgress = normalized;
-            taskService.updateTaskStatus(taskId, 'uploading', normalized);
-        };
-
-        // Dispatch to appropriate uploader
-        switch (type) {
-            case PlatformType.XIAOHONGSHU: await postVideoXhs(opts, onProgress); break;
-            case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts, onProgress); break;
-            case PlatformType.DOUYIN: await postVideoDouyin(opts, onProgress); break;
-            case PlatformType.KUAISHOU: await postVideoKs(opts, onProgress); break;
-            case PlatformType.BILIBILI: await postVideoBilibili(opts, onProgress); break;
-            case PlatformType.ZHIHU: await postArticleZhihu(opts, onProgress); break;
-            case PlatformType.JUEJIN: await postArticleJuejin(opts, onProgress); break;
-            case PlatformType.WX_OFFICIAL_ACCOUNT: await postOpenCLI(opts, onProgress); break;
-            default:
-                if (type >= 100) {
-                    await postOpenCLI(opts, onProgress);
-                } else {
-                    throw new Error(`Unknown platform type: ${type}`);
+                    if (fs.existsSync(accPath)) {
+                        logger.info(`  ✓ Cookie exists: ${acc}`);
+                    } else {
+                        logger.error(`  ✗ Cookie MISSING: ${acc}`);
+                        throw new Error(`Cookie file not found: ${accPath}`);
+                    }
                 }
-        }
+            } else {
+                logger.info('\n[VALIDATE] Skipping cookie check (using local browser profile).');
+            }
 
-        logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
-        taskService.updateTaskStatus(taskId, 'completed', 100, null);
-    } catch (error: any) {
-        logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${error.message}`);
-        logger.error(error.stack);
-        taskService.updateTaskStatus(taskId, 'failed', undefined, error.message);
-    } finally {
-        // 释放所有已持有的账号锁
-        for (const key of lockKeys) {
-            lockManager.unlock(key);
+            logger.info('\n[PUBLISH] All validations passed. Starting upload...');
+
+            const opts: UploadOptions = {
+                title,
+                fileList,
+                tags,
+                accountList,
+                category,
+                enableTimer,
+                videosPerDay,
+                dailyTimes,
+                startDays,
+                thumbnailPath,
+                productLink,
+                productTitle,
+                isDraft,
+                browser_profile_id,
+                article,
+                platform_id: type,
+                userName: resolveUserNameByAccountFile(type, accountList),
+            };
+            const onProgress = (progress: number): void => {
+                if (!Number.isFinite(progress)) return;
+                const normalized = Math.max(0, Math.min(100, Math.trunc(progress)));
+                if (normalized <= lastProgress || normalized >= 100) return;
+                lastProgress = normalized;
+                taskService.updateTaskStatus(taskId, 'uploading', normalized);
+            };
+
+            // Dispatch to appropriate uploader
+            switch (type) {
+                case PlatformType.XIAOHONGSHU: await postVideoXhs(opts, onProgress); break;
+                case PlatformType.WX_CHANNELS: await postVideoWxChannels(opts, onProgress); break;
+                case PlatformType.DOUYIN: await postVideoDouyin(opts, onProgress); break;
+                case PlatformType.KUAISHOU: await postVideoKs(opts, onProgress); break;
+                case PlatformType.BILIBILI: await postVideoBilibili(opts, onProgress); break;
+                case PlatformType.ZHIHU: await postArticleZhihu(opts, onProgress); break;
+                case PlatformType.JUEJIN: await postArticleJuejin(opts, onProgress); break;
+                case PlatformType.WX_OFFICIAL_ACCOUNT: await postOpenCLI(opts, onProgress); break;
+                default:
+                    if (type >= 100) {
+                        await postOpenCLI(opts, onProgress);
+                    } else {
+                        throw new Error(`Unknown platform type: ${type}`);
+                    }
+            }
+
+            logger.info(`\n[PUBLISH] Task ${taskId} completed successfully!`);
+            taskService.updateTaskStatus(taskId, 'completed', 100, null);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            const stack = error instanceof Error ? error.stack : undefined;
+            const exception = error instanceof Error ? error : new Error(message);
+            logger.error(`\n[PUBLISH] Task ${taskId} FAILED: ${message}`);
+            if (stack) {
+                logger.error(stack);
+            }
+            span.recordException(exception);
+            span.setStatus({ code: SpanStatusCode.ERROR, message });
+            taskService.updateTaskStatus(taskId, 'failed', undefined, message);
+        } finally {
+            // 释放所有已持有的账号锁
+            for (const key of lockKeys) {
+                lockManager.unlock(key);
+            }
+            releaseSlot(taskId);
+            span.end();
         }
-        releaseSlot(taskId);
-    }
+    }); // end startActiveSpan
 }
 
 /**
  * Start publish task in background (non-blocking).
  */
-export function startPublishThread(taskId: string, publishData: any): void {
+export function startPublishThread(taskId: string, publishData: PublishTaskData): void {
     setImmediate(() => {
         runPublishTask(taskId, publishData).catch(err => {
             logger.error(`[PUBLISH] Unhandled error in task ${taskId}: ${err.message}`);

@@ -1,0 +1,49 @@
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+
+describe('Telemetry Module', () => {
+    const previousOtelEnabled = process.env.OTEL_ENABLED;
+
+    beforeAll(() => {
+        process.env.OTEL_ENABLED = 'true';
+    });
+
+    afterEach(async () => {
+        // Clean up SDK after each test to avoid state leaks
+        const mod = await import('../../src/core/telemetry.js');
+        await mod.shutdownTelemetry();
+    });
+
+    afterAll(() => {
+        if (previousOtelEnabled === undefined) {
+            delete process.env.OTEL_ENABLED;
+            return;
+        }
+        process.env.OTEL_ENABLED = previousOtelEnabled;
+    });
+
+    it('should export initTelemetry and shutdownTelemetry functions', async () => {
+        const mod = await import('../../src/core/telemetry.js');
+        expect(typeof mod.initTelemetry).toBe('function');
+        expect(typeof mod.shutdownTelemetry).toBe('function');
+    });
+
+    it('should initialize without throwing', async () => {
+        const mod = await import('../../src/core/telemetry.js');
+        await expect(mod.initTelemetry()).resolves.not.toThrow();
+    });
+
+    it('should provide access to a tracer', async () => {
+        const mod = await import('../../src/core/telemetry.js');
+        await mod.initTelemetry();
+        expect(typeof mod.getTracer).toBe('function');
+        const tracer = mod.getTracer();
+        expect(tracer).toBeDefined();
+        expect(typeof tracer.startSpan).toBe('function');
+    });
+
+    it('should shutdown gracefully', async () => {
+        const mod = await import('../../src/core/telemetry.js');
+        await mod.initTelemetry();
+        await expect(mod.shutdownTelemetry()).resolves.not.toThrow();
+    });
+});

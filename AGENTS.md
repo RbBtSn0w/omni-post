@@ -17,16 +17,16 @@ All non-trivial tasks MUST follow this iterative lifecycle to satisfy constituti
 
 ### 1. Research Phase
 - **Context Mapping**: Use `grep_search` and `glob` to map routes, services, and types.
-- **Empirical Validation**: For bug fixes, reproduce the failure with a script or test BEFORE implementation.
+- **Empirical Validation**: For bug fixes, reproduce the failure with a script or test BEFORE implementation (Constitution Principle V).
 
 ### 2. Strategy Phase (Spec/Plan/Tasks)
 - **Drafting**: Update `.specify/spec.md` and `.specify/plan.md`.
-- **Mandatory Constitution Check**: Explicitly verify the plan against the 6 Core Principles.
+- **Mandatory Constitution Check**: Explicitly verify the plan against the **6 Core Principles** in the Constitution.
 - **Taskification**: Create a dependency-ordered `tasks.md` with explicit validation steps.
 
 ### 3. Execution Phase (Plan -> Act -> Validate)
 - **Small Batches**: Change one file or layer at a time.
-- **TDD Requirement**: Write or update tests alongside implementation.
+- **TDD Requirement**: Write or update tests alongside implementation. Ensure Red-Green-Refactor cycle.
 - **Pre-Completion Validation**: Run the mandatory verification scripts (see below).
 
 ---
@@ -34,18 +34,22 @@ All non-trivial tasks MUST follow this iterative lifecycle to satisfy constituti
 ## Engineering Standards (The "How")
 
 ### Layer Discipline (P-II)
-- **Patterns**: Use `services/` for logic, `routes/` for validation, `uploader/` for automation.
-- **Anti-Patterns**: No Express `req/res` in uploaders; no automation logic in routes.
+- **Patterns**: Use `services/` for orchestration/business logic, `routes/` for HTTP validation, `uploader/` for platform-specific Playwright automation.
+- **Anti-Patterns**: NEVER leak Express `req`/`res` objects into services or uploaders. No automation logic in routes.
 
 ### Type Safety & SSOT (P-IV)
 - **Strict Typing**: 
     - NEVER use `explicit any` or `as any`.
     - Run `node tools/scripts/check-no-new-any.mjs` before finishing.
-- **SSOT**: Always check `@omni-post/shared/src/index.ts` before defining new constants.
+- **SSOT**: Always check `@omni-post/shared` (`packages/shared/src/index.ts`) before defining new constants.
 
-### Async Safety (P-V)
-- **Lifecycle**: Long-running tasks MUST use the `task-service` for state management.
-- **Patterns**: Use SSE-style streaming for real-time progress.
+### Async & Task Safety (P-V)
+- **Lifecycle**: Long-running automation tasks MUST use the `task-service` for state management and recovery.
+- **Progress**: Use SSE-style streaming for real-time progress reporting.
+
+### Monorepo Integrity (P-VI)
+- **Tooling**: Always use root workspace scripts (e.g., `npm run test`, `npm run lint`) rather than local subdirectory commands.
+- **Cleanliness**: Use `npm run clean` to safely remove build artifacts.
 
 ---
 
@@ -72,8 +76,19 @@ Before declaring a task "Complete", you MUST execute and record:
 | **Shared** | `npm run test -w packages/shared` |
 | **Cleaning** | `npm run clean` |
 
+## Technical Stack
+- **Backend**: Node.js 20+ (TypeScript 5.x, ESM, Express.js)
+- **Frontend**: Vue 3 + Vite (Pinia, Element Plus)
+- **Automation**: Playwright (Node.js version)
+- **Database**: SQLite (via Knex/Objection)
+
+## Recent Decisions
+- **Deprecation**: Python code (Flask, pytest, pip) has been removed. No new Python dependencies are permitted.
+- **Architecture**: Enforced monorepo structure with workspace isolation.
+
 ## Active Technologies
-- N/A (Removing Python code) + Removing Python dependencies (pip, pytest, Flask, etc.) (034-remove-python-backend)
+- Node.js 20+ (TypeScript 5.x) + `@opentelemetry/api`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/sdk-logs` (036-add-opentelemetry)
+- N/A (Console output only) (036-add-opentelemetry)
 
 ## Recent Changes
-- 034-remove-python-backend: Added N/A (Removing Python code) + Removing Python dependencies (pip, pytest, Flask, etc.)
+- 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade and removed Winston from backend-node
