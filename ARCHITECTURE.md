@@ -616,6 +616,8 @@ The backend uses OpenTelemetry (OTel) for structured logging and distributed tra
 import { getOtelLogger } from './core/telemetry.js';
 // Or use the compatible facade: import { logger } from './core/logger.js';
 
+const logger = getOtelLogger('architecture-example');
+
 logger.debug("Detailed diagnostic information");
 logger.info("General informational message");
 logger.warn("Warning message");
@@ -625,8 +627,8 @@ logger.error("Error message");
 ### Log Storage & Tracing
 
 - **Development**: Traces and logs are output to the console by default (`ConsoleSpanExporter`).
-- **Debugging & AI Analysis**: Run `npm run dev:node:trace` from the root to export full structured JSON traces to `apps/backend-node/logs/local-trace.json`. This JSON is ideal for AI context-aware debugging.
-- **Production**: In future setups, data can be routed via OTLP exporters to observability platforms (Jaeger, Grafana, Datadog) without changing application code.
+- **Debugging & AI Analysis**: Run `npm run dev:node:trace` from the root to capture backend console output in `apps/backend-node/logs/local-trace.log`. Because this currently mirrors combined stdout/stderr, the file may contain spans, logs, and watch/restart output and is not guaranteed to be valid structured JSON.
+- **Production**: In future setups, proper structured trace/log export can be enabled by configuring OTLP or file exporters to send data to observability platforms such as Jaeger, Grafana, or Datadog without changing application code.
 
 ## Future Enhancements
 

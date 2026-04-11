@@ -72,7 +72,7 @@ Before declaring a task "Complete", you MUST execute and record:
 | Target | Command |
 | :--- | :--- |
 | **Backend-Node** | `npm run dev:node` / `npm run test:node` |
-| **Backend-Trace** | `npm run dev:node:trace` (Exports OTel JSON to `apps/backend-node/logs/local-trace.json` for AI debugging) |
+| **Backend-Trace** | `npm run dev:node:trace` (Captures trace/debug console output to `apps/backend-node/logs/local-trace.log` for AI debugging) |
 | **Frontend** | `npm run dev:frontend` / `npm run test:frontend` |
 | **Shared** | `npm run test -w packages/shared` |
 | **Cleaning** | `npm run clean` |
