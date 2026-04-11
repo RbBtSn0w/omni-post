@@ -98,6 +98,13 @@ function sanitizeAttributes(meta?: unknown): Attributes | undefined {
     return Object.keys(attrs).length > 0 ? attrs : undefined;
 }
 
+function extractErrorMeta(meta?: unknown): Error | undefined {
+    if (meta instanceof Error) return meta;
+    if (typeof meta !== 'object' || meta === null) return undefined;
+    const maybeError = (meta as Record<string, unknown>).error;
+    return maybeError instanceof Error ? maybeError : undefined;
+}
+
 /**
  * Emit a structured log record via OTel and also print to console.
  */
@@ -110,13 +117,14 @@ function emit(otelLogger: OtelLoggerType, level: LogLevel, message: string, meta
     const attrs = sanitizeAttributes(meta);
     const prefix = typeof attrs?.platform === 'string' ? `[${attrs.platform}] ` : '';
     const consoleWriter = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+    const errorMeta = extractErrorMeta(meta);
 
-    if (meta instanceof Error) {
+    if (errorMeta) {
         // eslint-disable-next-line no-console
-        consoleWriter(`${ts} | ${tag}: ${prefix}${message} ${meta.message}`);
-        if (meta.stack) {
+        consoleWriter(`${ts} | ${tag}: ${prefix}${message} ${errorMeta.message}`);
+        if (errorMeta.stack) {
             // eslint-disable-next-line no-console
-            consoleWriter(meta.stack);
+            consoleWriter(errorMeta.stack);
         }
     } else if (meta !== undefined && typeof meta !== 'object') {
         // eslint-disable-next-line no-console
@@ -146,6 +154,9 @@ interface LoggerFacade {
 function createLoggerFacade(name: string, defaultMeta?: Record<string, unknown>): LoggerFacade {
     const otelLog = getOtelLogger(name);
     const merged = (meta?: unknown): unknown => {
+        if (defaultMeta && meta instanceof Error) {
+            return { ...defaultMeta, error: meta };
+        }
         if (defaultMeta && typeof meta === 'object' && meta !== null) {
             return { ...defaultMeta, ...meta };
         }
