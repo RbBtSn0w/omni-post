@@ -7,7 +7,7 @@
  */
 
 import { SeverityNumber, type Logger as OtelLoggerType } from '@opentelemetry/api-logs';
-import type { AttributeValue, Attributes } from '@opentelemetry/api';
+import { trace, type AttributeValue, type Attributes } from '@opentelemetry/api';
 import { getOtelLogger } from './telemetry.js';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -134,12 +134,20 @@ function emit(otelLogger: OtelLoggerType, level: LogLevel, message: string, meta
         consoleWriter(`${ts} | ${tag}: ${prefix}${message}`);
     }
 
-    // OTel structured log record
+    // OTel structured log record - active context auto-injects traceId/spanId
+    const activeContext = trace.getActiveSpan()?.spanContext();
+
     otelLogger.emit({
         severityNumber: SEVERITY_MAP[level],
         severityText: tag,
         body: message,
         attributes: attrs,
+        // Manually map context context if present, though some exporters do this automatically
+        ...(activeContext && {
+            traceId: activeContext.traceId,
+            spanId: activeContext.spanId,
+            traceFlags: activeContext.traceFlags,
+        }),
     });
 }
 
