@@ -72,6 +72,7 @@ Before declaring a task "Complete", you MUST execute and record:
 | Target | Command |
 | :--- | :--- |
 | **Backend-Node** | `npm run dev:node` / `npm run test:node` |
+| **Backend-Trace** | `npm run dev:node:trace` (Captures trace/debug console output to `apps/backend-node/logs/local-trace.log` for AI debugging) |
 | **Frontend** | `npm run dev:frontend` / `npm run test:frontend` |
 | **Shared** | `npm run test -w packages/shared` |
 | **Cleaning** | `npm run clean` |
@@ -87,8 +88,7 @@ Before declaring a task "Complete", you MUST execute and record:
 - **Architecture**: Enforced monorepo structure with workspace isolation.
 
 ## Active Technologies
-- Node.js 20+ (TypeScript 5.x) + `@opentelemetry/api`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/sdk-logs` (036-add-opentelemetry)
-- N/A (Console output only) (036-add-opentelemetry)
+- Node.js 20+ (TypeScript 5.x) + `@opentelemetry/api`, `@opentelemetry/api-logs`, `@opentelemetry/sdk-node`, `@opentelemetry/sdk-trace-node`, `@opentelemetry/sdk-logs`
 
 ## Recent Changes
-- 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade and removed Winston from backend-node
+- 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade, removed Winston, and added `dev:node:trace` script for AI debugging.

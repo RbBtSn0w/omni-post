@@ -7,6 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:trace": "node -e \"const fs=require('node:fs'); const { spawn }=require('node:child_process'); fs.mkdirSync('logs', { recursive: true }); const output=fs.createWriteStream('logs/local-trace.log', { flags: 'a' }); const command=process.platform === 'win32' ? 'npx.cmd' : 'npx'; const child=spawn(command, ['tsx', 'watch', 'src/index.ts'], { stdio: ['inherit', 'pipe', 'pipe'] }); child.stdout.on('data', chunk => { process.stdout.write(chunk); output.write(chunk); }); child.stderr.on('data', chunk => { process.stderr.write(chunk); output.write(chunk); }); child.on('exit', code => { output.end(); process.exit(code ?? 0); }); child.on('error', error => { console.error(error); output.end(); process.exit(1); });\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
