@@ -49,9 +49,6 @@ export async function initTelemetry(): Promise<void> {
             sdk = nextSdk;
         })
         .catch((error: unknown) => {
-            if (sdk === nextSdk) {
-                sdk = undefined;
-            }
             // eslint-disable-next-line no-console
             console.error('Failed to initialize OpenTelemetry SDK', error);
             throw error;

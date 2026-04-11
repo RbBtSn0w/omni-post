@@ -8,6 +8,7 @@ import { SpanStatusCode } from '@opentelemetry/api';
 import { logger } from '../core/logger.js';
 import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
+import type { PublishTaskData } from './publish-types.js';
 
 export interface Task {
     id: string;
@@ -32,7 +33,7 @@ class TaskService {
     /**
      * Create a new publishing task.
      */
-    createTask(publishData: any): string {
+    createTask(publishData: PublishTaskData): string {
         const tracer = getTracer();
         return tracer.startActiveSpan('task.create', (span) => {
             try {

@@ -14,6 +14,7 @@ import { getTracer } from '../core/telemetry.js';
 import { dbManager } from '../db/database.js';
 import { safeJoin } from '../utils/path.js';
 import { lockManager } from './lock-manager.js';
+import type { PublishTaskData } from './publish-types.js';
 import {
     postArticleJuejin,
     postArticleZhihu,
@@ -84,7 +85,7 @@ function releaseSlot(taskId: string): void {
 /**
  * Execute publish task. Updates task status in DB.
  */
-export async function runPublishTask(taskId: string, publishData: any): Promise<void> {
+export async function runPublishTask(taskId: string, publishData: PublishTaskData): Promise<void> {
     const tracer = getTracer();
     return tracer.startActiveSpan('publish.task', async (span) => {
         span.setAttribute('task.id', taskId);
@@ -93,7 +94,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
         await acquireSlot(taskId);
 
         const accountList: string[] = publishData.accountList || [];
-        const contentType: 'video' | 'article' = publishData.content_type || 'video';
+        const contentType: 'video' | 'article' = publishData.content_type === 'article' ? 'article' : 'video';
         const browser_profile_id = publishData.browser_profile_id || null;
         const lockKeys: string[] = [];
         let lastProgress = 0;
@@ -118,7 +119,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
             taskService.updateTaskStatus(taskId, 'uploading', 0);
 
             // Extract data
-            const type = publishData.type;
+            const type = typeof publishData.type === 'number' ? publishData.type : -1;
             const title = publishData.title || '';
             const tags = publishData.tags || [];
             const fileList: string[] = publishData.fileList || [];
@@ -266,7 +267,7 @@ export async function runPublishTask(taskId: string, publishData: any): Promise<
 /**
  * Start publish task in background (non-blocking).
  */
-export function startPublishThread(taskId: string, publishData: any): void {
+export function startPublishThread(taskId: string, publishData: PublishTaskData): void {
     setImmediate(() => {
         runPublishTask(taskId, publishData).catch(err => {
             logger.error(`[PUBLISH] Unhandled error in task ${taskId}: ${err.message}`);
