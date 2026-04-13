@@ -27,7 +27,7 @@
     "@opentelemetry/sdk-logs": "^0.214.0",
     "@opentelemetry/sdk-node": "^0.214.0",
     "@opentelemetry/sdk-trace-node": "^2.6.1",
-    "better-sqlite3": "^11.7.0",
+    "better-sqlite3": "^12.9.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-rate-limit": "^8.3.1",
