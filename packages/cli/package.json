@@ -15,7 +15,7 @@
     "clean": "rm -rf node_modules dist coverage"
   },
   "dependencies": {
-    "axios": "^1.15.0",
+    "axios": "^1.15.1",
     "commander": "^12.0.0",
     "inquirer": "^9.2.0",
     "chalk": "^5.3.0",
