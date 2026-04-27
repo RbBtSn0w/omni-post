@@ -18,14 +18,14 @@
   "dependencies": {
     "@omni-post/shared": "*",
     "@element-plus/icons-vue": "^2.3.1",
-    "axios": "^1.15.1",
+    "axios": "^1.15.2",
     "echarts": "^6.0.0",
     "element-plus": "^2.13.7",
     "pinia": "^3.0.2",
     "sass": "^1.99.0",
-    "vue": "^3.5.32",
+    "vue": "^3.5.33",
     "vue-echarts": "^8.0.1",
-    "vue-router": "^5.0.3"
+    "vue-router": "^5.0.6"
   },
   "devDependencies": {
     "@omni-post/shared-config": "*",
