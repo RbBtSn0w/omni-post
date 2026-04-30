@@ -142,6 +142,24 @@ export class DouyinUploader extends BaseUploader {
                 }
             }
 
+            // --- 新增：处理强制性“自主声明” ---
+            this.log('正在处理强制性“自主声明”选项...');
+            const declarationBox = page.locator('.selectBox-buZRzi, .selectBox-Ew17B8').or(page.locator('div:has(> div:text-is("请选择自主声明"))')).first();
+            if (await declarationBox.count() > 0) {
+                await declarationBox.click({ force: true });
+                await page.waitForTimeout(1000);
+                // 选择最后一个选项：“无需添加自主声明”
+                const lastOption = page.locator('label.semi-radio').filter({ hasText: '无需添加自主声明' }).last();
+                if (await lastOption.count() > 0) {
+                    await lastOption.click({ force: true });
+                    await page.waitForTimeout(500);
+                    const confirmBtn = page.getByRole('button', { name: '确定' }).first();
+                    if (await confirmBtn.count() > 0) {
+                        await confirmBtn.click({ force: true });
+                    }
+                }
+            }
+
             if (productLink && productTitle) {
                 await this.setProductLink(page, productLink, productTitle);
             }
@@ -202,7 +220,9 @@ export class DouyinUploader extends BaseUploader {
                         || hostname === 'pstatp.com'
                         || hostname.endsWith('.pstatp.com')
                         || hostname === 'volcengine.com'
-                        || hostname.endsWith('.volcengine.com');
+                        || hostname.endsWith('.volcengine.com')
+                        || hostname.endsWith('.douyin.com')
+                        || hostname.endsWith('.snssdk.com');
 
                     if (isTrustedUploadHost && request.method() === 'POST') {
                         const buffer = request.postDataBuffer();
