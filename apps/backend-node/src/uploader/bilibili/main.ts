@@ -268,7 +268,7 @@ export class BilibiliUploader extends BaseUploader {
         pointerEvents: string;
     }> {
         const normalizedLocator = await this.normalizePublishButton(locator);
-        return normalizedLocator.evaluate((el: any, limit: number) => {
+        return normalizedLocator.evaluate((el: Element, limit: number) => {
             let target = (
                 el.closest?.('button, [role="button"], .cc-btn, .submit-btn, .submit-add')
                 ?? el

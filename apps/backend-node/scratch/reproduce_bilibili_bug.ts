@@ -14,11 +14,12 @@ async function reproduce() {
             console.log(BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT);
         });
         console.log('✅ Fix verified: No ReferenceError');
-    } catch (e: any) {
-        if (e.message.includes('ReferenceError')) {
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('ReferenceError')) {
             console.error('❌ Bug reproduced: ReferenceError');
         } else {
-            console.error('❌ Unexpected error:', e.message);
+            console.error('❌ Unexpected error:', msg);
         }
     } finally {
         await browser.close();
