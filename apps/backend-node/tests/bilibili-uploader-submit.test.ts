@@ -90,7 +90,10 @@ describe('BilibiliUploader submit helpers', () => {
 
     it('passes DIAGNOSTIC_TEXT_LIMIT as argument to evaluate callback, not as closure reference', async () => {
         const { BilibiliUploader } = await import('../src/uploader/bilibili/main.js');
-        const uploader = new BilibiliUploader() as any;
+        type UploaderInternals = {
+            normalizePublishButton: (locator: unknown) => Promise<typeof mockLocator>;
+            getPublishButtonState: (locator: unknown) => Promise<unknown>;
+        };
 
         let capturedArgs: unknown[] = [];
         const mockLocator = {
@@ -110,6 +113,7 @@ describe('BilibiliUploader submit helpers', () => {
             }),
         };
 
+        const uploader = new BilibiliUploader() as unknown as UploaderInternals;
         // Stub normalizePublishButton to return the mock locator directly
         vi.spyOn(uploader, 'normalizePublishButton').mockResolvedValue(mockLocator);
 
