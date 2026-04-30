@@ -81,7 +81,7 @@ function detectChromePath(): string | null {
 export const LOCAL_CHROME_PATH = detectChromePath();
 
 // Headless mode setting - defaults to true (especially for CI/Linux) unless disabled
-export const LOCAL_CHROME_HEADLESS = process.env.CHROME_HEADLESS !== 'false';
+export const LOCAL_CHROME_HEADLESS = false;//process.env.CHROME_HEADLESS !== 'false';
 
 /**
  * Log browser configuration information at startup.

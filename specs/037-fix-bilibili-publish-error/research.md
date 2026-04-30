@@ -5,8 +5,8 @@
 ### Investigation 1: ReferenceError in evaluate
 - **Question**: Why does `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` cause a `ReferenceError`?
 - **Finding**: Playwright's `evaluate` function runs the provided code in the browser context. Node.js classes and variables are not accessible in that context unless explicitly passed as arguments.
-- **Root Cause**: At `apps/backend-node/src/uploader/bilibili/main.ts:281`, the code `if (textResult.length > BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT)` tries to access `BilibiliUploader` which is a Node.js class.
-- **Solution**: Pass `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` as an argument to `evaluate`.
+- **Root Cause**: The original failure came from code inside `evaluate` trying to access the Node.js class constant directly. In the current implementation, the browser callback should use the passed `limit` argument instead of referencing `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` in the page context.
+- **Solution**: Pass `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` into `evaluate` from Node.js and compare against the callback parameter `limit` inside the evaluated function.
 
 ## Decisions
 
