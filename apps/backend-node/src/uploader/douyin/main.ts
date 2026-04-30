@@ -221,7 +221,9 @@ export class DouyinUploader extends BaseUploader {
                         || hostname.endsWith('.pstatp.com')
                         || hostname === 'volcengine.com'
                         || hostname.endsWith('.volcengine.com')
+                        || hostname === 'douyin.com'
                         || hostname.endsWith('.douyin.com')
+                        || hostname === 'snssdk.com'
                         || hostname.endsWith('.snssdk.com');
 
                     if (isTrustedUploadHost && request.method() === 'POST') {

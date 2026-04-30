@@ -7,12 +7,12 @@ async function reproduce() {
     const page = await context.newPage();
 
     // Mocking the behavior of getPublishButtonState
-    // This is a simplified version of what would fail
+    // Capture the limit in Node.js scope and pass it into the browser context as an argument.
+    const diagnosticTextLimit = BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT;
     try {
-        await page.evaluate(() => {
-            // @ts-ignore
-            console.log(BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT);
-        });
+        await page.evaluate((limit) => {
+            console.log(limit);
+        }, diagnosticTextLimit);
         console.log('✅ Fix verified: No ReferenceError');
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
