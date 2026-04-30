@@ -92,3 +92,8 @@ Before declaring a task "Complete", you MUST execute and record:
 
 ## Recent Changes
 - 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade, removed Winston, and added `dev:node:trace` script for AI debugging.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

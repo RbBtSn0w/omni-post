@@ -265,7 +265,7 @@ export class BilibiliUploader extends BaseUploader {
         pointerEvents: string;
     }> {
         const normalizedLocator = await this.normalizePublishButton(locator);
-        return normalizedLocator.evaluate((el: any) => {
+        return normalizedLocator.evaluate((el: any, limit: number) => {
             let target = (
                 el.closest?.('button, [role="button"], .cc-btn, .submit-btn, .submit-add')
                 ?? el
@@ -278,8 +278,8 @@ export class BilibiliUploader extends BaseUploader {
             
             let textResult = target.innerText?.trim() ?? '';
             textResult = textResult.replace(/\n| /g, ' ');
-            if (textResult.length > BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) {
-                textResult = textResult.substring(0, BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) + '...';
+            if (textResult.length > limit) {
+                textResult = textResult.substring(0, limit) + '...';
             }
 
             return {
@@ -291,7 +291,7 @@ export class BilibiliUploader extends BaseUploader {
                 pointerEvents: getStyle ? getStyle(target).pointerEvents : '',
                 parentClassName: parent?.className ?? '',
             };
-        });
+        }, BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT);
     }
 
     /**
