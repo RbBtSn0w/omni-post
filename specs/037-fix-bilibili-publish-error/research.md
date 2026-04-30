@@ -16,5 +16,5 @@
 
 ## Empirical Validation Plan
 
-- **Reproduction Script**: Create a script `apps/backend-node/scratch/reproduce_bilibili_bug.ts` that mocks a Playwright Page and calls `getPublishButtonState` with a mocked Locator, expecting it to fail with `ReferenceError`.
-- **Verification**: Run the script after the fix to ensure it passes.
+- **Reproduction Script**: Use `apps/backend-node/scratch/reproduce_bilibili_bug.ts` to verify the evaluate argument-passing pattern: the script captures `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` in Node.js scope and passes it into `page.evaluate` as an argument, demonstrating that values must be passed as arguments rather than read from Node.js class scope inside the browser callback.
+- **Verification**: Run the script to confirm the argument-passing pattern works, and verify that `getPublishButtonState` follows the same pattern by using the callback's `limit` parameter inside `evaluate` instead of referencing `BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT` in the page context.

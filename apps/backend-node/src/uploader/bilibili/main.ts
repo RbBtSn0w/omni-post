@@ -145,13 +145,16 @@ export class BilibiliUploader extends BaseUploader {
     /**
      * 判断是否为上传已经启动的请求信号
      */
-    private isUploadStartRequest(url: string): boolean {
-        return [
-            '/upload/multipart/new',
-            '/upload/multipart/part',
-            'bilivideo.com',
-            'upos'
-        ].some(keyword => url.includes(keyword));
+    private isUploadStartRequest(request: Request): boolean {
+        if (request.method() !== 'POST') {
+            return false;
+        }
+        try {
+            const pathname = new URL(request.url()).pathname;
+            return pathname.includes('/upload/multipart/new') || pathname.includes('/upload/multipart/part');
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -204,7 +207,7 @@ export class BilibiliUploader extends BaseUploader {
             });
 
         const requestReadyPromise = page
-            .waitForRequest(req => this.isUploadStartRequest(req.url()), { timeout })
+            .waitForRequest(req => this.isUploadStartRequest(req), { timeout })
             .then((): UploadStartProbeResult => ({ kind: 'started' }))
             .catch((error: unknown): UploadStartProbeResult => {
                 if (this.isTimeoutError(error)) {
