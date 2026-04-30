@@ -704,7 +704,8 @@ export class BilibiliUploader extends BaseUploader {
                 const uploadProgressListener = (request: Request) => {
                     this.logRequestDiagnostics(request);
                     const url = request.url();
-                    if ((url.includes('upload/multipart') || url.includes('bilivideo.com') || url.includes('upos')) && request.method() === 'POST') {
+                    const isBilivideoHost = (() => { try { const h = new URL(url).hostname; return h === 'bilivideo.com' || h.endsWith('.bilivideo.com'); } catch { return false; } })();
+                    if ((url.includes('upload/multipart') || isBilivideoHost || url.includes('upos')) && request.method() === 'POST') {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;
