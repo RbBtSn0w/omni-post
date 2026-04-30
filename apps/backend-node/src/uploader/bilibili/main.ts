@@ -151,7 +151,7 @@ export class BilibiliUploader extends BaseUploader {
         }
         try {
             const pathname = new URL(request.url()).pathname;
-            return pathname.includes('/upload/multipart/new') || pathname.includes('/upload/multipart/part');
+            return /\/upload\/multipart\/(new|part)(?:\/|$|\?)/.test(pathname);
         } catch {
             return false;
         }
