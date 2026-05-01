@@ -87,4 +87,40 @@ describe('BilibiliUploader submit helpers', () => {
         });
         expect(runtimeResult.diagnostic.message).toContain('Execution context was destroyed');
     });
+
+    it('passes DIAGNOSTIC_TEXT_LIMIT as argument to evaluate callback, not as closure reference', async () => {
+        const { BilibiliUploader } = await import('../src/uploader/bilibili/main.js');
+        type UploaderInternals = {
+            normalizePublishButton: (locator: unknown) => Promise<typeof mockLocator>;
+            getPublishButtonState: (locator: unknown) => Promise<unknown>;
+        };
+
+        let capturedArgs: unknown[] = [];
+        const mockLocator = {
+            evaluate: vi.fn(async (fn: (...args: unknown[]) => unknown, ...args: unknown[]) => {
+                capturedArgs = args;
+                // Call the callback with a minimal element stub and the passed limit
+                const el = {
+                    closest: () => null,
+                    tagName: 'BUTTON',
+                    innerText: 'test',
+                    className: '',
+                    disabled: false,
+                    getAttribute: () => null,
+                    parentElement: { className: '' },
+                };
+                return fn(el, args[0]);
+            }),
+        };
+
+        const uploader = new BilibiliUploader() as unknown as UploaderInternals;
+        // Stub normalizePublishButton to return the mock locator directly
+        vi.spyOn(uploader, 'normalizePublishButton').mockResolvedValue(mockLocator);
+
+        await uploader.getPublishButtonState({});
+
+        // The limit must be passed as the second argument to evaluate, not referenced via closure
+        expect(capturedArgs).toHaveLength(1);
+        expect(capturedArgs[0]).toBe(BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT);
+    });
 });

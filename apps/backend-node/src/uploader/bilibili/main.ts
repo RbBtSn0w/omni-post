@@ -126,7 +126,8 @@ export class BilibiliUploader extends BaseUploader {
             '/x/vu/web/add/v3',
             '/x/vu/web/add',
             'archive/add',
-            'upos'
+            'upos',
+            'bilivideo.com'
         ].some(keyword => url.includes(keyword));
     }
 
@@ -144,11 +145,16 @@ export class BilibiliUploader extends BaseUploader {
     /**
      * 判断是否为上传已经启动的请求信号
      */
-    private isUploadStartRequest(url: string): boolean {
-        return [
-            '/upload/multipart/new',
-            '/upload/multipart/part'
-        ].some(keyword => url.includes(keyword));
+    private isUploadStartRequest(request: Request): boolean {
+        if (request.method() !== 'POST') {
+            return false;
+        }
+        try {
+            const pathname = new URL(request.url()).pathname;
+            return /\/upload\/multipart\/(new|part)(?:\/|$|\?)/.test(pathname);
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -201,7 +207,7 @@ export class BilibiliUploader extends BaseUploader {
             });
 
         const requestReadyPromise = page
-            .waitForRequest(req => this.isUploadStartRequest(req.url()), { timeout })
+            .waitForRequest(req => this.isUploadStartRequest(req), { timeout })
             .then((): UploadStartProbeResult => ({ kind: 'started' }))
             .catch((error: unknown): UploadStartProbeResult => {
                 if (this.isTimeoutError(error)) {
@@ -265,7 +271,7 @@ export class BilibiliUploader extends BaseUploader {
         pointerEvents: string;
     }> {
         const normalizedLocator = await this.normalizePublishButton(locator);
-        return normalizedLocator.evaluate((el: any) => {
+        return normalizedLocator.evaluate((el: { closest?: (s: string) => unknown }, limit: number) => {
             let target = (
                 el.closest?.('button, [role="button"], .cc-btn, .submit-btn, .submit-add')
                 ?? el
@@ -278,8 +284,8 @@ export class BilibiliUploader extends BaseUploader {
             
             let textResult = target.innerText?.trim() ?? '';
             textResult = textResult.replace(/\n| /g, ' ');
-            if (textResult.length > BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) {
-                textResult = textResult.substring(0, BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT) + '...';
+            if (textResult.length > limit) {
+                textResult = textResult.substring(0, limit) + '...';
             }
 
             return {
@@ -291,7 +297,7 @@ export class BilibiliUploader extends BaseUploader {
                 pointerEvents: getStyle ? getStyle(target).pointerEvents : '',
                 parentClassName: parent?.className ?? '',
             };
-        });
+        }, BilibiliUploader.DIAGNOSTIC_TEXT_LIMIT);
     }
 
     /**
@@ -700,13 +706,17 @@ export class BilibiliUploader extends BaseUploader {
                 // 进度监听：B 站分片通常走 multipart/part
                 const uploadProgressListener = (request: Request) => {
                     this.logRequestDiagnostics(request);
-                    if (request.url().includes('upload/multipart') && request.method() === 'POST') {
+                    const url = request.url();
+                    const isBilivideoHost = (() => { try { const h = new URL(url).hostname; return h === 'bilivideo.com' || h.endsWith('.bilivideo.com'); } catch { return false; } })();
+                    if ((url.includes('upload/multipart') || isBilivideoHost || url.includes('upos')) && request.method() === 'POST') {
                         const buffer = request.postDataBuffer();
                         if (buffer) {
                             uploadedBytes += buffer.length;
                             const filePercent = Math.min(uploadedBytes / totalSizeBytes, 1);
                             const globalPercent = Math.floor(((i + filePercent * 0.99) / fileList.length) * 100);
-                            this.log(`[UPLOAD CHUNK] file=${i + 1}/${fileList.length} chunkBytes=${buffer.length} uploadedBytes=${uploadedBytes}/${totalSizeBytes} percent=${(filePercent * 100).toFixed(2)}%`);
+                            if (uploadedBytes % (10 * 1024 * 1024) < 1024 * 1024 || filePercent === 1) { // Reduced logging frequency
+                                this.log(`[UPLOAD CHUNK] file=${i + 1}/${fileList.length} chunkBytes=${buffer.length} uploadedBytes=${uploadedBytes}/${totalSizeBytes} percent=${(filePercent * 100).toFixed(2)}%`);
+                            }
                             onProgress(globalPercent);
                         }
                     }
@@ -763,15 +773,16 @@ export class BilibiliUploader extends BaseUploader {
                             ]);
                             if (fileChooser) {
                                 await fileChooser.setFiles(videoPath);
-                                const started = await this.waitForUploadStartSignal(page, 10000, 'file_chooser_injection', videoFile);
+                                // 增加超时到 20s，并配合 uploadedBytes 检查防止重复注入
+                                const started = await this.waitForUploadStartSignal(page, 20000, 'file_chooser_injection', videoFile);
                                 if (started.kind === 'runtime_failure') {
                                     throw new Error(`[UPLOAD_START_RUNTIME_FAILURE] ${JSON.stringify(started.diagnostic)}`);
                                 }
-                                if (started.kind === 'started') {
+                                if (started.kind === 'started' || uploadedBytes > 0) {
                                     injected = true;
-                                    this.log('通过 FileChooser 拦截注入文件成功，且已观测到上传启动信号！');
+                                    this.log('通过 FileChooser 拦截注入文件成功，且已观测到上传启动信号或实时流量！');
                                 } else {
-                                    this.log('FileChooser 注入后未观测到上传启动信号，转入 input[type="file"] 回退流程', 'warn');
+                                    this.log('FileChooser 注入后未观测到上传启动信号且无流量，转入 input[type="file"] 回退流程', 'warn');
                                 }
                             }
                         } catch (_e) {
