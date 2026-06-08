@@ -214,6 +214,8 @@ jobs:
 
       - name: Setup Node Backend
         uses: ./.github/actions/setup-node-backend
+        with:
+          node-version: '22.x'
 
       - name: Build Shared Package
         run: npm run build -w @omni-post/shared
