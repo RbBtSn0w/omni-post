@@ -7,7 +7,7 @@
  */
 
 import { SeverityNumber, type Logger as OtelLoggerType } from '@opentelemetry/api-logs';
-import { trace, context, type AttributeValue, type Attributes } from '@opentelemetry/api';
+import { context, type AttributeValue, type Attributes } from '@opentelemetry/api';
 import { getOtelLogger } from './telemetry.js';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';

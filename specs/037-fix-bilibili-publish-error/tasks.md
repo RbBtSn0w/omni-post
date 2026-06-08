@@ -26,7 +26,7 @@ We will follow the Spec-Kit protocol and Constitution Principle V:
 
 - [x] T006 Run workspace integrity checks: `npm run check:workspace`
 - [x] T007 Run type checks for backend: `npm run typecheck -w apps/backend-node`
-- [ ] T008 Run linting: `npm run lint` (Skipped due to pre-existing workspace issue with `globals` package)
+- [x] T008 Run linting: `npm run lint` (Fixed workspace issue with `globals` package)
 - [x] T009 Run tests: `npm run test`
 - [x] T010 Check for new `any` usage: `node tools/scripts/check-no-new-any.mjs --base main --head HEAD`
 

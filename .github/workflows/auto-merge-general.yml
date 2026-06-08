@@ -1,0 +1,57 @@
+name: General Auto Merge (Label Triggered)
+
+on:
+  pull_request:
+    types: [labeled, synchronized, reopened, edited]
+  check_run:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.check_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  auto-merge:
+    name: Auto Merge
+    if: >
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'automerge')) ||
+      (github.event_name == 'check_run' && github.event.check_run.pull_requests[0] != null && github.event.check_run.name == 'CI Success')
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Auto Merge labeled PRs
+        run: |
+          # Fetch all open PRs with the 'automerge' label
+          prs=$(gh pr list --label "automerge" --json number,mergeable,statusCheckRollup --jq '.[] | select(.mergeable == "MERGEABLE")')
+          
+          if [ -z "$prs" ]; then
+            echo "No mergeable PRs with 'automerge' label found."
+            exit 0
+          fi
+
+          echo "Checking PRs for auto-merge..."
+          echo "$prs" | jq -c '.' | while read pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            # Only merge if all status checks are SUCCESS or NEUTRAL
+            # We filter out the Auto Merge job itself to avoid circular dependency check logic
+            checks_status=$(echo "$pr" | jq -r '.statusCheckRollup[] | select(.name != "Auto Merge") | .conclusion // "IN_PROGRESS"' | sort -u)
+            
+            echo "PR #$number unique check conclusions: $checks_status"
+
+            if [[ -n "$checks_status" ]] && ! echo "$checks_status" | grep -vE "^(SUCCESS|NEUTRAL)$" > /dev/null; then
+              echo "✅ All required checks passed for PR #$number. Merging..."
+              gh pr merge "$number" --squash --auto --delete-branch
+            else
+              echo "⏳ PR #$number has pending or failing checks ($checks_status). Skipping."
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
