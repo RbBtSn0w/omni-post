@@ -18,7 +18,7 @@ export const SOCIAL_MEDIA_XIAOHONGSHU = 'xiaohongshu';
 /**
  * Print only when DEBUG_MODE is enabled.
  */
-export function debugPrint(...args: any[]): void {
+export function debugPrint(...args: unknown[]): void {
     if (DEBUG_MODE) {
         logger.info(args.join(' '));
     }
@@ -49,7 +49,7 @@ export async function launchBrowser(headless?: boolean): Promise<Browser> {
         '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36',
     ];
 
-    const launchOptions: Record<string, any> = {
+    const launchOptions: Record<string, unknown> = {
         headless: headless ?? LOCAL_CHROME_HEADLESS,
         args: browserArgs,
     };
@@ -84,7 +84,7 @@ export async function launchPersistentContext(
         browserArgs.push(`--profile-directory=${profileName}`);
     }
 
-    const launchOptions: Record<string, any> = {
+    const launchOptions: Record<string, unknown> = {
         headless: headless ?? LOCAL_CHROME_HEADLESS,
         args: browserArgs,
         viewport: { width: 1280, height: 800 },
@@ -96,11 +96,11 @@ export async function launchPersistentContext(
     }
 
     try {
-        const context = await chromium.launchPersistentContext(userDataDir, launchOptions);
+        const context = await chromium.launchPersistentContext(userDataDir, launchOptions as any);
         await setInitScript(context);
         return context;
-    } catch (error: any) {
-        const msg = String(error?.message || error);
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
         if (msg.includes('already in use') || msg.includes('User data directory is already in use')) {
             throw new Error(
                 `浏览器配置目录正在使用中: ${userDataDir} (profile=${profileName})。请先关闭占用该配置的浏览器窗口后重试。`
