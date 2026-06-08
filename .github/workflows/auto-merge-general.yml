@@ -36,14 +36,17 @@ jobs:
           echo "Checking PRs for auto-merge..."
           echo "$prs" | jq -c '.' | while read pr; do
             number=$(echo "$pr" | jq -r '.number')
-            # Only merge if all status checks are successful
-            checks_status=$(echo "$pr" | jq -r '.statusCheckRollup[]?.conclusion // "IN_PROGRESS"' | sort -u)
+            # Only merge if all status checks are SUCCESS or NEUTRAL
+            # We filter out the Auto Merge job itself to avoid circular dependency check logic
+            checks_status=$(echo "$pr" | jq -r '.statusCheckRollup[] | select(.name != "Auto Merge") | .conclusion // "IN_PROGRESS"' | sort -u)
             
-            if [[ "$checks_status" == "SUCCESS" ]]; then
-              echo "Merging PR #$number..."
+            echo "PR #$number unique check conclusions: $checks_status"
+
+            if [[ -n "$checks_status" ]] && ! echo "$checks_status" | grep -vE "^(SUCCESS|NEUTRAL)$" > /dev/null; then
+              echo "✅ All required checks passed for PR #$number. Merging..."
               gh pr merge "$number" --squash --auto --delete-branch
             else
-              echo "PR #$number status checks are not all successful yet ($checks_status). Skipping."
+              echo "⏳ PR #$number has pending or failing checks ($checks_status). Skipping."
             fi
           done
         env:
