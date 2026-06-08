@@ -148,20 +148,21 @@ export async function debugScreenshot(
             path: screenshotPath,
             timeout: 10000,
         });
-        debugPrint(`[DEBUG] Screenshot saved: ${screenshotPath}${description ? ` (${description})` : ''}`);
+        debugPrint(`[DEBUG] 截图已保存: ${screenshotPath}${description ? ` (${description})` : ''}`);
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error);
-        debugPrint(`[ERROR] Failed to save screenshot: ${msg}`);
+        logger.error(`[ERROR] 截图保存失败: ${screenshotPath}`, { error: msg, description });
     }
 }
 
 /**
- * Close browser context and its browser.
+ * Close browser context safely.
+ * Note: For persistent contexts, this also closes the browser.
  */
 export async function closeBrowser(context: BrowserContext): Promise<void> {
-    const browser = context.browser();
-    await context.close();
-    if (browser) {
-        await browser.close();
+    try {
+        await context.close();
+    } catch (error) {
+        debugPrint(`[DEBUG] Error closing context: ${error}`);
     }
 }
