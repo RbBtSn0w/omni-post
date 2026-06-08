@@ -49,14 +49,14 @@ export async function launchBrowser(headless?: boolean): Promise<Browser> {
         '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.6613.100 Safari/537.36',
     ];
 
-    const launchOptions: Record<string, unknown> = {
+    const launchOptions = {
         headless: headless ?? LOCAL_CHROME_HEADLESS,
         args: browserArgs,
+        executablePath: LOCAL_CHROME_PATH && fs.existsSync(LOCAL_CHROME_PATH) ? LOCAL_CHROME_PATH : undefined,
     };
 
-    if (LOCAL_CHROME_PATH && fs.existsSync(LOCAL_CHROME_PATH)) {
-        debugPrint(`[DEBUG] 使用系统 Chrome: ${LOCAL_CHROME_PATH}`);
-        launchOptions.executablePath = LOCAL_CHROME_PATH;
+    if (launchOptions.executablePath) {
+        debugPrint(`[DEBUG] 使用系统 Chrome: ${launchOptions.executablePath}`);
     } else {
         debugPrint('[DEBUG] 使用 Playwright 内置 Chromium');
     }
@@ -84,19 +84,19 @@ export async function launchPersistentContext(
         browserArgs.push(`--profile-directory=${profileName}`);
     }
 
-    const launchOptions: Record<string, unknown> = {
+    const launchOptions = {
         headless: headless ?? LOCAL_CHROME_HEADLESS,
         args: browserArgs,
         viewport: { width: 1280, height: 800 },
+        executablePath: LOCAL_CHROME_PATH && fs.existsSync(LOCAL_CHROME_PATH) ? LOCAL_CHROME_PATH : undefined,
     };
 
-    if (LOCAL_CHROME_PATH && fs.existsSync(LOCAL_CHROME_PATH)) {
-        debugPrint(`[DEBUG] 使用系统 Chrome: ${LOCAL_CHROME_PATH}`);
-        launchOptions.executablePath = LOCAL_CHROME_PATH;
+    if (launchOptions.executablePath) {
+        debugPrint(`[DEBUG] 使用系统 Chrome: ${launchOptions.executablePath}`);
     }
 
     try {
-        const context = await chromium.launchPersistentContext(userDataDir, launchOptions as any);
+        const context = await chromium.launchPersistentContext(userDataDir, launchOptions);
         await setInitScript(context);
         return context;
     } catch (error: unknown) {
@@ -147,11 +147,21 @@ export async function debugScreenshot(
         await page.screenshot({
             path: screenshotPath,
             timeout: 10000,
-            omitBackground: true,
-            animations: 'disabled',
         });
-        debugPrint(`[DEBUG] 截图保存: ${screenshotPath}${description ? ` - ${description}` : ''}`);
-    } catch (e) {
-        debugPrint(`[DEBUG] 截图失败: ${screenshotPath} - ${e}`);
+        debugPrint(`[DEBUG] Screenshot saved: ${screenshotPath}${description ? ` (${description})` : ''}`);
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        debugPrint(`[ERROR] Failed to save screenshot: ${msg}`);
+    }
+}
+
+/**
+ * Close browser context and its browser.
+ */
+export async function closeBrowser(context: BrowserContext): Promise<void> {
+    const browser = context.browser();
+    await context.close();
+    if (browser) {
+        await browser.close();
     }
 }
