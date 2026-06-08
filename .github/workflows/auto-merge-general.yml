@@ -1,0 +1,47 @@
+name: General Auto Merge (Label Triggered)
+
+on:
+  pull_request:
+    types: [labeled, synchronized, reopened]
+  check_run:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto Merge
+    if: >
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'automerge')) ||
+      (github.event_name == 'check_run')
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    steps:
+      - name: Auto Merge labeled PRs
+        run: |
+          # Fetch all open PRs with the 'automerge' label
+          prs=$(gh pr list --label "automerge" --json number,mergeable,statusCheckRollup --jq '.[] | select(.mergeable == "MERGEABLE")')
+          
+          if [ -z "$prs" ]; then
+            echo "No mergeable PRs with 'automerge' label found."
+            exit 0
+          fi
+
+          echo "Checking PRs for auto-merge..."
+          echo "$prs" | jq -c '.' | while read pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            # Only merge if all status checks are successful
+            checks_status=$(echo "$pr" | jq -r '.statusCheckRollup[]?.conclusion // "IN_PROGRESS"' | sort -u)
+            
+            if [[ "$checks_status" == "SUCCESS" ]]; then
+              echo "Merging PR #$number..."
+              gh pr merge "$number" --squash --auto --delete-branch
+            else
+              echo "PR #$number status checks are not all successful yet ($checks_status). Skipping."
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
