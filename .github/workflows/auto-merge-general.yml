@@ -2,7 +2,7 @@ name: General Auto Merge (Label Triggered)
 
 on:
   pull_request:
-    types: [labeled, synchronized, reopened]
+    types: [labeled, synchronized, reopened, edited]
   check_run:
     types: [completed]
 
