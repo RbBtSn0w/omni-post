@@ -5,7 +5,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
     labels:
       - "dependencies"
     commit-message:
