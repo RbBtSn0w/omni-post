@@ -46,7 +46,7 @@ export async function initTelemetry(): Promise<void> {
         serviceName: SERVICE_NAME,
         traceExporter: new ConsoleSpanExporter(),
         logRecordProcessor: new SimpleLogRecordProcessor(
-            compatLogExporter as unknown as Parameters<typeof SimpleLogRecordProcessor>[0]
+            compatLogExporter as unknown as ConstructorParameters<typeof SimpleLogRecordProcessor>[0]
         ),
     });
 
