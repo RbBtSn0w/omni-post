@@ -45,7 +45,9 @@ export async function initTelemetry(): Promise<void> {
     const nextSdk = new NodeSDK({
         serviceName: SERVICE_NAME,
         traceExporter: new ConsoleSpanExporter(),
-        logRecordProcessor: new SimpleLogRecordProcessor(compatLogExporter as any),
+        logRecordProcessor: new SimpleLogRecordProcessor(
+            compatLogExporter as unknown as Parameters<typeof SimpleLogRecordProcessor>[0]
+        ),
     });
 
     startupPromise = Promise.resolve(nextSdk.start())
