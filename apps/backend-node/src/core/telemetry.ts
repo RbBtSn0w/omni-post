@@ -39,10 +39,15 @@ export async function initTelemetry(): Promise<void> {
         return;
     }
 
+    const consoleLogExporter = new ConsoleLogRecordExporter();
+    const compatLogExporter = Object.assign(consoleLogExporter, { exporter: consoleLogExporter });
+
     const nextSdk = new NodeSDK({
         serviceName: SERVICE_NAME,
         traceExporter: new ConsoleSpanExporter(),
-        logRecordProcessor: new SimpleLogRecordProcessor(new ConsoleLogRecordExporter()),
+        logRecordProcessor: new SimpleLogRecordProcessor(
+            compatLogExporter as unknown as ConstructorParameters<typeof SimpleLogRecordProcessor>[0]
+        ),
     });
 
     startupPromise = Promise.resolve(nextSdk.start())
