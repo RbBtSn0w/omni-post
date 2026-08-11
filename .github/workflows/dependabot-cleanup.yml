@@ -1,0 +1,30 @@
+name: Dependabot Auto Cleanup
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  cleanup:
+    name: Recreate Stale Dependabot PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Recreate Failing Dependabot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Scanning open Dependabot PRs..."
+          prs=$(gh pr list --limit 50 --json number,author -q '.[] | select(.author.login == "app/dependabot" or .author.login == "dependabot") | .number')
+          for pr in $prs; do
+            echo "Requesting recreate for PR #$pr..."
+            gh pr comment "$pr" --body "@dependabot recreate" || true
+          done
