@@ -19,13 +19,13 @@
     "@omni-post/shared": "*",
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.20.0",
-    "echarts": "^6.0.0",
-    "element-plus": "^2.13.7",
+    "echarts": "^6.1.0",
+    "element-plus": "^2.14.5",
     "pinia": "^3.0.2",
-    "sass": "^1.99.0",
-    "vue": "^3.5.33",
-    "vue-echarts": "^8.0.1",
-    "vue-router": "^5.0.6"
+    "sass": "^1.103.1",
+    "vue": "^3.5.42",
+    "vue-echarts": "^8.2.0",
+    "vue-router": "^5.3.0"
   },
   "devDependencies": {
     "@omni-post/shared-config": "*",
