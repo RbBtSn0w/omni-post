@@ -4,14 +4,14 @@
 
 ## Authority & Governance
 
-1. **North Star**: All actions MUST comply with the [OmniPost Constitution](.specify/memory/constitution.md). 
+1. **North Star**: All actions MUST comply with the [OmniPost Constitution](docs/constitution.md). 
 2. **Two-Layer Governance**:
    - **Constitution**: Defines "Why" (Principles) and "What" (Non-negotiable constraints).
    - **AGENTS.md** (This file): Defines "How" (Workflows, Tools, and Protocols).
 
 ---
 
-## Operational Workflow: Spec-Kit Protocol
+## Operational Workflow: Agent Protocol
 
 All non-trivial tasks MUST follow this iterative lifecycle to satisfy constitutional quality gates.
 
@@ -20,7 +20,7 @@ All non-trivial tasks MUST follow this iterative lifecycle to satisfy constituti
 - **Empirical Validation**: For bug fixes, reproduce the failure with a script or test BEFORE implementation (Constitution Principle V).
 
 ### 2. Strategy Phase (Spec/Plan/Tasks)
-- **Drafting**: Update `.specify/spec.md` and `.specify/plan.md`.
+- **Drafting**: Update `docs/specs/spec.md` and `docs/specs/plan.md`.
 - **Mandatory Constitution Check**: Explicitly verify the plan against the **6 Core Principles** in the Constitution.
 - **Taskification**: Create a dependency-ordered `tasks.md` with explicit validation steps.
 
@@ -92,12 +92,6 @@ Before declaring a task "Complete", you MUST execute and record:
 
 ## Recent Changes
 - 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade, removed Winston, and added `dev:node:trace` script for AI debugging.
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read
-`specs/037-fix-bilibili-publish-error/plan.md`.
-<!-- SPECKIT END -->
 
 ### Frontend Testing & Vue 3.5 Constraints (P-VII)
 - **Slot Destructuring**: VTU auto-generated stubs (`ElTableColumn: true`) evaluate fallback slots without providing slot scope props in Vue 3.5. Always use optional chaining (`scope?.row?.xxx`) when accessing scoped slot props in `<template #default="scope">` within Element Plus components to prevent `Cannot read properties of undefined` during tests.
