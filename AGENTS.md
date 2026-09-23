@@ -20,7 +20,7 @@ All non-trivial tasks MUST follow this iterative lifecycle to satisfy constituti
 - **Empirical Validation**: For bug fixes, reproduce the failure with a script or test BEFORE implementation (Constitution Principle V).
 
 ### 2. Strategy Phase (Spec/Plan/Tasks)
-- **Drafting**: Update `docs/specs/spec.md` and `docs/specs/plan.md`.
+- **Drafting**: Create or update feature design artifacts under `specs/<feature>/` (e.g. `spec.md`, `plan.md`).
 - **Mandatory Constitution Check**: Explicitly verify the plan against the **6 Core Principles** in the Constitution.
 - **Taskification**: Create a dependency-ordered `tasks.md` with explicit validation steps.
 
@@ -93,6 +93,6 @@ Before declaring a task "Complete", you MUST execute and record:
 ## Recent Changes
 - 036-add-opentelemetry: Added OpenTelemetry tracing + logs with OTel-native logger facade, removed Winston, and added `dev:node:trace` script for AI debugging.
 
-### Frontend Testing & Vue 3.5 Constraints (P-VII)
+### Frontend Testing & Vue 3.5 Constraints
 - **Slot Destructuring**: VTU auto-generated stubs (`ElTableColumn: true`) evaluate fallback slots without providing slot scope props in Vue 3.5. Always use optional chaining (`scope?.row?.xxx`) when accessing scoped slot props in `<template #default="scope">` within Element Plus components to prevent `Cannot read properties of undefined` during tests.
 - **Template Ref Lifecycle**: Components hidden behind `v-show` or `v-if` (e.g. `el-form` inside an unmounted `el-dialog`) expose `null` as their template ref. In test setups, ensure visibility (e.g. `dialogVisible = true`) and `await wrapper.vm.$nextTick()` before accessing inner component template refs.
