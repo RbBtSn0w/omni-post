@@ -652,13 +652,13 @@
             <el-table-column prop="id" label="任务ID" width="180" show-overflow-tooltip />
             <el-table-column label="任务名称" width="200" show-overflow-tooltip>
               <template #default="scope">
-                {{ scope.row.title || '未命名任务' }}
+                {{ scope?.row?.title || '未命名任务' }}
               </template>
             </el-table-column>
             <el-table-column label="平台" width="150">
               <template #default="scope">
                 <el-tag
-                  v-for="platformKey in scope.row.selectedPlatforms"
+                  v-for="platformKey in scope?.row?.selectedPlatforms"
                   :key="platformKey"
                   size="small"
                   class="platform-tag"
@@ -670,17 +670,17 @@
             <el-table-column label="状态" width="120">
               <template #default="scope">
                 <el-tag
-                  :type="getTaskStatusType(scope.row.status)"
+                  :type="getTaskStatusType(scope?.row?.status)"
                   size="small"
                 >
-                  {{ getTaskStatusText(scope.row.status) }}
+                  {{ getTaskStatusText(scope?.row?.status) }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="进度" width="150">
               <template #default="scope">
                 <el-progress
-                  :percentage="scope.row.progress"
+                  :percentage="scope?.row?.progress"
                   :stroke-width="6"
                 />
               </template>
@@ -688,37 +688,37 @@
             <el-table-column label="优先级" width="120">
               <template #default="scope">
                 <el-tag
-                  :type="scope.row.priority === 2 ? 'danger' : scope.row.priority === 1 ? 'primary' : 'info'"
+                  :type="scope?.row?.priority === 2 ? 'danger' : scope?.row?.priority === 1 ? 'primary' : 'info'"
                   size="small"
                 >
-                  {{ scope.row.priority === 2 ? '高' : scope.row.priority === 1 ? '正常' : '低' }}
+                  {{ scope?.row?.priority === 2 ? '高' : scope?.row?.priority === 1 ? '正常' : '低' }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="创建时间" width="200" show-overflow-tooltip>
               <template #default="scope">
-                {{ formatDate(scope.row.createdAt) }}
+                {{ formatDate(scope?.row?.createdAt) }}
               </template>
             </el-table-column>
             <el-table-column label="操作" width="200">
               <template #default="scope">
                 <el-button
-                  v-if="['waiting', 'failed'].includes(scope.row.status)"
+                  v-if="['waiting', 'failed'].includes(scope?.row?.status)"
                   size="small"
                   type="primary"
                   @click="startTask(scope.row)"
                 >
-                  {{ scope.row.status === 'failed' ? '重试' : '开始' }}
+                  {{ scope?.row?.status === 'failed' ? '重试' : '开始' }}
                 </el-button>
                 <el-button
-                  v-if="['uploading', 'processing'].includes(scope.row.status)"
+                  v-if="['uploading', 'processing'].includes(scope?.row?.status)"
                   size="small"
                   @click="pauseTask(scope.row)"
                 >
                   暂停
                 </el-button>
                 <el-button
-                  v-if="['waiting', 'uploading', 'processing', 'failed'].includes(scope.row.status)"
+                  v-if="['waiting', 'uploading', 'processing', 'failed'].includes(scope?.row?.status)"
                   size="small"
                   type="danger"
                   @click="cancelTask(scope.row)"

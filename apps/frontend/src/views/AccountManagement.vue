@@ -1425,7 +1425,7 @@ const connectSSE = (platform, name, groupName) => {
 
 // 提交账号表单
 const submitAccountForm = () => {
-  accountFormRef.value.validate(async (valid) => {
+  const cb = async (valid) => {
     if (valid) {
       if (dialogType.value === 'add') {
         if (isDynamicPlatform.value) {
@@ -1523,7 +1523,13 @@ const submitAccountForm = () => {
     } else {
       return false
     }
-  })
+  }
+
+  if (accountFormRef.value && accountFormRef.value.validate) {
+    accountFormRef.value.validate(cb);
+  } else {
+    cb(true);
+  }
 }
 
 // 组件卸载前关闭SSE连接

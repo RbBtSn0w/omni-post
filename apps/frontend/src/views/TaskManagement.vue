@@ -138,7 +138,7 @@
         <el-table-column label="平台" width="200">
           <template #default="scope">
             <el-tag
-              v-for="platform in (scope.row.platformNames || [])"
+              v-for="platform in (scope?.row?.platformNames || [])"
               :key="platform"
               size="small"
               :type="getPlatformTagType(platform)"
@@ -152,17 +152,17 @@
         <el-table-column prop="statusText" label="状态" width="120">
           <template #default="scope">
             <el-tag
-              :type="getStatusTagType(scope.row.status)"
+              :type="getStatusTagType(scope?.row?.status)"
               size="small"
             >
-              {{ scope.row.statusText }}
+              {{ scope?.row?.statusText }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="progress" label="进度" width="150">
           <template #default="scope">
             <el-progress
-              :percentage="scope.row.progress"
+              :percentage="scope?.row?.progress"
               :stroke-width="6"
             />
           </template>
@@ -170,16 +170,16 @@
         <el-table-column prop="priorityText" label="优先级" width="120">
           <template #default="scope">
             <el-tag
-              :type="scope.row.priority === 2 ? 'danger' : scope.row.priority === 1 ? 'primary' : 'info'"
+              :type="scope?.row?.priority === 2 ? 'danger' : scope?.row?.priority === 1 ? 'primary' : 'info'"
               size="small"
             >
-              {{ scope.row.priorityText }}
+              {{ scope?.row?.priorityText }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="200">
           <template #default="scope">
-            {{ formatDate(scope.row.createdAt) }}
+            {{ formatDate(scope?.row?.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="250">
@@ -191,15 +191,15 @@
             <el-button
               size="small"
               type="primary"
-              v-if="['waiting', 'failed'].includes(scope.row.status)"
+              v-if="['waiting', 'failed'].includes(scope?.row?.status)"
               @click="startTask(scope.row)"
             >
               <el-icon><VideoPlay /></el-icon>
-              {{ scope.row.status === 'failed' ? '重试' : '开始' }}
+              {{ scope?.row?.status === 'failed' ? '重试' : '开始' }}
             </el-button>
             <el-button
               size="small"
-              v-if="['uploading', 'processing'].includes(scope.row.status)"
+              v-if="['uploading', 'processing'].includes(scope?.row?.status)"
               @click="pauseTask(scope.row)"
             >
               <el-icon><VideoPause /></el-icon>
@@ -208,7 +208,7 @@
             <el-button
               size="small"
               type="danger"
-              v-if="scope.row.status !== 'completed' && scope.row.status !== 'cancelled'"
+              v-if="scope?.row?.status !== 'completed' && scope?.row?.status !== 'cancelled'"
               @click="cancelTask(scope.row)"
             >
               <el-icon><Delete /></el-icon>
