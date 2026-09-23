@@ -309,6 +309,9 @@ describe('AccountManagement.vue - Harden Refresh Flow', () => {
   // T034 [US4]: account edit success path uses validated refresh completion semantics
   it('account edit success calls refreshAccountsAfterMutation with account_edit', async () => {
     // Set component state for edit mode
+    wrapper.vm.dialogVisible = true
+    await wrapper.vm.$nextTick()
+
     wrapper.vm.dialogType = 'edit'
     Object.assign(wrapper.vm.accountForm, {
       id: 1,

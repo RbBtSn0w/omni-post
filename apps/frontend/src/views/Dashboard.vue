@@ -246,26 +246,26 @@
                   <template #default="scope">
                     <div class="task-title">
                       <el-tag
-                        v-if="scope.row.platformNames && scope.row.platformNames.length > 0"
-                        :type="getPlatformTagType(scope.row.platformNames[0])"
+                        v-if="scope?.row?.platformNames && scope?.row?.platformNames.length > 0"
+                        :type="getPlatformTagType(scope?.row?.platformNames[0])"
                         effect="plain"
                         size="small"
                         class="task-platform-tag"
                       >
-                        {{ scope.row.platformNames[0] }}
+                        {{ scope?.row?.platformNames[0] }}
                       </el-tag>
-                      <span>{{ scope.row.title }}</span>
+                      <span>{{ scope?.row?.title }}</span>
                     </div>
                   </template>
                 </el-table-column>
                 <el-table-column prop="statusText" label="状态" width="80">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
                       size="small"
                     >
-                      {{ scope.row.statusText }}
+                      {{ scope?.row?.statusText }}
                     </el-tag>
                   </template>
                 </el-table-column>

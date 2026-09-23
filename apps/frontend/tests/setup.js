@@ -7,6 +7,13 @@ import 'element-plus/dist/index.css'
 // 配置Vue测试工具
 config.global.plugins = [ElementPlus]
 config.global.stubs = {
+  ElTableColumn: {
+    template: '<div><slot :row="{ platformNames: [] }"></slot></div>'
+  },
+  ElForm: {
+    template: '<div><slot></slot></div>',
+    methods: { validate(cb) { cb(true) } }
+  },
   Transition: false,
   TransitionGroup: false
 }
