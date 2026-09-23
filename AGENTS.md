@@ -98,3 +98,7 @@ For additional context about technologies to be used, project structure,
 shell commands, and other important information, read
 `specs/037-fix-bilibili-publish-error/plan.md`.
 <!-- SPECKIT END -->
+
+### Frontend Testing & Vue 3.5 Constraints (P-VII)
+- **Slot Destructuring**: VTU auto-generated stubs (`ElTableColumn: true`) evaluate fallback slots without providing slot scope props in Vue 3.5. Always use optional chaining (`scope?.row?.xxx`) when accessing scoped slot props in `<template #default="scope">` within Element Plus components to prevent `Cannot read properties of undefined` during tests.
+- **Template Ref Lifecycle**: Components hidden behind `v-show` or `v-if` (e.g. `el-form` inside an unmounted `el-dialog`) expose `null` as their template ref. In test setups, ensure visibility (e.g. `dialogVisible = true`) and `await wrapper.vm.$nextTick()` before accessing inner component template refs.
