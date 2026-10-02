@@ -34,21 +34,21 @@
           <el-table-column prop="filename" label="文件名" width="300" />
           <el-table-column prop="filesize" label="文件大小" width="120">
           <template #default="scope">
-            {{ scope.row.filesize || 0 }} MB
+            {{ scope?.row?.filesize || 0 }} MB
           </template>
         </el-table-column>
           <el-table-column prop="upload_time" label="上传时间" width="180" />
           <el-table-column label="状态" width="100">
             <template #default="scope">
-              <el-tag :type="scope.row.is_missing ? 'danger' : 'success'">
-                {{ scope.row.is_missing ? '缺失' : '正常' }}
+              <el-tag :type="scope?.row?.is_missing ? 'danger' : 'success'">
+                {{ scope?.row?.is_missing ? '缺失' : '正常' }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作">
             <template #default="scope">
-              <el-button size="small" @click="handlePreview(scope.row)" :disabled="scope.row.is_missing">预览</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+              <el-button size="small" @click="handlePreview(scope?.row)" :disabled="scope?.row?.is_missing">预览</el-button>
+              <el-button size="small" type="danger" @click="handleDelete(scope?.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
