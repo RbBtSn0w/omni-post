@@ -26,7 +26,7 @@
     "@types/inquirer": "^9.0.0",
     "@types/node": "^20.19.43",
     "eslint": "^9.39.5",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript-eslint": "^8.70.1",
     "@omni-post/shared-config": "*"
   }
