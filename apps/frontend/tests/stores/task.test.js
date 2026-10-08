@@ -2,6 +2,14 @@ import { useTaskStore } from '@/stores/task'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/api', () => ({
+  taskApi: {
+    deleteTask: vi.fn().mockResolvedValue({ code: 200 }),
+    updateTaskStatus: vi.fn().mockResolvedValue({ code: 200 }),
+    getAllTasks: vi.fn().mockResolvedValue({ data: [] })
+  }
+}))
+
 describe('Task Store', () => {
   let taskStore
 
@@ -150,17 +158,6 @@ describe('Task Store', () => {
 
   // 测试任务删除功能
   describe('Task Deletion', () => {
-    // Mock taskApi before each test
-    beforeEach(() => {
-      vi.mock('@/api', () => ({
-        taskApi: {
-          deleteTask: vi.fn().mockResolvedValue({ code: 200 }),
-          updateTaskStatus: vi.fn().mockResolvedValue({ code: 200 }),
-          getAllTasks: vi.fn().mockResolvedValue({ data: [] })
-        }
-      }))
-    })
-
     describe('Single Task Deletion', () => {
       beforeEach(() => {
         // 添加测试任务

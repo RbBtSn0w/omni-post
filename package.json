@@ -40,6 +40,10 @@
     "node": ">=20.19.0",
     "npm": ">=9.0.0"
   },
+  "overrides": {
+    "vue": "^3.5.43",
+    "@vue/server-renderer": "^3.5.43"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/RbBtSn0w/omni-post.git"
