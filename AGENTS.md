@@ -4,7 +4,7 @@
 
 ## Authority & Governance
 
-1. **North Star**: All actions MUST comply with the [OmniPost Constitution](docs/constitution.md). 
+1. **North Star**: All actions MUST comply with the [OmniPost Constitution](docs/constitution.md).
 2. **Two-Layer Governance**:
    - **Constitution**: Defines "Why" (Principles) and "What" (Non-negotiable constraints).
    - **AGENTS.md** (This file): Defines "How" (Workflows, Tools, and Protocols).

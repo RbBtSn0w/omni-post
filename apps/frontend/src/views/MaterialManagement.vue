@@ -47,8 +47,8 @@
           </el-table-column>
           <el-table-column label="操作">
             <template #default="scope">
-              <el-button size="small" @click="handlePreview(scope?.row)" :disabled="scope?.row?.is_missing">预览</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(scope?.row)">删除</el-button>
+              <el-button size="small" @click="scope?.row && handlePreview(scope.row)" :disabled="!scope?.row || scope?.row?.is_missing">预览</el-button>
+              <el-button size="small" type="danger" @click="scope?.row && handleDelete(scope.row)" :disabled="!scope?.row">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -417,6 +417,7 @@ const submitUpload = async () => {
 
 // 预览素材
 const handlePreview = async (material) => {
+  if (!material) return
   currentMaterial.value = null
   previewDialogVisible.value = true
   ElMessage.info('加载中...')
@@ -433,6 +434,7 @@ const handlePreview = async (material) => {
 
 // 删除素材
 const handleDelete = (material) => {
+  if (!material) return
   ElMessageBox.confirm(
     `确定要删除素材 ${material.filename} 吗？`,
     '警告',
