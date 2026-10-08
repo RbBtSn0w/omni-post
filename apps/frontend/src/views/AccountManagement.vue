@@ -101,24 +101,24 @@
                 <el-table-column type="index" label="序号" width="60" />
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -126,18 +126,18 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
                       :class="{
-                        'clickable-status': isStatusClickable(scope.row.status),
-                        'refreshing-status': scope.row.isRefreshing
+                        'clickable-status': isStatusClickable(scope?.row?.status),
+                        'refreshing-status': scope?.row?.isRefreshing
                       }"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="{'is-loading': scope.row.isRefreshing || scope.row.status === '验证中'}" v-if="scope.row.isRefreshing || scope.row.status === '验证中'">
+                      <el-icon :class="{'is-loading': scope?.row?.isRefreshing || scope?.row?.status === '验证中'}" v-if="scope?.row?.isRefreshing || scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -146,9 +146,9 @@
                     <el-button
                       size="small"
                       :icon="Refresh"
-                      :loading="scope.row.isRefreshing"
+                      :loading="scope?.row?.isRefreshing"
                       @click="handleRefreshSingleAccount(scope.row)"
-                      :disabled="scope.row.isRefreshing"
+                      :disabled="scope?.row?.isRefreshing"
                     >
                       刷新
                     </el-button>
@@ -188,24 +188,24 @@
               <el-table :data="filteredKuaishouAccounts" style="width: 100%">
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -213,15 +213,15 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
-                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      :class="{'clickable-status': isStatusClickable(scope?.row?.status)}"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                      <el-icon :class="scope?.row?.status === '验证中' ? 'is-loading' : ''" v-if="scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -263,24 +263,24 @@
               <el-table :data="filteredDouyinAccounts" style="width: 100%">
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -288,15 +288,15 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
-                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      :class="{'clickable-status': isStatusClickable(scope?.row?.status)}"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                      <el-icon :class="scope?.row?.status === '验证中' ? 'is-loading' : ''" v-if="scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -338,24 +338,24 @@
               <el-table :data="filteredChannelsAccounts" style="width: 100%">
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -363,15 +363,15 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
-                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      :class="{'clickable-status': isStatusClickable(scope?.row?.status)}"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                      <el-icon :class="scope?.row?.status === '验证中' ? 'is-loading' : ''" v-if="scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -413,24 +413,24 @@
               <el-table :data="filteredXiaohongshuAccounts" style="width: 100%">
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -438,15 +438,15 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
-                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      :class="{'clickable-status': isStatusClickable(scope?.row?.status)}"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                      <el-icon :class="scope?.row?.status === '验证中' ? 'is-loading' : ''" v-if="scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -488,24 +488,24 @@
               <el-table :data="filteredBilibiliAccounts" style="width: 100%">
                 <el-table-column label="头像" width="80">
                   <template #default="scope">
-                    <el-avatar :src="getDefaultAvatar(scope.row.name)" :size="40" />
+                    <el-avatar :src="getDefaultAvatar(scope?.row?.name)" :size="40" />
                   </template>
                 </el-table-column>
                 <el-table-column prop="name" label="名称" width="180" />
                 <el-table-column prop="platform" label="平台" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="getPlatformTagType(scope.row.platform)"
+                      :type="getPlatformTagType(scope?.row?.platform)"
                       effect="plain"
                     >
-                      {{ scope.row.platform }}
+                      {{ scope?.row?.platform }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="账号组" width="120">
                   <template #default="scope">
-                    <el-tag v-if="scope.row.group_id" size="small" type="info" effect="light">
-                      {{ groupStore.groups.find(g => g.id === scope.row.group_id)?.name || '未知组' }}
+                    <el-tag v-if="scope?.row?.group_id" size="small" type="info" effect="light">
+                      {{ groupStore.groups.find(g => g.id === scope?.row?.group_id)?.name || '未知组' }}
                     </el-tag>
                     <span v-else style="color: #909399; font-size: 12px;">未分組</span>
                   </template>
@@ -513,15 +513,15 @@
                 <el-table-column prop="status" label="状态">
                   <template #default="scope">
                     <el-tag
-                      :type="getStatusTagType(scope.row.status)"
+                      :type="getStatusTagType(scope?.row?.status)"
                       effect="plain"
-                      :class="{'clickable-status': isStatusClickable(scope.row.status)}"
+                      :class="{'clickable-status': isStatusClickable(scope?.row?.status)}"
                       @click="handleStatusClick(scope.row)"
                     >
-                      <el-icon :class="scope.row.status === '验证中' ? 'is-loading' : ''" v-if="scope.row.status === '验证中'">
+                      <el-icon :class="scope?.row?.status === '验证中' ? 'is-loading' : ''" v-if="scope?.row?.status === '验证中'">
                         <Loading />
                       </el-icon>
-                      {{ scope.row.status }}
+                      {{ scope?.row?.status }}
                     </el-tag>
                   </template>
                 </el-table-column>
