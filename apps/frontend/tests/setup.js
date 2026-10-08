@@ -19,25 +19,35 @@ config.global.stubs = {
 }
 
 // 模拟 localStorage
-global.localStorage = {
+const localStorageMock = {
   getItem: vi.fn().mockReturnValue(null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn()
 }
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+  writable: true
+})
+global.localStorage = localStorageMock
 
 // 模拟 sessionStorage
-global.sessionStorage = {
+const sessionStorageMock = {
   getItem: vi.fn().mockReturnValue(null),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn()
 }
+Object.defineProperty(window, 'sessionStorage', {
+  value: sessionStorageMock,
+  configurable: true,
+  writable: true
+})
+global.sessionStorage = sessionStorageMock
 
 // 模拟 window 对象 (non-destructive: add/override properties without replacing the real jsdom window)
 Object.assign(global.window, {
-  localStorage: global.localStorage,
-  sessionStorage: global.sessionStorage,
   open: vi.fn(),
   confirm: vi.fn().mockReturnValue(true),
   alert: vi.fn(),
