@@ -21,12 +21,12 @@
     "@vue/server-renderer": "^3.5.43",
     "axios": "^1.20.0",
     "echarts": "^6.1.0",
-    "element-plus": "^2.14.6",
+    "element-plus": "^2.14.7",
     "pinia": "^3.0.2",
-    "sass": "^1.105.0",
+    "sass": "^1.105.1",
     "vue": "^3.5.43",
-    "vue-echarts": "^8.3.0",
-    "vue-router": "^5.3.1"
+    "vue-echarts": "^8.3.2",
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@omni-post/shared-config": "*",
