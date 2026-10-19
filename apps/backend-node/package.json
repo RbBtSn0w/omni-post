@@ -32,12 +32,12 @@
     "express": "^4.22.3",
     "express-rate-limit": "^8.7.1",
     "multer": "^2.4.0",
-    "playwright": "^1.64.0",
+    "playwright": "^1.64.1",
     "rehype-stringify": "^10.0.0",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.0.0",
     "unified": "^11.0.0",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -54,7 +54,7 @@
     "eslint-plugin-import": "^2.32.0",
     "supertest": "^7.3.1",
     "tsx": "^4.23.15",
-    "typescript-eslint": "^8.71.1",
+    "typescript-eslint": "^8.71.2",
     "vitest": "^5.0.2"
   },
   "engines": {

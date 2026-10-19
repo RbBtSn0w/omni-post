@@ -27,7 +27,7 @@
     "@types/node": "^20.19.43",
     "eslint": "^9.39.5",
     "tsx": "^4.23.15",
-    "typescript-eslint": "^8.71.1",
+    "typescript-eslint": "^8.71.2",
     "@omni-post/shared-config": "*"
   }
 }
